@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rector\Privatization\Rector\MethodCall;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Stmt\Class_;
@@ -98,7 +99,7 @@ CODE_SAMPLE
         return $this->matchLocalPropertyFetchInGetterMethod($classMethod);
     }
 
-    private function matchLocalPropertyFetchInGetterMethod(ClassMethod $classMethod): ?PropertyFetch
+    private function matchLocalPropertyFetchInGetterMethod(ClassMethod $classMethod): ?Expr
     {
         $stmts = (array) $classMethod->stmts;
         if (count($stmts) !== 1) {

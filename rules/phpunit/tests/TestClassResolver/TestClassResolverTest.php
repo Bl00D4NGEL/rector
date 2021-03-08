@@ -37,6 +37,9 @@ final class TestClassResolverTest extends AbstractKernelTestCase
         $this->assertSame($expectedTestClass, $testClass);
     }
 
+    /**
+     * @return Iterator<class-string<SeeSomeClass>[]|class-string<SeeSomeClassTest>[]|class-string<TypedPropertyRector>[]|class-string<TypedPropertyRectorTest>[]|class-string<DowngradeTypedPropertyRector>[]|class-string<DowngradeTypedPropertyRectorTest>[]>
+     */
     public function provideData(): Iterator
     {
         yield [SeeSomeClass::class, SeeSomeClassTest::class];

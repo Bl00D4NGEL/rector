@@ -308,7 +308,7 @@ CODE_SAMPLE
         return $this->nullsafeManipulator->processNullSafeExprResult($expr, $nextNode->expr->name);
     }
 
-    private function getPreviousIf(Node $node): ?Node
+    private function getPreviousIf(Node $node): Expression
     {
         /** @var If_ $if */
         $if = $node->getAttribute(AttributeKey::NEXT_NODE);

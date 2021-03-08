@@ -31,7 +31,7 @@ final class EmptyStringDefaultPropertyFinder
     }
 
     /**
-     * @return PropertyProperty[]
+     * @return mixed[]<string, PropertyProperty[]>&mixed[]|PropertyProperty[]
      */
     public function find(Assign $assign): array
     {

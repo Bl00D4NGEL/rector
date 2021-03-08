@@ -15,6 +15,7 @@ use PHPStan\Type\ArrayType;
 use PHPStan\Type\ObjectType;
 use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\Core\NodeManipulator\MethodCallManipulator;
+use Rector\Core\PhpParser\Node\Value\ValueResolver;
 use Rector\Core\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
@@ -170,7 +171,7 @@ CODE_SAMPLE
         return true;
     }
 
-    private function inferMockedClassName(MethodCall $methodCall): ?string
+    private function inferMockedClassName(MethodCall $methodCall): ?ValueResolver
     {
         $variable = $this->findRootVariableOfChainCall($methodCall);
         if (! $variable instanceof Variable) {

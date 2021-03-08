@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rector\PHPOffice\Rector\MethodCall;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\BinaryOp;
 use PhpParser\Node\Expr\BinaryOp\Plus;
@@ -127,7 +128,7 @@ CODE_SAMPLE
         }
     }
 
-    private function findPreviousForWithVariable(Variable $variable): ?LNumber
+    private function findPreviousForWithVariable(Variable $variable): ?Expr
     {
         $for = $this->betterNodeFinder->findFirstPreviousOfTypes($variable, [For_::class]);
         if (! $for instanceof For_) {

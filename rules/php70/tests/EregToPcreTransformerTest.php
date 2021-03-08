@@ -30,6 +30,9 @@ final class EregToPcreTransformerTest extends TestCase
         $this->assertSame($expectedPcre, $pcre);
     }
 
+    /**
+     * @return Iterator<string[]>
+     */
     public function provideDataCaseSensitive(): Iterator
     {
         yield ['hi', '#hi#m'];
@@ -44,11 +47,17 @@ final class EregToPcreTransformerTest extends TestCase
         $this->assertSame($expectedPcre, $pcre);
     }
 
+    /**
+     * @return Iterator<string[]>
+     */
     public function provideDataCaseInsensitive(): Iterator
     {
         yield ['hi', '#hi#mi'];
     }
 
+    /**
+     * @return Iterator<string[]>
+     */
     public function provideDataDropping(): Iterator
     {
         yield ['mearie\.org', '#mearie\.org#m'];
