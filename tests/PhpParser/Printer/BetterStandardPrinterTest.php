@@ -68,6 +68,9 @@ final class BetterStandardPrinterTest extends AbstractKernelTestCase
         $this->assertSame($expectedOutput, $printed);
     }
 
+    /**
+     * @return Iterator<string[]>
+     */
     public function provideDataForDoubleSlashEscaping(): Iterator
     {
         yield ['Vendor\Name', "'Vendor\Name'"];

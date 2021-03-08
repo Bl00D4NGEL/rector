@@ -8,6 +8,8 @@ use Iterator;
 use PhpParser\BuilderFactory;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\BinaryOp\Plus;
+use PhpParser\Node\Expr\ClassConstFetch;
+use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Name\FullyQualified;
 use Rector\Core\HttpKernel\RectorKernel;
 use Rector\Core\PhpParser\Node\Value\ValueResolver;
@@ -37,6 +39,9 @@ final class ValueResolverTest extends AbstractKernelTestCase
         $this->assertSame($expectedValue, $resolvedValue);
     }
 
+    /**
+     * @return Iterator<string[]|ClassConstFetch[]|Expr[]|bool[]|int[]|Expr[]|float[]|Expr[]|Variable[]|null[]|int[]|Plus[]|Plus[]|null[]>
+     */
     public function dataProvider(): Iterator
     {
         $builderFactory = new BuilderFactory();

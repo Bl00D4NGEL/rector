@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Rector\Core\Tests\DependencyInjection;
 
 use Iterator;
+use PHPUnit\Framework\MockObject\Stub;
+use PHPUnit\Framework\MockObject\Stub\ReturnStub;
 use Rector\Core\Bootstrap\RectorConfigsResolver;
 use Rector\Core\HttpKernel\RectorKernel;
 use Rector\Renaming\Rector\Name\RenameClassRector;
@@ -47,6 +49,9 @@ final class ConfigurableRectorImportConfigCallsMergeTest extends AbstractRectorT
         $this->assertSame($expectedConfiguration, $oldToNewClasses);
     }
 
+    /**
+     * @return Iterator<string[]|array<string, string>[]|string[]<string, string|class-string<Stub>|class-string<ReturnStub>>[]>
+     */
     public function provideData(): Iterator
     {
         yield [

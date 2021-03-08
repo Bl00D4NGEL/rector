@@ -36,6 +36,9 @@ final class FilesFinderTest extends AbstractKernelTestCase
         $this->assertSame($expectedFileName, $foundFile->getBasename());
     }
 
+    /**
+     * @return Iterator<int[]|string[]>
+     */
     public function provideData(): Iterator
     {
         yield ['php', 1, 'SomeFile.php'];

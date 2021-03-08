@@ -15,12 +15,16 @@ final class StaticInstanceOfTest extends TestCase
     /**
      * @dataProvider provideIsOneOf()
      * @param class-string[] $array
+     * @param DateTime|stdClass|null $object
      */
     public function testIsOneOf(?object $object, array $array, bool $expected): void
     {
         $this->assertSame($expected, StaticInstanceOf::isOneOf($object, $array));
     }
 
+    /**
+     * @return Iterator<class-string<DateTime>[]|class-string<stdClass>[][]|DateTime[]|bool[]|class-string<DateTime>[]|class-string<Iterator>[][]|stdClass[]|bool[]|class-string<DateTime>[]|class-string<Iterator>[][]|bool[]|null[]>
+     */
     public function provideIsOneOf(): Iterator
     {
         yield [new DateTime('now'), [DateTime::class, stdClass::class], true];
