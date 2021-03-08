@@ -136,7 +136,7 @@ CODE_SAMPLE
     /**
      * @return string[]
      */
-    private function splitProcessCommandToItems(string $process): array
+    private function splitProcessCommandToItems(string $process): PrivatesCaller
     {
         $privatesCaller = new PrivatesCaller();
         return $privatesCaller->callPrivateMethod(new StringInput(''), 'tokenize', [$process]);

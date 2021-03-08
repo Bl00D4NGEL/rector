@@ -62,8 +62,10 @@ final class ObjectTypeComparator
         if ($currentType->getClassName() === 'iterable' && $this->isTraversableGeneratorIterator($newType)) {
             return true;
         }
-
-        return $newType->getClassName() === 'iterable' && $this->isTraversableGeneratorIterator($currentType);
+        if ($newType->getClassName() !== 'iterable') {
+            return false;
+        }
+        return $this->isTraversableGeneratorIterator($currentType);
     }
 
     private function isTraversableGeneratorIterator(ObjectType $objectType): bool

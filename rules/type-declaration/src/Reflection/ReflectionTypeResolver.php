@@ -109,7 +109,7 @@ final class ReflectionTypeResolver
         return null;
     }
 
-    public function resolveFuncCallReturnType(FuncCall $funcCall): ?Type
+    public function resolveFuncCallReturnType(FuncCall $funcCall): ?PrivatesCaller
     {
         $funcCallScope = $funcCall->getAttribute(AttributeKey::SCOPE);
 
@@ -130,8 +130,11 @@ final class ReflectionTypeResolver
         return $this->privatesCaller->callPrivateMethod($functionReflection, 'getNativeReturnType', []);
     }
 
-    private function resolveNativeReturnTypeFromClassAndMethod(string $className, string $methodName, Expr $expr): ?Type
-    {
+    private function resolveNativeReturnTypeFromClassAndMethod(
+        string $className,
+        string $methodName,
+        Expr $expr
+    ): ?PrivatesCaller {
         if (! $this->reflectionProvider->hasClass($className)) {
             return null;
         }
