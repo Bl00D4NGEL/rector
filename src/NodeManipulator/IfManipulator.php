@@ -106,7 +106,7 @@ final class IfManipulator
      *     $anotherValue = $value;
      * }
      */
-    public function matchIfNotNullNextAssignment(If_ $if): ?Assign
+    public function matchIfNotNullNextAssignment(If_ $if): ?Expr
     {
         if ($if->stmts === []) {
             return null;
@@ -245,7 +245,7 @@ final class IfManipulator
     }
 
     /**
-     * @return If_[]
+     * @return mixed[]
      */
     public function collectNestedIfsWithNonBreaking(Foreach_ $foreach): array
     {

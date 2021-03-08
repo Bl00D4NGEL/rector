@@ -13,6 +13,9 @@ final class CurrentRectorProvider
      */
     private $currentRector;
 
+    /**
+     * @param RectorInterface|null $rector
+     */
     public function changeCurrentRector(RectorInterface $rector): void
     {
         $this->currentRector = $rector;

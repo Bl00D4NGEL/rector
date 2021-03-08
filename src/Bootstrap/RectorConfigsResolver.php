@@ -36,7 +36,7 @@ final class RectorConfigsResolver
     }
 
     /**
-     * @return SmartFileInfo[]
+     * @return array<string, SmartFileInfo[]>&mixed[]|SmartFileInfo[]
      */
     public function resolveFromConfigFileInfo(SmartFileInfo $configFileInfo): array
     {

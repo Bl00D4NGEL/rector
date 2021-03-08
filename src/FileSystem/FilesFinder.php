@@ -69,7 +69,7 @@ final class FilesFinder
     /**
      * @param string[] $source
      * @param string[] $suffixes
-     * @return SmartFileInfo[]
+     * @return SmartFileInfo[][]&mixed[]|SmartFileInfo[]
      */
     public function findInDirectoriesAndFiles(array $source, array $suffixes): array
     {

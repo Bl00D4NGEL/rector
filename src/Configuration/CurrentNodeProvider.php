@@ -13,6 +13,9 @@ final class CurrentNodeProvider
      */
     private $node;
 
+    /**
+     * @param Node|null $node
+     */
     public function setNode(Node $node): void
     {
         $this->node = $node;

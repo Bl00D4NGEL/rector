@@ -297,7 +297,7 @@ final class BetterStandardPrinter extends Standard
      * Print arrays in short [] by default,
      * to prevent manual explicit array shortening.
      */
-    protected function pExpr_Array(Array_ $array): string
+    protected function pExpr_Array(Array_ $array): Standard
     {
         if (! $array->hasAttribute(AttributeKey::KIND)) {
             $array->setAttribute(AttributeKey::KIND, Array_::KIND_SHORT);
@@ -354,7 +354,7 @@ final class BetterStandardPrinter extends Standard
     /**
      * Clean class and trait from empty "use x;" for traits causing invalid code
      */
-    protected function pStmt_Class(Class_ $class): string
+    protected function pStmt_Class(Class_ $class): Standard
     {
         $shouldReindex = false;
 
@@ -386,7 +386,7 @@ final class BetterStandardPrinter extends Standard
     /**
      * Remove extra \\ from FQN use imports, for easier use in the code
      */
-    protected function pStmt_Use(Use_ $use): string
+    protected function pStmt_Use(Use_ $use): Standard
     {
         if ($use->type !== Use_::TYPE_NORMAL) {
             return parent::pStmt_Use($use);
