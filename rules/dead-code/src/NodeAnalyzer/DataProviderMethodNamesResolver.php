@@ -35,7 +35,7 @@ final class DataProviderMethodNamesResolver
     }
 
     /**
-     * @return string[]
+     * @return array<string, string[]>&mixed[]|string[]
      */
     public function resolveFromClass(Class_ $class): array
     {

@@ -31,6 +31,9 @@ final class MoveInterfacesToContractNamespaceDirectoryRectorTest extends Abstrac
         }
     }
 
+    /**
+     * @return Iterator<SmartFileInfo[][]|AddedFileWithContent[]|SmartFileInfo[]|AddedFileWithContent[]|SmartFileInfo[]|SmartFileInfo[]|null[]>
+     */
     public function provideData(): Iterator
     {
         $smartFileSystem = new SmartFileSystem();

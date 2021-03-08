@@ -30,6 +30,9 @@ final class ReplaceMagicPropertyEventWithEventClassRectorTest extends AbstractRe
         $this->doTestExtraFile($expectedRelativeFilePath, $expectedContentFilePath);
     }
 
+    /**
+     * @return Iterator<string[]|SmartFileInfo[]>
+     */
     public function provideData(): Iterator
     {
         yield [

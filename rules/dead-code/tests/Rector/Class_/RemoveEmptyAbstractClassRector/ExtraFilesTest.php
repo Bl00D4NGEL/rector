@@ -20,6 +20,9 @@ final class ExtraFilesTest extends AbstractRectorTestCase
         $this->doTestFileInfo($originalFileInfo, $extraFileInfos);
     }
 
+    /**
+     * @return Iterator<SmartFileInfo[][]|SmartFileInfo[]>
+     */
     public function provideData(): Iterator
     {
         $extraFileInfos = [new SmartFileInfo(__DIR__ . '/Source/UseAbstract.php')];

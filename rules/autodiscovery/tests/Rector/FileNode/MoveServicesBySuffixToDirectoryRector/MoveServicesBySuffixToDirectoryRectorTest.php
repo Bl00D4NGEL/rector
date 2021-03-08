@@ -27,6 +27,9 @@ final class MoveServicesBySuffixToDirectoryRectorTest extends AbstractRectorTest
         }
     }
 
+    /**
+     * @return Iterator<AddedFileWithContent[]|SmartFileInfo[]|SmartFileInfo[]|null[]>
+     */
     public function provideData(): Iterator
     {
         $smartFileSystem = new SmartFileSystem();

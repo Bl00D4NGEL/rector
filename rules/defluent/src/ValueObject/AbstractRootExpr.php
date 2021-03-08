@@ -48,7 +48,7 @@ abstract class AbstractRootExpr implements RootExprAwareInterface, FirstCallFact
         return new Assign($assignVar, $assignExpr);
     }
 
-    protected function getFirstAssign(): ?Assign
+    protected function getFirstAssign(): ?Expr
     {
         $currentStmt = $this->assignExpr->getAttribute(AttributeKey::CURRENT_STATEMENT);
         if (! $currentStmt instanceof Expression) {

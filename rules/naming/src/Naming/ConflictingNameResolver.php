@@ -89,7 +89,7 @@ final class ConflictingNameResolver
 
     /**
      * @param ClassMethod|Function_|Closure $functionLike
-     * @return string[]
+     * @return string[][]&mixed[]|string[]
      */
     private function resolveConflictingVariableNamesForNew(FunctionLike $functionLike): array
     {

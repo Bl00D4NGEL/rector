@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rector\CodingStyle\Rector\ClassMethod;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Stmt\ClassMethod;
@@ -147,7 +148,7 @@ CODE_SAMPLE
         $this->methodsToYields = $methodsToYields;
     }
 
-    private function collectReturnArrayNodesFromClassMethod(ClassMethod $classMethod): ?Array_
+    private function collectReturnArrayNodesFromClassMethod(ClassMethod $classMethod): ?Expr
     {
         if ($classMethod->stmts === null) {
             return null;
