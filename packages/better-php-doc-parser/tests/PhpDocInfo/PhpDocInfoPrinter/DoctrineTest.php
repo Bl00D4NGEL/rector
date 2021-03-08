@@ -16,6 +16,7 @@ final class DoctrineTest extends AbstractPhpDocInfoPrinterTest
 {
     /**
      * @dataProvider provideDataClass()
+     * @param Class_ $node
      */
     public function testClass(string $docFilePath, Node $node): void
     {
@@ -29,6 +30,9 @@ final class DoctrineTest extends AbstractPhpDocInfoPrinterTest
         $this->assertSame($docComment, $printedPhpDocInfo, $relativeFilePathFromCwd);
     }
 
+    /**
+     * @return Iterator<string[]|Class_[]>
+     */
     public function provideDataClass(): Iterator
     {
         yield [__DIR__ . '/Source/Doctrine/index_in_table.txt', new Class_(IndexInTable::class)];

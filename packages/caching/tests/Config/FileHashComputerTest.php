@@ -35,6 +35,9 @@ final class FileHashComputerTest extends AbstractKernelTestCase
         $this->assertSame($configAHash, $configBHash);
     }
 
+    /**
+     * @return Iterator<string[]>
+     */
     public function provideDataForIdenticalHash(): Iterator
     {
         yield [__DIR__ . '/Source/config_content_a.yaml', __DIR__ . '/Source/config_content_b.yaml'];

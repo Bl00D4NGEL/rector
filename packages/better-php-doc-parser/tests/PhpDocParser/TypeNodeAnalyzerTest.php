@@ -35,6 +35,7 @@ final class TypeNodeAnalyzerTest extends AbstractKernelTestCase
 
     /**
      * @dataProvider provideDataForArrayType()
+     * @param IdentifierTypeNode|ArrayTypeNode|UnionTypeNode $typeNode
      */
     public function testContainsArrayType(TypeNode $typeNode, bool $expectedContains): void
     {
@@ -42,6 +43,9 @@ final class TypeNodeAnalyzerTest extends AbstractKernelTestCase
         $this->assertSame($expectedContains, $containsArrayType);
     }
 
+    /**
+     * @return Iterator<IdentifierTypeNode[]|bool[]|ArrayTypeNode[]|bool[]|UnionTypeNode[]|bool[]>
+     */
     public function provideDataForArrayType(): Iterator
     {
         $arrayTypeNode = new ArrayTypeNode(new IdentifierTypeNode(self::INT));
@@ -53,6 +57,7 @@ final class TypeNodeAnalyzerTest extends AbstractKernelTestCase
 
     /**
      * @dataProvider provideDataForIntersectionAndNotNullable()
+     * @param IntersectionTypeNode $typeNode
      */
     public function testIsIntersectionAndNotNullable(TypeNode $typeNode, bool $expectedIs): void
     {
@@ -60,6 +65,9 @@ final class TypeNodeAnalyzerTest extends AbstractKernelTestCase
         $this->assertSame($expectedIs, $isIntersection);
     }
 
+    /**
+     * @return Iterator<IntersectionTypeNode[]|bool[]>
+     */
     public function provideDataForIntersectionAndNotNullable(): Iterator
     {
         yield [new IntersectionTypeNode([new IdentifierTypeNode(self::INT)]), true];

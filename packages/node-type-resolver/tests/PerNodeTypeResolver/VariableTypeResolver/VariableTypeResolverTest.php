@@ -21,6 +21,7 @@ final class VariableTypeResolverTest extends AbstractNodeTypeResolverTest
 {
     /**
      * @dataProvider provideData()
+     * @param ThisType|ObjectType $expectedTypeWithClassName
      */
     public function test(string $file, int $nodePosition, TypeWithClassName $expectedTypeWithClassName): void
     {
@@ -33,6 +34,9 @@ final class VariableTypeResolverTest extends AbstractNodeTypeResolverTest
         $this->assertEquals($expectedTypeWithClassName->getClassName(), $resolvedType->getClassName());
     }
 
+    /**
+     * @return Iterator<int[]|string[]|ThisType[]|int[]|string[]|ObjectType[]>
+     */
     public function provideData(): Iterator
     {
         yield [__DIR__ . '/Fixture/this_class.php.inc', 0, new ThisType(new ReflectionClass(ThisClass::class))];

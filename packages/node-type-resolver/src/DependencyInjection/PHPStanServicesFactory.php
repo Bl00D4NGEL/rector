@@ -46,7 +46,7 @@ final class PHPStanServicesFactory
     /**
      * @api
      */
-    public function createReflectionProvider(): ReflectionProvider
+    public function createReflectionProvider(): Container
     {
         return $this->container->getByType(ReflectionProvider::class);
     }
@@ -54,7 +54,7 @@ final class PHPStanServicesFactory
     /**
      * @api
      */
-    public function createNodeScopeResolver(): NodeScopeResolver
+    public function createNodeScopeResolver(): Container
     {
         return $this->container->getByType(NodeScopeResolver::class);
     }
@@ -62,7 +62,7 @@ final class PHPStanServicesFactory
     /**
      * @api
      */
-    public function createTypeSpecifier(): TypeSpecifier
+    public function createTypeSpecifier(): Container
     {
         return $this->container->getByType(TypeSpecifier::class);
     }
@@ -70,7 +70,7 @@ final class PHPStanServicesFactory
     /**
      * @api
      */
-    public function createScopeFactory(): ScopeFactory
+    public function createScopeFactory(): Container
     {
         return $this->container->getByType(ScopeFactory::class);
     }
@@ -78,7 +78,7 @@ final class PHPStanServicesFactory
     /**
      * @api
      */
-    public function createDependencyResolver(): DependencyResolver
+    public function createDependencyResolver(): Container
     {
         return $this->container->getByType(DependencyResolver::class);
     }
@@ -86,7 +86,7 @@ final class PHPStanServicesFactory
     /**
      * @api
      */
-    public function createFileHelper(): FileHelper
+    public function createFileHelper(): Container
     {
         return $this->container->getByType(FileHelper::class);
     }
@@ -94,7 +94,7 @@ final class PHPStanServicesFactory
     /**
      * @api
      */
-    public function createOperatorTypeSpecifyingExtensionRegistryProvider(): OperatorTypeSpecifyingExtensionRegistryProvider
+    public function createOperatorTypeSpecifyingExtensionRegistryProvider(): Container
     {
         return $this->container->getByType(OperatorTypeSpecifyingExtensionRegistryProvider::class);
     }
@@ -102,7 +102,7 @@ final class PHPStanServicesFactory
     /**
      * @api
      */
-    public function createTypeNodeResolver(): TypeNodeResolver
+    public function createTypeNodeResolver(): Container
     {
         return $this->container->getByType(TypeNodeResolver::class);
     }
@@ -110,7 +110,7 @@ final class PHPStanServicesFactory
     /**
      * @api
      */
-    public function createDynamicSourceLocatorProvider(): DynamicSourceLocatorProvider
+    public function createDynamicSourceLocatorProvider(): Container
     {
         return $this->container->getByType(DynamicSourceLocatorProvider::class);
     }

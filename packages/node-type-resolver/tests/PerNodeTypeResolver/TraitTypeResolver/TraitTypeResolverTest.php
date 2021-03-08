@@ -7,6 +7,7 @@ namespace Rector\NodeTypeResolver\Tests\PerNodeTypeResolver\TraitTypeResolver;
 use Iterator;
 use PhpParser\Node\Stmt\Trait_;
 use PHPStan\Type\Type;
+use PHPStan\Type\UnionType;
 use Rector\NodeTypeResolver\Tests\PerNodeTypeResolver\AbstractNodeTypeResolverTest;
 use Rector\NodeTypeResolver\Tests\PerNodeTypeResolver\TraitTypeResolver\Source\AnotherTrait;
 use Rector\NodeTypeResolver\Tests\PerNodeTypeResolver\TraitTypeResolver\Source\TraitWithTrait;
@@ -19,6 +20,7 @@ final class TraitTypeResolverTest extends AbstractNodeTypeResolverTest
 {
     /**
      * @dataProvider provideData()
+     * @param UnionType $expectedType
      */
     public function test(string $file, int $nodePosition, Type $expectedType): void
     {
@@ -28,6 +30,9 @@ final class TraitTypeResolverTest extends AbstractNodeTypeResolverTest
         $this->assertEquals($expectedType, $resolvedType);
     }
 
+    /**
+     * @return Iterator<int[]|string[]|UnionType[]>
+     */
     public function provideData(): Iterator
     {
         $unionTypeFactory = new UnionTypeFactory();

@@ -55,7 +55,7 @@ final class ManualInteractiveInputProvider
      * @param string[]|null[] $manualInteractiveInput
      * @return resource
      */
-    private function createInputStream(array $manualInteractiveInput)
+    private function createInputStream(array $manualInteractiveInput): PrivatesCaller
     {
         // mimics CommandTester, only with DI approach
         return $this->privatesCaller->callPrivateMethod(

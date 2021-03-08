@@ -55,6 +55,9 @@ final class NamespaceNodeVisitor extends NodeVisitorAbstract
         return null;
     }
 
+    /**
+     * @param Namespace_|null $node
+     */
     public function enterNode(Node $node): ?Node
     {
         if ($node instanceof Namespace_) {

@@ -28,6 +28,8 @@ final class ScalarTypeComparatorTest extends AbstractKernelTestCase
 
     /**
      * @dataProvider provideData()
+     * @param StringType $firstType
+     * @param BooleanType|StringType|ClassStringType $secondType
      */
     public function test(Type $firstType, Type $secondType, bool $areExpectedEqual): void
     {
@@ -35,6 +37,9 @@ final class ScalarTypeComparatorTest extends AbstractKernelTestCase
         $this->assertSame($areExpectedEqual, $areEqual);
     }
 
+    /**
+     * @return Iterator<BooleanType[]|StringType[]|bool[]|StringType[]|bool[]>
+     */
     public function provideData(): Iterator
     {
         yield [new StringType(), new BooleanType(), false];

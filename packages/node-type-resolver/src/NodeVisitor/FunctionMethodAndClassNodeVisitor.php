@@ -116,6 +116,9 @@ final class FunctionMethodAndClassNodeVisitor extends NodeVisitorAbstract
         }
     }
 
+    /**
+     * @param ClassMethod|null $node
+     */
     private function processMethod(Node $node): void
     {
         if ($node instanceof ClassMethod) {
@@ -129,6 +132,9 @@ final class FunctionMethodAndClassNodeVisitor extends NodeVisitorAbstract
         $node->setAttribute(AttributeKey::METHOD_NODE, $this->classMethod);
     }
 
+    /**
+     * @param Function_|null $node
+     */
     private function processFunction(Node $node): void
     {
         if ($node instanceof Function_) {
@@ -138,6 +144,9 @@ final class FunctionMethodAndClassNodeVisitor extends NodeVisitorAbstract
         $node->setAttribute(AttributeKey::FUNCTION_NODE, $this->function);
     }
 
+    /**
+     * @param Closure|null $node
+     */
     private function processClosure(Node $node): void
     {
         if ($node instanceof Closure) {

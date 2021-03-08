@@ -18,6 +18,7 @@ final class ParamTypeResolverTest extends AbstractNodeTypeResolverTest
 {
     /**
      * @dataProvider provideData()
+     * @param ObjectType $expectedTypeWithClassName
      */
     public function test(string $file, int $nodePosition, TypeWithClassName $expectedTypeWithClassName): void
     {
@@ -31,6 +32,9 @@ final class ParamTypeResolverTest extends AbstractNodeTypeResolverTest
         $this->assertSame($expectedTypeWithClassName->getClassName(), $resolvedType->getClassName());
     }
 
+    /**
+     * @return Iterator<int[]|string[]|ObjectType[]>
+     */
     public function provideData(): Iterator
     {
         $objectType = new ObjectType(Html::class);

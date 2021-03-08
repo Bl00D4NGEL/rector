@@ -42,6 +42,9 @@ final class RemoveDeepChainMethodCallNodeVisitor extends NodeVisitorAbstract
         );
     }
 
+    /**
+     * @param Expression|null $node
+     */
     public function enterNode(Node $node): ?int
     {
         if (! $node instanceof Expression) {

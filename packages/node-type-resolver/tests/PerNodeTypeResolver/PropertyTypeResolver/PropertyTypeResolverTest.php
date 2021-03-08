@@ -9,6 +9,7 @@ use PhpParser\Node\Stmt\Property;
 use PHPStan\Type\NullType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
+use PHPStan\Type\UnionType;
 use PHPStan\Type\VerbosityLevel;
 use Rector\NodeTypeResolver\Tests\PerNodeTypeResolver\AbstractNodeTypeResolverTest;
 use Rector\NodeTypeResolver\Tests\PerNodeTypeResolver\PropertyTypeResolver\Source\ClassThatExtendsHtml;
@@ -23,6 +24,7 @@ final class PropertyTypeResolverTest extends AbstractNodeTypeResolverTest
 {
     /**
      * @dataProvider provideData()
+     * @param ObjectType|UnionType $expectedType
      */
     public function test(string $file, int $nodePosition, Type $expectedType): void
     {
@@ -40,6 +42,9 @@ final class PropertyTypeResolverTest extends AbstractNodeTypeResolverTest
         $this->assertEquals($expectedTypeAsString, $resolvedTypeAsString);
     }
 
+    /**
+     * @return Iterator<int[]|string[]|ObjectType[]|int[]|string[]|UnionType[]>
+     */
     public function provideData(): Iterator
     {
         $unionTypeFactory = new UnionTypeFactory();

@@ -36,6 +36,7 @@ final class StaticTypeMapperTest extends AbstractKernelTestCase
 
     /**
      * @dataProvider provideDataForMapPHPStanPhpDocTypeNodeToPHPStanType()
+     * @param GenericTypeNode|IdentifierTypeNode $typeNode
      */
     public function testMapPHPStanPhpDocTypeNodeToPHPStanType(TypeNode $typeNode, string $expectedType): void
     {
@@ -46,6 +47,9 @@ final class StaticTypeMapperTest extends AbstractKernelTestCase
         $this->assertInstanceOf($expectedType, $phpStanType);
     }
 
+    /**
+     * @return Iterator<class-string<GenericObjectType>[]|GenericTypeNode[]|class-string<IterableType>[]|GenericTypeNode[]|class-string<MixedType>[]|IdentifierTypeNode[]>
+     */
     public function provideDataForMapPHPStanPhpDocTypeNodeToPHPStanType(): Iterator
     {
         $genericTypeNode = new GenericTypeNode(new IdentifierTypeNode('Traversable'), []);
@@ -81,6 +85,7 @@ final class StaticTypeMapperTest extends AbstractKernelTestCase
 
     /**
      * @dataProvider provideDataForMapPhpParserNodePHPStanType()
+     * @param Identifier $node
      */
     public function testMapPhpParserNodePHPStanType(Node $node, string $expectedType): void
     {
@@ -88,6 +93,9 @@ final class StaticTypeMapperTest extends AbstractKernelTestCase
         $this->assertInstanceOf($expectedType, $phpStanType);
     }
 
+    /**
+     * @return Iterator<class-string<IterableType>[]|Identifier[]>
+     */
     public function provideDataForMapPhpParserNodePHPStanType(): Iterator
     {
         yield [new Identifier('iterable'), IterableType::class];

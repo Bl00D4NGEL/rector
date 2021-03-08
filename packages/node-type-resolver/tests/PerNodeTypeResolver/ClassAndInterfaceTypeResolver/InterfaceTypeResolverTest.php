@@ -18,6 +18,7 @@ final class InterfaceTypeResolverTest extends AbstractNodeTypeResolverTest
 {
     /**
      * @dataProvider dataProvider()
+     * @param ObjectType $expectedTypeWithClassName
      */
     public function test(string $file, int $nodePosition, TypeWithClassName $expectedTypeWithClassName): void
     {
@@ -30,6 +31,9 @@ final class InterfaceTypeResolverTest extends AbstractNodeTypeResolverTest
         $this->assertEquals($expectedTypeWithClassName->getClassName(), $resolvedType->getClassName());
     }
 
+    /**
+     * @return Iterator<int[]|string[]|ObjectType[]>
+     */
     public function dataProvider(): Iterator
     {
         yield [

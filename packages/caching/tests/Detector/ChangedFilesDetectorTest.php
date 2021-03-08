@@ -61,6 +61,9 @@ final class ChangedFilesDetectorTest extends AbstractRectorTestCase
         }
     }
 
+    /**
+     * @return Iterator<string[]|mixed[][]|string[]|string[][]>
+     */
     public function provideData(): Iterator
     {
         yield [__DIR__ . '/Source/file.php', []];

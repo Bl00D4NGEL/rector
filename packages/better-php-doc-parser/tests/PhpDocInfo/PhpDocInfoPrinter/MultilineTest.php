@@ -27,6 +27,7 @@ final class MultilineTest extends AbstractPhpDocInfoPrinterTest
      * @dataProvider provideData()
      * @dataProvider provideDataForProperty()
      * @dataProvider provideDataClass()
+     * @param Nop $node
      */
     public function test(string $docFilePath, Node $node): void
     {
@@ -40,6 +41,9 @@ final class MultilineTest extends AbstractPhpDocInfoPrinterTest
         $this->assertSame($docComment, $printedPhpDocInfo, $relativeFilePathFromCwd);
     }
 
+    /**
+     * @return Iterator<string[]|Nop[]>
+     */
     public function provideData(): Iterator
     {
         yield [__DIR__ . '/Source/Multiline/multiline1.txt', new Nop()];
@@ -49,6 +53,9 @@ final class MultilineTest extends AbstractPhpDocInfoPrinterTest
         yield [__DIR__ . '/Source/Multiline/multiline5.txt', new Nop()];
     }
 
+    /**
+     * @return Iterator<string[]|Class_[]>
+     */
     public function provideDataClass(): Iterator
     {
         yield [__DIR__ . '/Source/Class_/some_entity_class.txt', new Class_(SomeEntityClass::class)];
@@ -56,6 +63,9 @@ final class MultilineTest extends AbstractPhpDocInfoPrinterTest
         yield [__DIR__ . '/Source/Multiline/table.txt', new Class_(TableClass::class)];
     }
 
+    /**
+     * @return Iterator<string[]|Property[]|string[]|ClassMethod[]>
+     */
     public function provideDataForProperty(): Iterator
     {
         $property = $this->createPublicPropertyUnderClass('manyTo', ManyToPropertyClass::class);

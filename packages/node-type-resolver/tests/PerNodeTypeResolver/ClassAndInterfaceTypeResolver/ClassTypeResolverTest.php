@@ -33,6 +33,9 @@ final class ClassTypeResolverTest extends AbstractNodeTypeResolverTest
         $this->assertEquals($expectedObjectType->getClassName(), $resolvedType->getClassName());
     }
 
+    /**
+     * @return Iterator<int[]|string[]|ObjectType[]>
+     */
     public function dataProvider(): Iterator
     {
         yield [

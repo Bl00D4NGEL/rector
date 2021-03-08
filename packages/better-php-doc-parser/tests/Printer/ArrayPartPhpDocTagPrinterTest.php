@@ -33,6 +33,9 @@ final class ArrayPartPhpDocTagPrinterTest extends TestCase
         $this->assertSame($expectedContent, $output);
     }
 
+    /**
+     * @return Iterator<string[]|array<string, string>[]|string[]<string, bool>[]|string[]|string[][]>
+     */
     public function provideData(): Iterator
     {
         yield [[

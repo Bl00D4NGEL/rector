@@ -36,6 +36,9 @@ final class AddNewServiceToSymfonyPhpConfigRector extends AbstractRector impleme
         $this->symfonyPhpConfigClosureAnalyzer = $symfonyPhpConfigClosureAnalyzer;
     }
 
+    /**
+     * @param string|null $rectorClass
+     */
     public function setRectorClass(string $rectorClass): void
     {
         $this->rectorClass = $rectorClass;

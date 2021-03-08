@@ -27,6 +27,9 @@ final class StatementNodeVisitor extends NodeVisitorAbstract
         return null;
     }
 
+    /**
+     * @param Stmt|null $node
+     */
     public function enterNode(Node $node): ?Node
     {
         $parent = $node->getAttribute(AttributeKey::PARENT_NODE);

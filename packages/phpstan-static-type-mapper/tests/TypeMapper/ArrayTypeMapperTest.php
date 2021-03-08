@@ -47,6 +47,9 @@ final class ArrayTypeMapperTest extends AbstractKernelTestCase
         $this->assertSame($expectedResult, (string) $actualTypeNode);
     }
 
+    /**
+     * @return Iterator<string[]|ArrayType[]>
+     */
     public function provideDataWithoutKeys(): Iterator
     {
         $arrayType = new ArrayType(new MixedType(), new StringType());
@@ -57,6 +60,9 @@ final class ArrayTypeMapperTest extends AbstractKernelTestCase
         yield [$arrayType, 'string[]'];
     }
 
+    /**
+     * @return Iterator<string[]|ArrayType[]>
+     */
     public function provideDataUnionedWithoutKeys(): Iterator
     {
         $stringAndIntegerUnionType = new UnionType([new StringType(), new IntegerType()]);
@@ -70,6 +76,9 @@ final class ArrayTypeMapperTest extends AbstractKernelTestCase
         yield [$evenMoreNestedUnionArrayType, 'int[][][]|string[][][]'];
     }
 
+    /**
+     * @return Iterator<string[]|ArrayType[]>
+     */
     public function provideDataWithKeys(): Iterator
     {
         $arrayMixedToStringType = new ArrayType(new MixedType(), new StringType());

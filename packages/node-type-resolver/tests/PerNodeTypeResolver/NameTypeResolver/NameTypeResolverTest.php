@@ -18,6 +18,7 @@ final class NameTypeResolverTest extends AbstractNodeTypeResolverTest
 {
     /**
      * @dataProvider provideData()
+     * @param ObjectType $expectedType
      */
     public function test(string $file, int $nodePosition, Type $expectedType): void
     {
@@ -27,6 +28,9 @@ final class NameTypeResolverTest extends AbstractNodeTypeResolverTest
         $this->assertEquals($expectedType, $resolvedType);
     }
 
+    /**
+     * @return Iterator<int[]|string[]|ObjectType[]>
+     */
     public function provideData(): Iterator
     {
         $expectedObjectType = new ObjectType(AnotherClass::class);
