@@ -1,27 +1,21 @@
 <?php
 
-declare(strict_types=1);
+declare (strict_types=1);
+namespace RectorPrefix20211107;
 
 use Rector\Naming\Rector\Assign\RenameVariableToMatchMethodCallReturnTypeRector;
 use Rector\Naming\Rector\Class_\RenamePropertyToMatchTypeRector;
-use Rector\Naming\Rector\ClassMethod\MakeGetterClassMethodNameStartWithGetRector;
-use Rector\Naming\Rector\ClassMethod\MakeIsserClassMethodNameStartWithIsRector;
 use Rector\Naming\Rector\ClassMethod\RenameParamToMatchTypeRector;
 use Rector\Naming\Rector\ClassMethod\RenameVariableToMatchNewTypeRector;
 use Rector\Naming\Rector\Foreach_\RenameForeachValueVariableToMatchExprVariableRector;
 use Rector\Naming\Rector\Foreach_\RenameForeachValueVariableToMatchMethodCallReturnTypeRector;
-use Rector\Naming\Rector\Property\MakeBoolPropertyRespectIsHasWasMethodNamingRector;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
+return static function (\Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator $containerConfigurator) : void {
     $services = $containerConfigurator->services();
-    $services->set(RenameParamToMatchTypeRector::class);
-    $services->set(RenamePropertyToMatchTypeRector::class);
-    $services->set(RenameVariableToMatchNewTypeRector::class);
-    $services->set(RenameVariableToMatchMethodCallReturnTypeRector::class);
-    $services->set(MakeGetterClassMethodNameStartWithGetRector::class);
-    $services->set(MakeIsserClassMethodNameStartWithIsRector::class);
-    $services->set(RenameForeachValueVariableToMatchMethodCallReturnTypeRector::class);
-    $services->set(MakeBoolPropertyRespectIsHasWasMethodNamingRector::class);
-    $services->set(RenameForeachValueVariableToMatchExprVariableRector::class);
+    $services->set(\Rector\Naming\Rector\ClassMethod\RenameParamToMatchTypeRector::class);
+    $services->set(\Rector\Naming\Rector\Class_\RenamePropertyToMatchTypeRector::class);
+    $services->set(\Rector\Naming\Rector\ClassMethod\RenameVariableToMatchNewTypeRector::class);
+    $services->set(\Rector\Naming\Rector\Assign\RenameVariableToMatchMethodCallReturnTypeRector::class);
+    $services->set(\Rector\Naming\Rector\Foreach_\RenameForeachValueVariableToMatchMethodCallReturnTypeRector::class);
+    $services->set(\Rector\Naming\Rector\Foreach_\RenameForeachValueVariableToMatchExprVariableRector::class);
 };

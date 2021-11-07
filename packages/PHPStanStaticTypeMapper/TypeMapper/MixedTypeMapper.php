@@ -1,45 +1,41 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\PHPStanStaticTypeMapper\TypeMapper;
 
 use PhpParser\Node;
+use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\Type;
-use PHPStan\Type\VerbosityLevel;
-use Rector\AttributeAwarePhpDoc\Ast\Type\AttributeAwareIdentifierTypeNode;
 use Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface;
-
-final class MixedTypeMapper implements TypeMapperInterface
+use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
+/**
+ * @implements TypeMapperInterface<MixedType>
+ */
+final class MixedTypeMapper implements \Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface
 {
     /**
      * @return class-string<Type>
      */
-    public function getNodeClass(): string
+    public function getNodeClass() : string
     {
-        return MixedType::class;
+        return \PHPStan\Type\MixedType::class;
     }
-
     /**
-     * @param MixedType $type
+     * @param \PHPStan\Type\Type $type
+     * @param \Rector\PHPStanStaticTypeMapper\Enum\TypeKind $typeKind
      */
-    public function mapToPHPStanPhpDocTypeNode(Type $type): TypeNode
+    public function mapToPHPStanPhpDocTypeNode($type, $typeKind) : \PHPStan\PhpDocParser\Ast\Type\TypeNode
     {
-        return new AttributeAwareIdentifierTypeNode('mixed');
+        return new \PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode('mixed');
     }
-
     /**
-     * @param MixedType $type
+     * @param \PHPStan\Type\Type $type
+     * @param \Rector\PHPStanStaticTypeMapper\Enum\TypeKind $typeKind
      */
-    public function mapToPhpParserNode(Type $type, ?string $kind = null): ?Node
+    public function mapToPhpParserNode($type, $typeKind) : ?\PhpParser\Node
     {
         return null;
-    }
-
-    public function mapToDocString(Type $type, ?Type $parentType = null): string
-    {
-        return $type->describe(VerbosityLevel::typeOnly());
     }
 }

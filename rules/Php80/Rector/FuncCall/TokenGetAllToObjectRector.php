@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Php80\Rector\FuncCall;
 
 use PhpParser\Node;
@@ -9,41 +8,39 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\Variable;
-use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\If_;
 use Rector\Core\Rector\AbstractRector;
+use Rector\Core\ValueObject\PhpVersionFeature;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\Php80\NodeManipulator\TokenManipulator;
+use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-
 /**
- * @see https://wiki.php.net/rfc/token_as_object
+ * @changelog https://wiki.php.net/rfc/token_as_object
  *
  * @see \Rector\Tests\Php80\Rector\FuncCall\TokenGetAllToObjectRector\TokenGetAllToObjectRectorTest
  */
-final class TokenGetAllToObjectRector extends AbstractRector
+final class TokenGetAllToObjectRector extends \Rector\Core\Rector\AbstractRector implements \Rector\VersionBonding\Contract\MinPhpVersionInterface
 {
     /**
-     * @var TokenManipulator
+     * @var \Rector\Php80\NodeManipulator\TokenManipulator
      */
     private $tokenManipulator;
-
-    public function __construct(TokenManipulator $ifArrayTokenManipulator)
+    public function __construct(\Rector\Php80\NodeManipulator\TokenManipulator $tokenManipulator)
     {
-        $this->tokenManipulator = $ifArrayTokenManipulator;
+        $this->tokenManipulator = $tokenManipulator;
     }
-
-    public function getRuleDefinition(): RuleDefinition
+    public function provideMinPhpVersion() : int
     {
-        return new RuleDefinition(
-            'Complete missing constructor dependency instance by type',
-            [
-                new CodeSample(
-                    <<<'CODE_SAMPLE'
+        return \Rector\Core\ValueObject\PhpVersionFeature::PHP_TOKEN;
+    }
+    public function getRuleDefinition() : \Symplify\RuleDocGenerator\ValueObject\RuleDefinition
+    {
+        return new \Symplify\RuleDocGenerator\ValueObject\RuleDefinition('Convert `token_get_all` to `PhpToken::tokenize`', [new \Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample(<<<'CODE_SAMPLE'
 final class SomeClass
 {
     public function run()
@@ -61,13 +58,12 @@ final class SomeClass
     }
 }
 CODE_SAMPLE
-,
-                    <<<'CODE_SAMPLE'
+, <<<'CODE_SAMPLE'
 final class SomeClass
 {
     public function run()
     {
-        $tokens = \PhpToken::getAll($code);
+        $tokens = \PhpToken::tokenize($code);
         foreach ($tokens as $phpToken) {
            $name = $phpToken->getTokenName();
            $text = $phpToken->text;
@@ -75,98 +71,79 @@ final class SomeClass
     }
 }
 CODE_SAMPLE
-            ),
-            ]);
+)]);
     }
-
     /**
      * @return array<class-string<Node>>
      */
-    public function getNodeTypes(): array
+    public function getNodeTypes() : array
     {
-        return [FuncCall::class];
+        return [\PhpParser\Node\Expr\FuncCall::class];
     }
-
     /**
      * @param FuncCall $node
      */
-    public function refactor(Node $node): ?Node
+    public function refactor(\PhpParser\Node $node) : ?\PhpParser\Node
     {
-        if (! $this->nodeNameResolver->isFuncCallName($node, 'token_get_all')) {
+        if (!$this->nodeNameResolver->isName($node, 'token_get_all')) {
             return null;
         }
-
         $this->refactorTokensVariable($node);
-
-        return $this->nodeFactory->createStaticCall('PhpToken', 'getAll', $node->args);
+        return $this->nodeFactory->createStaticCall('PhpToken', 'tokenize', $node->args);
     }
-
-    private function refactorTokensVariable(FuncCall $funcCall): void
+    private function refactorTokensVariable(\PhpParser\Node\Expr\FuncCall $funcCall) : void
     {
-        $assign = $funcCall->getAttribute(AttributeKey::PARENT_NODE);
-        if (! $assign instanceof Assign) {
+        $assign = $funcCall->getAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::PARENT_NODE);
+        if (!$assign instanceof \PhpParser\Node\Expr\Assign) {
             return;
         }
-
-        $classMethodOrFunctionNode = $funcCall->getAttribute(AttributeKey::METHOD_NODE) ?:
-            $funcCall->getAttribute(AttributeKey::FUNCTION_NODE);
-
-        if ($classMethodOrFunctionNode === null) {
+        /** @var ClassMethod|Function_|null $classMethodOrFunction */
+        $classMethodOrFunction = $this->betterNodeFinder->findParentByTypes($funcCall, [\PhpParser\Node\Stmt\ClassMethod::class, \PhpParser\Node\Stmt\Function_::class]);
+        if ($classMethodOrFunction === null) {
             return;
         }
-
         // dummy approach, improve when needed
-        $this->replaceGetNameOrGetValue($classMethodOrFunctionNode, $assign->var);
+        $this->replaceGetNameOrGetValue($classMethodOrFunction, $assign->var);
     }
-
     /**
-     * @param ClassMethod|Function_ $functionLike
+     * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_ $functionLike
      */
-    private function replaceGetNameOrGetValue(FunctionLike $functionLike, Expr $assignedExpr): void
+    private function replaceGetNameOrGetValue($functionLike, \PhpParser\Node\Expr $assignedExpr) : void
     {
         $tokensForeaches = $this->findForeachesOverTokenVariable($functionLike, $assignedExpr);
         foreach ($tokensForeaches as $tokenForeach) {
             $this->refactorTokenInForeach($tokenForeach);
         }
     }
-
     /**
-     * @param ClassMethod|Function_ $functionLike
      * @return Foreach_[]
+     * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_ $functionLike
      */
-    private function findForeachesOverTokenVariable(FunctionLike $functionLike, Expr $assignedExpr): array
+    private function findForeachesOverTokenVariable($functionLike, \PhpParser\Node\Expr $assignedExpr) : array
     {
-        return $this->betterNodeFinder->find((array) $functionLike->stmts, function (Node $node) use (
-            $assignedExpr
-        ): bool {
-            if (! $node instanceof Foreach_) {
-                return false;
+        return $this->betterNodeFinder->find((array) $functionLike->stmts, function (\PhpParser\Node $node) use($assignedExpr) : bool {
+            if (!$node instanceof \PhpParser\Node\Stmt\Foreach_) {
+                return \false;
             }
-
             return $this->nodeComparator->areNodesEqual($node->expr, $assignedExpr);
         });
     }
-
-    private function refactorTokenInForeach(Foreach_ $tokensForeach): void
+    private function refactorTokenInForeach(\PhpParser\Node\Stmt\Foreach_ $tokensForeach) : void
     {
         $singleToken = $tokensForeach->valueVar;
-        if (! $singleToken instanceof Variable) {
+        if (!$singleToken instanceof \PhpParser\Node\Expr\Variable) {
             return;
         }
-
-        $this->traverseNodesWithCallable($tokensForeach, function (Node $node) use ($singleToken) {
+        $this->traverseNodesWithCallable($tokensForeach, function (\PhpParser\Node $node) use($singleToken) {
             $this->tokenManipulator->refactorArrayToken([$node], $singleToken);
             $this->tokenManipulator->refactorNonArrayToken([$node], $singleToken);
             $this->tokenManipulator->refactorTokenIsKind([$node], $singleToken);
-
             $this->tokenManipulator->removeIsArray([$node], $singleToken);
-
             // drop if "If_" node not needed
-            if ($node instanceof If_ && $node->else !== null) {
-                if (! $this->nodeComparator->areNodesEqual($node->stmts, $node->else->stmts)) {
+            if ($node instanceof \PhpParser\Node\Stmt\If_ && $node->else !== null) {
+                if (!$this->nodeComparator->areNodesEqual($node->stmts, $node->else->stmts)) {
                     return null;
                 }
-
                 $this->unwrapStmts($node->stmts, $node);
                 $this->removeNode($node);
             }

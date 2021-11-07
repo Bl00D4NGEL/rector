@@ -1,80 +1,60 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\PHPStanStaticTypeMapper\TypeMapper;
 
 use PhpParser\Node;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use PHPStan\Type\IntersectionType;
 use PHPStan\Type\Type;
-use Rector\AttributeAwarePhpDoc\Ast\Type\AttributeAwareIntersectionTypeNode;
+use Rector\BetterPhpDocParser\ValueObject\Type\BracketsAwareIntersectionTypeNode;
 use Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface;
+use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
 use Rector\PHPStanStaticTypeMapper\PHPStanStaticTypeMapper;
-
-final class IntersectionTypeMapper implements TypeMapperInterface
+use RectorPrefix20211107\Symfony\Contracts\Service\Attribute\Required;
+/**
+ * @implements TypeMapperInterface<IntersectionType>
+ */
+final class IntersectionTypeMapper implements \Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface
 {
     /**
-     * @var PHPStanStaticTypeMapper
+     * @var \Rector\PHPStanStaticTypeMapper\PHPStanStaticTypeMapper
      */
     private $phpStanStaticTypeMapper;
-
     /**
      * @required
      */
-    public function autowireIntersectionTypeMapper(PHPStanStaticTypeMapper $phpStanStaticTypeMapper): void
+    public function autowireIntersectionTypeMapper(\Rector\PHPStanStaticTypeMapper\PHPStanStaticTypeMapper $phpStanStaticTypeMapper) : void
     {
         $this->phpStanStaticTypeMapper = $phpStanStaticTypeMapper;
     }
-
     /**
      * @return class-string<Type>
      */
-    public function getNodeClass(): string
+    public function getNodeClass() : string
     {
-        return IntersectionType::class;
+        return \PHPStan\Type\IntersectionType::class;
     }
-
     /**
-     * @param IntersectionType $type
+     * @param \PHPStan\Type\Type $type
+     * @param \Rector\PHPStanStaticTypeMapper\Enum\TypeKind $typeKind
      */
-    public function mapToPHPStanPhpDocTypeNode(Type $type): TypeNode
+    public function mapToPHPStanPhpDocTypeNode($type, $typeKind) : \PHPStan\PhpDocParser\Ast\Type\TypeNode
     {
         $intersectionTypesNodes = [];
-
         foreach ($type->getTypes() as $intersectionedType) {
-            $intersectionTypesNodes[] = $this->phpStanStaticTypeMapper->mapToPHPStanPhpDocTypeNode($intersectionedType);
+            $intersectionTypesNodes[] = $this->phpStanStaticTypeMapper->mapToPHPStanPhpDocTypeNode($intersectionedType, $typeKind);
         }
-
-        $intersectionTypesNodes = array_unique($intersectionTypesNodes);
-
-        return new AttributeAwareIntersectionTypeNode($intersectionTypesNodes);
+        $intersectionTypesNodes = \array_unique($intersectionTypesNodes);
+        return new \Rector\BetterPhpDocParser\ValueObject\Type\BracketsAwareIntersectionTypeNode($intersectionTypesNodes);
     }
-
     /**
-     * @param IntersectionType $type
+     * @param \PHPStan\Type\Type $type
+     * @param \Rector\PHPStanStaticTypeMapper\Enum\TypeKind $typeKind
      */
-    public function mapToPhpParserNode(Type $type, ?string $kind = null): ?Node
+    public function mapToPhpParserNode($type, $typeKind) : ?\PhpParser\Node
     {
         // intersection types in PHP are not yet supported
         return null;
-    }
-
-    /**
-     * @param IntersectionType $type
-     */
-    public function mapToDocString(Type $type, ?Type $parentType = null): string
-    {
-        $stringTypes = [];
-
-        foreach ($type->getTypes() as $unionedType) {
-            $stringTypes[] = $this->phpStanStaticTypeMapper->mapToDocString($unionedType);
-        }
-
-        // remove empty values, e.g. void/iterable
-        $stringTypes = array_unique($stringTypes);
-        $stringTypes = array_filter($stringTypes);
-
-        return implode('&', $stringTypes);
     }
 }

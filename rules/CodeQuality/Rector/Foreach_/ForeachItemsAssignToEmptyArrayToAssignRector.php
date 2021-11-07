@@ -1,48 +1,42 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\CodeQuality\Rector\Foreach_;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Stmt\Foreach_;
+use PHPStan\Analyser\Scope;
+use PHPStan\Type\ObjectType;
+use PHPStan\Type\ThisType;
 use Rector\CodeQuality\NodeAnalyzer\ForeachAnalyzer;
 use Rector\Core\Rector\AbstractRector;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\ReadWrite\NodeFinder\NodeUsageFinder;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-
 /**
  * @see \Rector\Tests\CodeQuality\Rector\Foreach_\ForeachItemsAssignToEmptyArrayToAssignRector\ForeachItemsAssignToEmptyArrayToAssignRectorTest
  */
-final class ForeachItemsAssignToEmptyArrayToAssignRector extends AbstractRector
+final class ForeachItemsAssignToEmptyArrayToAssignRector extends \Rector\Core\Rector\AbstractRector
 {
     /**
-     * @var NodeUsageFinder
+     * @var \Rector\ReadWrite\NodeFinder\NodeUsageFinder
      */
     private $nodeUsageFinder;
-
     /**
-     * @var ForeachAnalyzer
+     * @var \Rector\CodeQuality\NodeAnalyzer\ForeachAnalyzer
      */
     private $foreachAnalyzer;
-
-    public function __construct(NodeUsageFinder $nodeUsageFinder, ForeachAnalyzer $foreachAnalyzer)
+    public function __construct(\Rector\ReadWrite\NodeFinder\NodeUsageFinder $nodeUsageFinder, \Rector\CodeQuality\NodeAnalyzer\ForeachAnalyzer $foreachAnalyzer)
     {
         $this->nodeUsageFinder = $nodeUsageFinder;
         $this->foreachAnalyzer = $foreachAnalyzer;
     }
-
-    public function getRuleDefinition(): RuleDefinition
+    public function getRuleDefinition() : \Symplify\RuleDocGenerator\ValueObject\RuleDefinition
     {
-        return new RuleDefinition(
-            'Change foreach() items assign to empty array to direct assign',
-            [
-                new CodeSample(
-                    <<<'CODE_SAMPLE'
+        return new \Symplify\RuleDocGenerator\ValueObject\RuleDefinition('Change foreach() items assign to empty array to direct assign', [new \Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample(<<<'CODE_SAMPLE'
 class SomeClass
 {
     public function run($items)
@@ -55,8 +49,7 @@ class SomeClass
     }
 }
 CODE_SAMPLE
-,
-                    <<<'CODE_SAMPLE'
+, <<<'CODE_SAMPLE'
 class SomeClass
 {
     public function run($items)
@@ -67,54 +60,65 @@ class SomeClass
     }
 }
 CODE_SAMPLE
-            ),
-            ]);
+)]);
     }
-
     /**
      * @return array<class-string<Node>>
      */
-    public function getNodeTypes(): array
+    public function getNodeTypes() : array
     {
-        return [Foreach_::class];
+        return [\PhpParser\Node\Stmt\Foreach_::class];
     }
-
     /**
      * @param Foreach_ $node
      */
-    public function refactor(Node $node): ?Node
+    public function refactor(\PhpParser\Node $node) : ?\PhpParser\Node
     {
+        if ($this->shouldSkip($node)) {
+            return null;
+        }
+        /** @var Expr $assignVariable */
         $assignVariable = $this->foreachAnalyzer->matchAssignItemsOnlyForeachArrayVariable($node);
-        if (! $assignVariable instanceof Expr) {
-            return null;
+        return new \PhpParser\Node\Expr\Assign($assignVariable, $node->expr);
+    }
+    private function shouldSkip(\PhpParser\Node\Stmt\Foreach_ $foreach) : bool
+    {
+        $assignVariable = $this->foreachAnalyzer->matchAssignItemsOnlyForeachArrayVariable($foreach);
+        if (!$assignVariable instanceof \PhpParser\Node\Expr) {
+            return \true;
         }
-
-        if ($this->shouldSkipAsPartOfNestedForeach($node)) {
-            return null;
+        if ($this->shouldSkipAsPartOfNestedForeach($foreach)) {
+            return \true;
         }
-
-        $previousDeclaration = $this->nodeUsageFinder->findPreviousForeachNodeUsage($node, $assignVariable);
-        if (! $previousDeclaration instanceof Node) {
-            return null;
+        $previousDeclaration = $this->nodeUsageFinder->findPreviousForeachNodeUsage($foreach, $assignVariable);
+        if (!$previousDeclaration instanceof \PhpParser\Node) {
+            return \true;
         }
-
-        $previousDeclarationParentNode = $previousDeclaration->getAttribute(AttributeKey::PARENT_NODE);
-        if (! $previousDeclarationParentNode instanceof Assign) {
-            return null;
+        $previousDeclarationParentNode = $previousDeclaration->getAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::PARENT_NODE);
+        if (!$previousDeclarationParentNode instanceof \PhpParser\Node\Expr\Assign) {
+            return \true;
         }
-
         // must be empty array, otherwise it will false override
         $defaultValue = $this->valueResolver->getValue($previousDeclarationParentNode->expr);
         if ($defaultValue !== []) {
-            return null;
+            return \true;
         }
-
-        return new Assign($assignVariable, $node->expr);
+        $scope = $foreach->expr->getAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::SCOPE);
+        if (!$scope instanceof \PHPStan\Analyser\Scope) {
+            return \true;
+        }
+        $type = $scope->getType($foreach->expr);
+        if ($type instanceof \PHPStan\Type\ObjectType) {
+            return $type->isIterable()->yes();
+        }
+        if ($type instanceof \PHPStan\Type\ThisType) {
+            return $type->isIterable()->yes();
+        }
+        return \false;
     }
-
-    private function shouldSkipAsPartOfNestedForeach(Foreach_ $foreach): bool
+    private function shouldSkipAsPartOfNestedForeach(\PhpParser\Node\Stmt\Foreach_ $foreach) : bool
     {
-        $foreachParent = $this->betterNodeFinder->findParentType($foreach, Foreach_::class);
+        $foreachParent = $this->betterNodeFinder->findParentType($foreach, \PhpParser\Node\Stmt\Foreach_::class);
         return $foreachParent !== null;
     }
 }

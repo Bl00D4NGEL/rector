@@ -1,75 +1,65 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\StaticTypeMapper\ValueObject\Type;
 
-use Nette\Utils\Strings;
+use RectorPrefix20211107\Nette\Utils\Strings;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Use_;
 use PhpParser\Node\Stmt\UseUse;
 use PHPStan\Type\ObjectType;
 use Rector\NodeTypeResolver\Node\AttributeKey;
-
-final class FullyQualifiedObjectType extends ObjectType
+final class FullyQualifiedObjectType extends \PHPStan\Type\ObjectType
 {
-    public function getShortNameType(): ShortenedObjectType
+    public function getShortNameType() : \Rector\StaticTypeMapper\ValueObject\Type\ShortenedObjectType
     {
-        return new ShortenedObjectType($this->getShortName(), $this->getClassName());
+        return new \Rector\StaticTypeMapper\ValueObject\Type\ShortenedObjectType($this->getShortName(), $this->getClassName());
     }
-
     /**
-     * @param AliasedObjectType|FullyQualifiedObjectType $comparedObjectType
+     * @param \Rector\StaticTypeMapper\ValueObject\Type\AliasedObjectType|\Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType $comparedObjectType
      */
-    public function areShortNamesEqual(ObjectType $comparedObjectType): bool
+    public function areShortNamesEqual($comparedObjectType) : bool
     {
         return $this->getShortName() === $comparedObjectType->getShortName();
     }
-
-    public function getShortName(): string
+    public function getShortName() : string
     {
-        if (! Strings::contains($this->getClassName(), '\\')) {
+        if (\strpos($this->getClassName(), '\\') === \false) {
             return $this->getClassName();
         }
-
-        return (string) Strings::after($this->getClassName(), '\\', -1);
+        return (string) \RectorPrefix20211107\Nette\Utils\Strings::after($this->getClassName(), '\\', -1);
     }
-
-    public function getShortNameNode(): Name
+    public function getShortNameNode() : \PhpParser\Node\Name
     {
-        $name = new Name($this->getShortName());
-        $name->setAttribute(AttributeKey::VIRTUAL_NODE, true);
-
+        $name = new \PhpParser\Node\Name($this->getShortName());
+        // to avoid processing short name twice
+        $name->setAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::VIRTUAL_NODE, \true);
+        // keep original to avoid loss on while importing
+        $name->setAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::NAMESPACED_NAME, $this->getClassName());
         return $name;
     }
-
-    public function getUseNode(): Use_
+    public function getUseNode() : \PhpParser\Node\Stmt\Use_
     {
-        $name = new Name($this->getClassName());
-        $useUse = new UseUse($name);
-
-        $name->setAttribute(AttributeKey::PARENT_NODE, $useUse);
-
-        return new Use_([$useUse]);
+        $name = new \PhpParser\Node\Name($this->getClassName());
+        $useUse = new \PhpParser\Node\Stmt\UseUse($name);
+        $name->setAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::PARENT_NODE, $useUse);
+        return new \PhpParser\Node\Stmt\Use_([$useUse]);
     }
-
-    public function getFunctionUseNode(): Use_
+    public function getFunctionUseNode() : \PhpParser\Node\Stmt\Use_
     {
-        $name = new Name($this->getClassName());
-        $useUse = new UseUse($name, null, Use_::TYPE_FUNCTION);
-
-        $name->setAttribute(AttributeKey::PARENT_NODE, $useUse);
-
-        return new Use_([$useUse]);
+        $name = new \PhpParser\Node\Name($this->getClassName());
+        $useUse = new \PhpParser\Node\Stmt\UseUse($name, null);
+        $name->setAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::PARENT_NODE, $useUse);
+        $use = new \PhpParser\Node\Stmt\Use_([$useUse]);
+        $use->type = \PhpParser\Node\Stmt\Use_::TYPE_FUNCTION;
+        return $use;
     }
-
-    public function getShortNameLowered(): string
+    public function getShortNameLowered() : string
     {
-        return strtolower($this->getShortName());
+        return \strtolower($this->getShortName());
     }
-
-    public function getClassNameLowered(): string
+    public function getClassNameLowered() : string
     {
-        return strtolower($this->getClassName());
+        return \strtolower($this->getClassName());
     }
 }

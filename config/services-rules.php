@@ -1,32 +1,18 @@
 <?php
 
-declare(strict_types=1);
+declare (strict_types=1);
+namespace RectorPrefix20211107;
 
 use Rector\Core\Configuration\Option;
 use Rector\PSR4\Composer\PSR4NamespaceMatcher;
 use Rector\PSR4\Contract\PSR4AutoloadNamespaceMatcherInterface;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use Symfony\Component\Yaml\Parser;
-use Symplify\PhpConfigPrinter\Printer\PhpParserPhpConfigPrinter;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
+return static function (\Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator $containerConfigurator) : void {
     $parameters = $containerConfigurator->parameters();
-    $parameters->set(Option::TYPES_TO_REMOVE_STATIC_FROM, []);
-
+    $parameters->set(\Rector\Core\Configuration\Option::TYPES_TO_REMOVE_STATIC_FROM, []);
     $services = $containerConfigurator->services();
-
-    $services->defaults()
-        ->public()
-        ->autowire()
-        ->autoconfigure();
-
+    $services->defaults()->public()->autowire()->autoconfigure();
     // psr-4
-    $services->alias(PSR4AutoloadNamespaceMatcherInterface::class, PSR4NamespaceMatcher::class);
-
-    $services->load('Rector\\', __DIR__ . '/../rules')
-        ->exclude([__DIR__ . '/../rules/*/{ValueObject,Rector,Contract,Exception}']);
-
-    // symfony code-quality
-    $services->set(Parser::class);
-    $services->set(PhpParserPhpConfigPrinter::class);
+    $services->alias(\Rector\PSR4\Contract\PSR4AutoloadNamespaceMatcherInterface::class, \Rector\PSR4\Composer\PSR4NamespaceMatcher::class);
+    $services->load('Rector\\', __DIR__ . '/../rules')->exclude([__DIR__ . '/../rules/*/{ValueObject,Rector,Contract,Exception,Enum}']);
 };

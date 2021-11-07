@@ -1,10 +1,8 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Renaming\Rector\FuncCall;
 
-use Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Name;
@@ -14,80 +12,65 @@ use Rector\Core\Rector\AbstractRector;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-
+use RectorPrefix20211107\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Renaming\Rector\FuncCall\RenameFunctionRector\RenameFunctionRectorTest
  */
-final class RenameFunctionRector extends AbstractRector implements ConfigurableRectorInterface
+final class RenameFunctionRector extends \Rector\Core\Rector\AbstractRector implements \Rector\Core\Contract\Rector\ConfigurableRectorInterface
 {
     /**
      * @var string
      */
     public const OLD_FUNCTION_TO_NEW_FUNCTION = 'old_function_to_new_function';
-
     /**
      * @var array<string, string>
      */
     private $oldFunctionToNewFunction = [];
-
-    public function getRuleDefinition(): RuleDefinition
+    public function getRuleDefinition() : \Symplify\RuleDocGenerator\ValueObject\RuleDefinition
     {
-        return new RuleDefinition('Turns defined function call new one.', [
-            new ConfiguredCodeSample(
-                'view("...", []);',
-                'Laravel\Templating\render("...", []);',
-                [
-                    self::OLD_FUNCTION_TO_NEW_FUNCTION => [
-                        'view' => 'Laravel\Templating\render',
-                    ],
-                ]
-            ),
-        ]);
+        return new \Symplify\RuleDocGenerator\ValueObject\RuleDefinition('Turns defined function call new one.', [new \Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample('view("...", []);', 'Laravel\\Templating\\render("...", []);', [self::OLD_FUNCTION_TO_NEW_FUNCTION => ['view' => 'Laravel\\Templating\\render']])]);
     }
-
     /**
      * @return array<class-string<Node>>
      */
-    public function getNodeTypes(): array
+    public function getNodeTypes() : array
     {
-        return [FuncCall::class];
+        return [\PhpParser\Node\Expr\FuncCall::class];
     }
-
     /**
      * @param FuncCall $node
      */
-    public function refactor(Node $node): ?Node
+    public function refactor(\PhpParser\Node $node) : ?\PhpParser\Node
     {
         foreach ($this->oldFunctionToNewFunction as $oldFunction => $newFunction) {
-            if (! $this->isName($node, $oldFunction)) {
+            if (!$this->isName($node, $oldFunction)) {
                 continue;
             }
-
+            // not to refactor here
+            $isVirtual = $node->name->getAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::VIRTUAL_NODE);
+            if ($isVirtual) {
+                continue;
+            }
             $node->name = $this->createName($newFunction);
-            // to keep relationship to parent
-            $node->name->setAttribute(AttributeKey::PARENT_NODE, $node);
-            $node->name->setAttribute(AttributeKey::FILE_INFO, $node->getAttribute(AttributeKey::FILE_INFO));
-
             return $node;
         }
-
         return null;
     }
-
     /**
-     * @param mixed[] $configuration
+     * @param array<string, array<string, string>> $configuration
      */
-    public function configure(array $configuration): void
+    public function configure(array $configuration) : void
     {
-        $this->oldFunctionToNewFunction = $configuration[self::OLD_FUNCTION_TO_NEW_FUNCTION] ?? [];
+        $oldFunctionToNewFunction = $configuration[self::OLD_FUNCTION_TO_NEW_FUNCTION] ?? [];
+        \RectorPrefix20211107\Webmozart\Assert\Assert::allString($oldFunctionToNewFunction);
+        \RectorPrefix20211107\Webmozart\Assert\Assert::allString(\array_values($oldFunctionToNewFunction));
+        $this->oldFunctionToNewFunction = $oldFunctionToNewFunction;
     }
-
-    private function createName(string $newFunction): Name
+    private function createName(string $newFunction) : \PhpParser\Node\Name
     {
-        if (Strings::contains($newFunction, '\\')) {
-            return new FullyQualified($newFunction);
+        if (\strpos($newFunction, '\\') !== \false) {
+            return new \PhpParser\Node\Name\FullyQualified($newFunction);
         }
-
-        return new Name($newFunction);
+        return new \PhpParser\Node\Name($newFunction);
     }
 }

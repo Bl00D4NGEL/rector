@@ -1,50 +1,46 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\PHPStanStaticTypeMapper\TypeMapper;
 
 use PhpParser\Node;
 use PhpParser\Node\Name;
+use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use PHPStan\Type\StrictMixedType;
 use PHPStan\Type\Type;
-use Rector\AttributeAwarePhpDoc\Ast\Type\AttributeAwareIdentifierTypeNode;
 use Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface;
-
-final class StrictMixedTypeMapper implements TypeMapperInterface
+use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
+/**
+ * @implements TypeMapperInterface<StrictMixedType>
+ */
+final class StrictMixedTypeMapper implements \Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface
 {
     /**
      * @var string
      */
     private const MIXED = 'mixed';
-
     /**
      * @return class-string<Type>
      */
-    public function getNodeClass(): string
+    public function getNodeClass() : string
     {
-        return StrictMixedType::class;
+        return \PHPStan\Type\StrictMixedType::class;
     }
-
     /**
-     * @param StrictMixedType $type
+     * @param \PHPStan\Type\Type $type
+     * @param \Rector\PHPStanStaticTypeMapper\Enum\TypeKind $typeKind
      */
-    public function mapToPHPStanPhpDocTypeNode(Type $type): TypeNode
+    public function mapToPHPStanPhpDocTypeNode($type, $typeKind) : \PHPStan\PhpDocParser\Ast\Type\TypeNode
     {
-        return new AttributeAwareIdentifierTypeNode(self::MIXED);
+        return new \PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode(self::MIXED);
     }
-
     /**
-     * @param StrictMixedType $type
+     * @param \PHPStan\Type\Type $type
+     * @param \Rector\PHPStanStaticTypeMapper\Enum\TypeKind $typeKind
      */
-    public function mapToPhpParserNode(Type $type, ?string $kind = null): ?Node
+    public function mapToPhpParserNode($type, $typeKind) : ?\PhpParser\Node
     {
-        return new Name(self::MIXED);
-    }
-
-    public function mapToDocString(Type $type, ?Type $parentType = null): string
-    {
-        return self::MIXED;
+        return new \PhpParser\Node\Name(self::MIXED);
     }
 }

@@ -1,60 +1,54 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\CodingStyle\ClassNameImport;
 
 use PhpParser\Node;
+use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\UseUse;
-use Rector\NodeTypeResolver\Node\AttributeKey;
-
+use Rector\Core\PhpParser\Node\BetterNodeFinder;
 final class AliasUsesResolver
 {
     /**
-     * @var UseImportsTraverser
+     * @var \Rector\CodingStyle\ClassNameImport\UseImportsTraverser
      */
     private $useImportsTraverser;
-
-    public function __construct(UseImportsTraverser $useImportsTraverser)
+    /**
+     * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
+     */
+    private $betterNodeFinder;
+    public function __construct(\Rector\CodingStyle\ClassNameImport\UseImportsTraverser $useImportsTraverser, \Rector\Core\PhpParser\Node\BetterNodeFinder $betterNodeFinder)
     {
         $this->useImportsTraverser = $useImportsTraverser;
+        $this->betterNodeFinder = $betterNodeFinder;
     }
-
     /**
      * @return string[]
      */
-    public function resolveForNode(Node $node): array
+    public function resolveFromNode(\PhpParser\Node $node) : array
     {
-        if (! $node instanceof Namespace_) {
-            $node = $node->getAttribute(AttributeKey::NAMESPACE_NODE);
+        if (!$node instanceof \PhpParser\Node\Stmt\Namespace_) {
+            $node = $this->betterNodeFinder->findParentType($node, \PhpParser\Node\Stmt\Namespace_::class);
         }
-
-        if ($node instanceof Namespace_) {
-            return $this->resolveForNamespace($node);
+        if ($node instanceof \PhpParser\Node\Stmt\Namespace_) {
+            return $this->resolveFromStmts($node->stmts);
         }
-
         return [];
     }
-
     /**
+     * @param Stmt[] $stmts
      * @return string[]
      */
-    private function resolveForNamespace(Namespace_ $namespace): array
+    public function resolveFromStmts(array $stmts) : array
     {
         $aliasedUses = [];
-
-        $this->useImportsTraverser->traverserStmts($namespace->stmts, function (
-            UseUse $useUse,
-            string $name
-        ) use (&$aliasedUses): void {
+        $this->useImportsTraverser->traverserStmts($stmts, function (\PhpParser\Node\Stmt\UseUse $useUse, string $name) use(&$aliasedUses) : void {
             if ($useUse->alias === null) {
                 return;
             }
-
             $aliasedUses[] = $name;
         });
-
         return $aliasedUses;
     }
 }

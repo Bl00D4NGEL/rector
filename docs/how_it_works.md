@@ -43,7 +43,7 @@ foreach ($fileInfos as $fileInfo) {
 ### 2.1 Prepare Phase
 
 - Files are parsed by [`nikic/php-parser`](https://github.com/nikic/PHP-Parser), 4.0 that supports writing modified tree back to a file
-- Then nodes (array of objects by parser) are traversed by `StandaloneTraverseNodeTraverser` to prepare their metadata, e.g. the class name, the method node the node is in, the namespace name etc. added by `$node->setAttribute(Attribute::CLASS_NODE, 'value')`.
+- Then nodes (array of objects by parser) are traversed by `StandaloneTraverseNodeTraverser` to prepare their metadata, e.g. the class name, the method node the node is in, the namespace name etc. added by `$node->setAttribute('key', 'value')`.
 
 ### 2.2 Rectify Phase
 
@@ -55,7 +55,11 @@ foreach ($fileInfos as $fileInfo) {
 
 ### 2.2.1 Order of Rectors
 
-- Rectors are run by they natural order in the configuration, meaning the first
+- Nodes to run rectors are iterated in the node traversal order.
+
+E.g. rectors for `Class_` node always run before rectors for `ClassMethod` in one class.
+
+- Rectors are run by the natural order in the configuration, meaning the first
 in the configuration will be run first.
 
 E.g. in this case, first the `@expectedException` annotation will be changed to a method,

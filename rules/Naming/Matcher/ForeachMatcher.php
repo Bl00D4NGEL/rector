@@ -1,68 +1,60 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Naming\Matcher;
 
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\Variable;
-use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\Node\Stmt\Function_;
+use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\Naming\ValueObject\VariableAndCallForeach;
 use Rector\NodeNameResolver\NodeNameResolver;
-use Rector\NodeTypeResolver\Node\AttributeKey;
-
 final class ForeachMatcher
 {
     /**
-     * @var NodeNameResolver
+     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
     private $nodeNameResolver;
-
     /**
-     * @var CallMatcher
+     * @var \Rector\Naming\Matcher\CallMatcher
      */
     private $callMatcher;
-
-    public function __construct(NodeNameResolver $nodeNameResolver, CallMatcher $callMatcher)
+    /**
+     * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
+     */
+    private $betterNodeFinder;
+    public function __construct(\Rector\NodeNameResolver\NodeNameResolver $nodeNameResolver, \Rector\Naming\Matcher\CallMatcher $callMatcher, \Rector\Core\PhpParser\Node\BetterNodeFinder $betterNodeFinder)
     {
         $this->nodeNameResolver = $nodeNameResolver;
         $this->callMatcher = $callMatcher;
+        $this->betterNodeFinder = $betterNodeFinder;
     }
-
-    public function match(Foreach_ $foreach): ?VariableAndCallForeach
+    public function match(\PhpParser\Node\Stmt\Foreach_ $foreach) : ?\Rector\Naming\ValueObject\VariableAndCallForeach
     {
         $call = $this->callMatcher->matchCall($foreach);
         if ($call === null) {
             return null;
         }
-
-        if (! $foreach->valueVar instanceof Variable) {
+        if (!$foreach->valueVar instanceof \PhpParser\Node\Expr\Variable) {
             return null;
         }
-
         $functionLike = $this->getFunctionLike($foreach);
         if ($functionLike === null) {
             return null;
         }
-
         $variableName = $this->nodeNameResolver->getName($foreach->valueVar);
         if ($variableName === null) {
             return null;
         }
-
-        return new VariableAndCallForeach($foreach->valueVar, $call, $variableName, $functionLike);
+        return new \Rector\Naming\ValueObject\VariableAndCallForeach($foreach->valueVar, $call, $variableName, $functionLike);
     }
-
     /**
-     * @return ClassMethod|Function_|Closure|null
+     * @return \PhpParser\Node\Expr\Closure|\PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_|null
      */
-    private function getFunctionLike(Foreach_ $foreach): ?FunctionLike
+    private function getFunctionLike(\PhpParser\Node\Stmt\Foreach_ $foreach)
     {
-        return $foreach->getAttribute(AttributeKey::CLOSURE_NODE) ??
-            $foreach->getAttribute(AttributeKey::METHOD_NODE) ??
-            $foreach->getAttribute(AttributeKey::FUNCTION_NODE);
+        return $this->betterNodeFinder->findParentByTypes($foreach, [\PhpParser\Node\Expr\Closure::class, \PhpParser\Node\Stmt\ClassMethod::class, \PhpParser\Node\Stmt\Function_::class]);
     }
 }

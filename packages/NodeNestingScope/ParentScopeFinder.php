@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\NodeNestingScope;
 
 use PhpParser\Node;
@@ -10,19 +9,22 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\Namespace_;
-use Rector\NodeTypeResolver\Node\AttributeKey;
-
+use Rector\Core\PhpParser\Node\BetterNodeFinder;
 final class ParentScopeFinder
 {
     /**
-     * @return ClassMethod|Function_|Class_|Namespace_|Closure|null
+     * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
      */
-    public function find(Node $node): ?Node
+    private $betterNodeFinder;
+    public function __construct(\Rector\Core\PhpParser\Node\BetterNodeFinder $betterNodeFinder)
     {
-        return $node->getAttribute(AttributeKey::CLOSURE_NODE) ??
-            $node->getAttribute(AttributeKey::FUNCTION_NODE) ??
-            $node->getAttribute(AttributeKey::METHOD_NODE) ??
-            $node->getAttribute(AttributeKey::CLASS_NODE) ??
-            $node->getAttribute(AttributeKey::NAMESPACE_NODE);
+        $this->betterNodeFinder = $betterNodeFinder;
+    }
+    /**
+     * @return \PhpParser\Node\Expr\Closure|\PhpParser\Node\Stmt\Class_|\PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_|\PhpParser\Node\Stmt\Namespace_|null
+     */
+    public function find(\PhpParser\Node $node)
+    {
+        return $this->betterNodeFinder->findParentByTypes($node, [\PhpParser\Node\Expr\Closure::class, \PhpParser\Node\Stmt\Function_::class, \PhpParser\Node\Stmt\ClassMethod::class, \PhpParser\Node\Stmt\Class_::class, \PhpParser\Node\Stmt\Namespace_::class]);
     }
 }

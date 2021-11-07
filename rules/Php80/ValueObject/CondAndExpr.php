@@ -1,62 +1,50 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Php80\ValueObject;
 
 use PhpParser\Node\Expr;
-
+use Rector\Php80\Enum\MatchKind;
 final class CondAndExpr
 {
     /**
-     * @var string
+     * @var \PhpParser\Node\Expr[]
      */
-    public const TYPE_NORMAL = 'normal';
-
+    private $condExprs;
     /**
-     * @var string
-     */
-    public const TYPE_ASSIGN = 'assign';
-
-    /**
-     * @var string
-     */
-    public const TYPE_RETURN = 'return';
-
-    /**
-     * @var string
-     */
-    private $kind;
-
-    /**
-     * @var Expr
+     * @var \PhpParser\Node\Expr
      */
     private $expr;
-
     /**
-     * @var Expr|null
+     * @var \Rector\Php80\Enum\MatchKind
      */
-    private $condExpr;
-
-    public function __construct(?Expr $condExpr, Expr $expr, string $kind)
+    private $matchKind;
+    /**
+     * @param Expr[] $condExprs
+     */
+    public function __construct(array $condExprs, \PhpParser\Node\Expr $expr, \Rector\Php80\Enum\MatchKind $matchKind)
     {
-        $this->condExpr = $condExpr;
+        $this->condExprs = $condExprs;
         $this->expr = $expr;
-        $this->kind = $kind;
+        $this->matchKind = $matchKind;
     }
-
-    public function getExpr(): Expr
+    public function getExpr() : \PhpParser\Node\Expr
     {
         return $this->expr;
     }
-
-    public function getCondExpr(): ?Expr
+    /**
+     * @return Expr[]
+     */
+    public function getCondExprs() : array
     {
-        return $this->condExpr;
+        return $this->condExprs;
     }
-
-    public function getKind(): string
+    public function getMatchKind() : \Rector\Php80\Enum\MatchKind
     {
-        return $this->kind;
+        return $this->matchKind;
+    }
+    public function equalsMatchKind(\Rector\Php80\Enum\MatchKind $matchKind) : bool
+    {
+        return $this->matchKind->equals($matchKind);
     }
 }

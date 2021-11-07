@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\NodeTypeResolver\NodeTypeResolver;
 
 use PhpParser\Node\Identifier;
@@ -10,28 +9,25 @@ use PHPStan\Type\FloatType;
 use PHPStan\Type\IntegerType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\StringType;
-use PHPStan\Type\Type;
-
 final class IdentifierTypeResolver
 {
-    public function resolve(Identifier $identifier): Type
+    /**
+     * @return \PHPStan\Type\BooleanType|\PHPStan\Type\FloatType|\PHPStan\Type\IntegerType|\PHPStan\Type\MixedType|\PHPStan\Type\StringType
+     */
+    public function resolve(\PhpParser\Node\Identifier $identifier)
     {
         if ($identifier->toLowerString() === 'string') {
-            return new StringType();
+            return new \PHPStan\Type\StringType();
         }
-
         if ($identifier->toLowerString() === 'bool') {
-            return new BooleanType();
+            return new \PHPStan\Type\BooleanType();
         }
-
         if ($identifier->toLowerString() === 'int') {
-            return new IntegerType();
+            return new \PHPStan\Type\IntegerType();
         }
-
         if ($identifier->toLowerString() === 'float') {
-            return new FloatType();
+            return new \PHPStan\Type\FloatType();
         }
-
-        return new MixedType();
+        return new \PHPStan\Type\MixedType();
     }
 }

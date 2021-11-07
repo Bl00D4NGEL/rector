@@ -1,44 +1,44 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\PHPStanStaticTypeMapper\TypeMapper;
 
 use PhpParser\Node;
+use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use PHPStan\Type\NeverType;
 use PHPStan\Type\Type;
-use Rector\AttributeAwarePhpDoc\Ast\Type\AttributeAwareIdentifierTypeNode;
 use Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface;
-
-final class NeverTypeMapper implements TypeMapperInterface
+use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
+/**
+ * @implements TypeMapperInterface<NeverType>
+ */
+final class NeverTypeMapper implements \Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface
 {
     /**
      * @return class-string<Type>
      */
-    public function getNodeClass(): string
+    public function getNodeClass() : string
     {
-        return NeverType::class;
+        return \PHPStan\Type\NeverType::class;
     }
-
     /**
-     * @param NeverType $type
+     * @param \PHPStan\Type\Type $type
+     * @param \Rector\PHPStanStaticTypeMapper\Enum\TypeKind $typeKind
      */
-    public function mapToPHPStanPhpDocTypeNode(Type $type): TypeNode
+    public function mapToPHPStanPhpDocTypeNode($type, $typeKind) : \PHPStan\PhpDocParser\Ast\Type\TypeNode
     {
-        return new AttributeAwareIdentifierTypeNode('mixed');
+        if ($typeKind->equals(\Rector\PHPStanStaticTypeMapper\Enum\TypeKind::RETURN())) {
+            return new \PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode('never');
+        }
+        return new \PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode('mixed');
     }
-
     /**
-     * @param NeverType $type
+     * @param \PHPStan\Type\Type $type
+     * @param \Rector\PHPStanStaticTypeMapper\Enum\TypeKind $typeKind
      */
-    public function mapToPhpParserNode(Type $type, ?string $kind = null): ?Node
+    public function mapToPhpParserNode($type, $typeKind) : ?\PhpParser\Node
     {
         return null;
-    }
-
-    public function mapToDocString(Type $type, ?Type $parentType = null): string
-    {
-        return 'mixed';
     }
 }

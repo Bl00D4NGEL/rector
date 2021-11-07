@@ -1,33 +1,28 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Php80\NodeResolver;
 
 use PhpParser\Node\Arg;
 use PhpParser\Node\Param;
-
 final class ArgumentSorter
 {
     /**
-     * @param array<int, Param> $expectedOrderedParams
-     * @param Arg[] $args
-     * @return Arg[]
+     * @template T as Arg|Param
+     * @param array<int, int> $oldToNewPositions
+     * @param T[] $argOrParams
+     * @return T[]
      */
-    public function sortArgsByExpectedParamOrder(array $args, array $expectedOrderedParams): array
+    public function sortArgsByExpectedParamOrder(array $argOrParams, array $oldToNewPositions) : array
     {
-        $oldToNewPositions = array_keys($expectedOrderedParams);
-
-        $newArgs = [];
-        foreach (array_keys($args) as $position) {
+        $newArgsOrParams = [];
+        foreach (\array_keys($argOrParams) as $position) {
             $newPosition = $oldToNewPositions[$position] ?? null;
             if ($newPosition === null) {
                 continue;
             }
-
-            $newArgs[$position] = $args[$newPosition];
+            $newArgsOrParams[$position] = $argOrParams[$newPosition];
         }
-
-        return $newArgs;
+        return $newArgsOrParams;
     }
 }

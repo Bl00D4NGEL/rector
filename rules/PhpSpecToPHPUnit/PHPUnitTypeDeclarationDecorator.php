@@ -1,50 +1,35 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\PhpSpecToPHPUnit;
 
-use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\ClassMethod;
-use PHPStan\Reflection\ReflectionProvider;
+use Rector\Core\PhpParser\AstResolver;
 use Rector\Core\ValueObject\MethodName;
 use Rector\Testing\PHPUnit\StaticPHPUnitEnvironment;
-
 /**
  * Decorate setUp() and tearDown() with "void" when local TestClass class uses them
  */
 final class PHPUnitTypeDeclarationDecorator
 {
     /**
-     * @var ReflectionProvider
+     * @var \Rector\Core\PhpParser\AstResolver
      */
-    private $reflectionProvider;
-
-    public function __construct(ReflectionProvider $reflectionProvider)
+    private $astResolver;
+    public function __construct(\Rector\Core\PhpParser\AstResolver $astResolver)
     {
-        $this->reflectionProvider = $reflectionProvider;
+        $this->astResolver = $astResolver;
     }
-
-    public function decorate(ClassMethod $classMethod): void
+    public function decorate(\PhpParser\Node\Stmt\ClassMethod $classMethod) : void
     {
-        if (! $this->reflectionProvider->hasClass('PHPUnit\Framework\TestCase')) {
-            return;
-        }
-
         // skip test run
-        if (StaticPHPUnitEnvironment::isPHPUnitRun()) {
+        if (\Rector\Testing\PHPUnit\StaticPHPUnitEnvironment::isPHPUnitRun()) {
             return;
         }
-
-        $classReflection = $this->reflectionProvider->getClass('PHPUnit\Framework\TestCase');
-        $reflectionClass = $classReflection->getNativeReflection();
-
-        $reflectionMethod = $reflectionClass->getMethod(MethodName::SET_UP);
-        if (! $reflectionMethod->hasReturnType()) {
+        $setUpClassMethod = $this->astResolver->resolveClassMethod('PHPUnit\\Framework\\TestCase', \Rector\Core\ValueObject\MethodName::SET_UP);
+        if (!$setUpClassMethod instanceof \PhpParser\Node\Stmt\ClassMethod) {
             return;
         }
-
-        $returnType = (string) $reflectionMethod->getReturnType();
-        $classMethod->returnType = new Identifier($returnType);
+        $classMethod->returnType = $setUpClassMethod->returnType;
     }
 }

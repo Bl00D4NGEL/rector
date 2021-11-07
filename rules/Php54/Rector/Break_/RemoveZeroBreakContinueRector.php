@@ -1,34 +1,34 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Php54\Rector\Break_;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Scalar\LNumber;
-use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Break_;
 use PhpParser\Node\Stmt\Continue_;
 use PHPStan\Type\Constant\ConstantIntegerType;
 use PHPStan\Type\ConstantType;
 use Rector\Core\Rector\AbstractRector;
+use Rector\Core\ValueObject\PhpVersionFeature;
+use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-
 /**
- * @see https://www.php.net/manual/en/control-structures.continue.php
- * @see https://www.php.net/manual/en/control-structures.break.php
+ * @changelog https://www.php.net/manual/en/control-structures.continue.php https://www.php.net/manual/en/control-structures.break.php
  *
  * @see \Rector\Tests\Php54\Rector\Break_\RemoveZeroBreakContinueRector\RemoveZeroBreakContinueRectorTest
  */
-final class RemoveZeroBreakContinueRector extends AbstractRector
+final class RemoveZeroBreakContinueRector extends \Rector\Core\Rector\AbstractRector implements \Rector\VersionBonding\Contract\MinPhpVersionInterface
 {
-    public function getRuleDefinition(): RuleDefinition
+    public function provideMinPhpVersion() : int
     {
-        return new RuleDefinition('Remove 0 from break and continue', [
-            new CodeSample(
-                <<<'CODE_SAMPLE'
+        return \Rector\Core\ValueObject\PhpVersionFeature::NO_ZERO_BREAK;
+    }
+    public function getRuleDefinition() : \Symplify\RuleDocGenerator\ValueObject\RuleDefinition
+    {
+        return new \Symplify\RuleDocGenerator\ValueObject\RuleDefinition('Remove 0 from break and continue', [new \Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample(<<<'CODE_SAMPLE'
 class SomeClass
 {
     public function run($random)
@@ -43,8 +43,7 @@ class SomeClass
     }
 }
 CODE_SAMPLE
-                ,
-                <<<'CODE_SAMPLE'
+, <<<'CODE_SAMPLE'
 class SomeClass
 {
     public function run($random)
@@ -59,74 +58,60 @@ class SomeClass
     }
 }
 CODE_SAMPLE
-            ),
-        ]);
+)]);
     }
-
     /**
      * @return array<class-string<Node>>
      */
-    public function getNodeTypes(): array
+    public function getNodeTypes() : array
     {
-        return [Break_::class, Continue_::class];
+        return [\PhpParser\Node\Stmt\Break_::class, \PhpParser\Node\Stmt\Continue_::class];
     }
-
     /**
      * @param Break_|Continue_ $node
      */
-    public function refactor(Node $node): ?Node
+    public function refactor(\PhpParser\Node $node) : ?\PhpParser\Node
     {
         if ($node->num === null) {
             return null;
         }
-
-        if ($node->num instanceof LNumber) {
+        if ($node->num instanceof \PhpParser\Node\Scalar\LNumber) {
             $number = $this->valueResolver->getValue($node->num);
             if ($number > 1) {
                 return null;
             }
-
             if ($number === 0) {
                 $node->num = null;
                 return $node;
             }
-
             return null;
         }
-
-        if ($node->num instanceof Variable) {
+        if ($node->num instanceof \PhpParser\Node\Expr\Variable) {
             return $this->processVariableNum($node, $node->num);
         }
-
         return null;
     }
-
     /**
-     * @param Break_|Continue_ $stmt
+     * @param \PhpParser\Node\Stmt\Break_|\PhpParser\Node\Stmt\Continue_ $stmt
      */
-    private function processVariableNum(Stmt $stmt, Variable $numVariable): ?Node
+    private function processVariableNum($stmt, \PhpParser\Node\Expr\Variable $numVariable) : ?\PhpParser\Node
     {
-        $staticType = $this->getStaticType($numVariable);
-
-        if ($staticType instanceof ConstantType) {
-            if ($staticType instanceof ConstantIntegerType) {
+        $staticType = $this->getType($numVariable);
+        if ($staticType instanceof \PHPStan\Type\ConstantType) {
+            if ($staticType instanceof \PHPStan\Type\Constant\ConstantIntegerType) {
                 if ($staticType->getValue() === 0) {
                     $stmt->num = null;
                     return $stmt;
                 }
-
                 if ($staticType->getValue() > 0) {
-                    $stmt->num = new LNumber($staticType->getValue());
+                    $stmt->num = new \PhpParser\Node\Scalar\LNumber($staticType->getValue());
                     return $stmt;
                 }
             }
-
             return $stmt;
         }
-
         // remove variable
         $stmt->num = null;
-
         return null;
     }
 }

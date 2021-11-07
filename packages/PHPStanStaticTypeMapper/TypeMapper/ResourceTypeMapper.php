@@ -1,45 +1,41 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\PHPStanStaticTypeMapper\TypeMapper;
 
 use PhpParser\Node;
+use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use PHPStan\Type\ResourceType;
 use PHPStan\Type\Type;
-use PHPStan\Type\VerbosityLevel;
-use Rector\AttributeAwarePhpDoc\Ast\Type\AttributeAwareIdentifierTypeNode;
 use Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface;
-
-final class ResourceTypeMapper implements TypeMapperInterface
+use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
+/**
+ * @implements TypeMapperInterface<ResourceType>
+ */
+final class ResourceTypeMapper implements \Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface
 {
     /**
      * @return class-string<Type>
      */
-    public function getNodeClass(): string
+    public function getNodeClass() : string
     {
-        return ResourceType::class;
+        return \PHPStan\Type\ResourceType::class;
     }
-
     /**
-     * @param ResourceType $type
+     * @param \PHPStan\Type\Type $type
+     * @param \Rector\PHPStanStaticTypeMapper\Enum\TypeKind $typeKind
      */
-    public function mapToPHPStanPhpDocTypeNode(Type $type): TypeNode
+    public function mapToPHPStanPhpDocTypeNode($type, $typeKind) : \PHPStan\PhpDocParser\Ast\Type\TypeNode
     {
-        return new AttributeAwareIdentifierTypeNode('resource');
+        return new \PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode('resource');
     }
-
     /**
-     * @param ResourceType $type
+     * @param \PHPStan\Type\Type $type
+     * @param \Rector\PHPStanStaticTypeMapper\Enum\TypeKind $typeKind
      */
-    public function mapToPhpParserNode(Type $type, ?string $kind = null): ?Node
+    public function mapToPhpParserNode($type, $typeKind) : ?\PhpParser\Node
     {
         return null;
-    }
-
-    public function mapToDocString(Type $type, ?Type $parentType = null): string
-    {
-        return $type->describe(VerbosityLevel::typeOnly());
     }
 }

@@ -1,28 +1,23 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Naming;
 
-use Nette\Utils\Strings;
-use Rector\Core\ValueObject\RenamedNamespace;
-
+use Rector\Renaming\ValueObject\RenamedNamespace;
 final class NamespaceMatcher
 {
     /**
      * @param string[] $oldToNewNamespace
      */
-    public function matchRenamedNamespace(string $name, array $oldToNewNamespace): ?RenamedNamespace
+    public function matchRenamedNamespace(string $name, array $oldToNewNamespace) : ?\Rector\Renaming\ValueObject\RenamedNamespace
     {
-        krsort($oldToNewNamespace);
-
+        \krsort($oldToNewNamespace);
         /** @var string $oldNamespace */
         foreach ($oldToNewNamespace as $oldNamespace => $newNamespace) {
-            if (Strings::startsWith($name, $oldNamespace)) {
-                return new RenamedNamespace($name, $oldNamespace, $newNamespace);
+            if (\strncmp($name, $oldNamespace, \strlen($oldNamespace)) === 0) {
+                return new \Rector\Renaming\ValueObject\RenamedNamespace($name, $oldNamespace, $newNamespace);
             }
         }
-
         return null;
     }
 }

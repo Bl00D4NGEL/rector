@@ -1,47 +1,43 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Renaming\ValueObject;
 
 use PHPStan\Type\ObjectType;
 use Rector\Renaming\Contract\MethodCallRenameInterface;
-
-final class MethodCallRename implements MethodCallRenameInterface
+final class MethodCallRename implements \Rector\Renaming\Contract\MethodCallRenameInterface
 {
     /**
      * @var string
      */
-    private $oldClass;
-
+    private $class;
     /**
      * @var string
      */
     private $oldMethod;
-
     /**
      * @var string
      */
     private $newMethod;
-
-    public function __construct(string $oldClass, string $oldMethod, string $newMethod)
+    public function __construct(string $class, string $oldMethod, string $newMethod)
     {
-        $this->oldClass = $oldClass;
+        $this->class = $class;
         $this->oldMethod = $oldMethod;
         $this->newMethod = $newMethod;
     }
-
-    public function getOldObjectType(): ObjectType
+    public function getClass() : string
     {
-        return new ObjectType($this->oldClass);
+        return $this->class;
     }
-
-    public function getOldMethod(): string
+    public function getObjectType() : \PHPStan\Type\ObjectType
+    {
+        return new \PHPStan\Type\ObjectType($this->class);
+    }
+    public function getOldMethod() : string
     {
         return $this->oldMethod;
     }
-
-    public function getNewMethod(): string
+    public function getNewMethod() : string
     {
         return $this->newMethod;
     }

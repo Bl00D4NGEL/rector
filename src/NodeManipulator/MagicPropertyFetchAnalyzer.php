@@ -1,11 +1,11 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Core\NodeManipulator;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\PropertyFetch;
+use PhpParser\Node\Expr\StaticPropertyFetch;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\ErrorType;
@@ -16,7 +16,6 @@ use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\NodeTypeResolver;
-
 /**
  * Utils for PropertyFetch Node:
  * "$this->property"
@@ -24,78 +23,70 @@ use Rector\NodeTypeResolver\NodeTypeResolver;
 final class MagicPropertyFetchAnalyzer
 {
     /**
-     * @var NodeTypeResolver
-     */
-    private $nodeTypeResolver;
-
-    /**
-     * @var NodeNameResolver
+     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
     private $nodeNameResolver;
-
     /**
-     * @var ReflectionProvider
+     * @var \Rector\NodeTypeResolver\NodeTypeResolver
+     */
+    private $nodeTypeResolver;
+    /**
+     * @var \PHPStan\Reflection\ReflectionProvider
      */
     private $reflectionProvider;
-
-    public function __construct(
-        NodeNameResolver $nodeNameResolver,
-        NodeTypeResolver $nodeTypeResolver,
-        ReflectionProvider $reflectionProvider
-    ) {
-        $this->nodeTypeResolver = $nodeTypeResolver;
+    public function __construct(\Rector\NodeNameResolver\NodeNameResolver $nodeNameResolver, \Rector\NodeTypeResolver\NodeTypeResolver $nodeTypeResolver, \PHPStan\Reflection\ReflectionProvider $reflectionProvider)
+    {
         $this->nodeNameResolver = $nodeNameResolver;
+        $this->nodeTypeResolver = $nodeTypeResolver;
         $this->reflectionProvider = $reflectionProvider;
     }
-
-    public function isMagicOnType(PropertyFetch $propertyFetch, Type $type): bool
+    /**
+     * @param \PhpParser\Node\Expr\PropertyFetch|\PhpParser\Node\Expr\StaticPropertyFetch $expr
+     */
+    public function isMagicOnType($expr, \PHPStan\Type\Type $type) : bool
     {
-        $varNodeType = $this->nodeTypeResolver->resolve($propertyFetch);
-
-        if ($varNodeType instanceof ErrorType) {
-            return true;
+        $varNodeType = $this->nodeTypeResolver->getType($expr);
+        if ($varNodeType instanceof \PHPStan\Type\ErrorType) {
+            return \true;
         }
-
-        if ($varNodeType instanceof MixedType) {
-            return false;
+        if ($varNodeType instanceof \PHPStan\Type\MixedType) {
+            return \false;
         }
-
         if ($varNodeType->isSuperTypeOf($type)->yes()) {
-            return false;
+            return \false;
         }
-
-        $nodeName = $this->nodeNameResolver->getName($propertyFetch);
+        $nodeName = $this->nodeNameResolver->getName($expr->name);
         if ($nodeName === null) {
-            return false;
+            return \false;
         }
-
-        return ! $this->hasPublicProperty($propertyFetch, $nodeName);
+        return !$this->hasPublicProperty($expr, $nodeName);
     }
-
-    private function hasPublicProperty(PropertyFetch $propertyFetch, string $propertyName): bool
+    /**
+     * @param \PhpParser\Node\Expr\PropertyFetch|\PhpParser\Node\Expr\StaticPropertyFetch $expr
+     */
+    private function hasPublicProperty($expr, string $propertyName) : bool
     {
-        $scope = $propertyFetch->getAttribute(AttributeKey::SCOPE);
-        if (! $scope instanceof Scope) {
-            throw new ShouldNotHappenException();
+        $scope = $expr->getAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::SCOPE);
+        if (!$scope instanceof \PHPStan\Analyser\Scope) {
+            throw new \Rector\Core\Exception\ShouldNotHappenException();
         }
-
-        $propertyFetchType = $scope->getType($propertyFetch->var);
-        if (! $propertyFetchType instanceof TypeWithClassName) {
-            return false;
+        if ($expr instanceof \PhpParser\Node\Expr\PropertyFetch) {
+            $propertyFetchType = $scope->getType($expr->var);
+        } else {
+            $propertyFetchType = $this->nodeTypeResolver->getType($expr->class);
         }
-
+        if (!$propertyFetchType instanceof \PHPStan\Type\TypeWithClassName) {
+            return \false;
+        }
         $propertyFetchType = $propertyFetchType->getClassName();
-        if (! $this->reflectionProvider->hasClass($propertyFetchType)) {
-            return false;
+        if (!$this->reflectionProvider->hasClass($propertyFetchType)) {
+            return \false;
         }
-
         $classReflection = $this->reflectionProvider->getClass($propertyFetchType);
-        if (! $classReflection->hasProperty($propertyName)) {
-            return false;
+        if (!$classReflection->hasProperty($propertyName)) {
+            return \false;
         }
-
         $propertyReflection = $classReflection->getProperty($propertyName, $scope);
-
         return $propertyReflection->isPublic();
     }
 }

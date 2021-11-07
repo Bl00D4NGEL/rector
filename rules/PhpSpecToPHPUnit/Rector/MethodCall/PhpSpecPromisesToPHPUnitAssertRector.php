@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\PhpSpecToPHPUnit\Rector\MethodCall;
 
 use PhpParser\Node;
@@ -16,23 +15,22 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\Class_;
-use Rector\NodeTypeResolver\Node\AttributeKey;
+use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\PhpSpecToPHPUnit\MatchersManipulator;
 use Rector\PhpSpecToPHPUnit\Naming\PhpSpecRenaming;
 use Rector\PhpSpecToPHPUnit\NodeFactory\AssertMethodCallFactory;
 use Rector\PhpSpecToPHPUnit\NodeFactory\BeConstructedWithAssignFactory;
 use Rector\PhpSpecToPHPUnit\NodeFactory\DuringMethodCallFactory;
 use Rector\PhpSpecToPHPUnit\Rector\AbstractPhpSpecToPHPUnitRector;
-
 /**
  * @see \Rector\Tests\PhpSpecToPHPUnit\Rector\Variable\PhpSpecToPHPUnitRector\PhpSpecToPHPUnitRectorTest
  */
-final class PhpSpecPromisesToPHPUnitAssertRector extends AbstractPhpSpecToPHPUnitRector
+final class PhpSpecPromisesToPHPUnitAssertRector extends \Rector\PhpSpecToPHPUnit\Rector\AbstractPhpSpecToPHPUnitRector
 {
     /**
-     * @see https://github.com/phpspec/phpspec/blob/master/src/PhpSpec/Wrapper/Subject.php
+     * @changelog https://github.com/phpspec/phpspec/blob/master/src/PhpSpec/Wrapper/Subject.php
      * ↓
-     * @see https://phpunit.readthedocs.io/en/8.0/assertions.html
+     * @changelog https://phpunit.readthedocs.io/en/8.0/assertions.html
      * @var array<string, string[]>
      */
     private const NEW_METHOD_TO_OLD_METHODS = [
@@ -40,7 +38,7 @@ final class PhpSpecPromisesToPHPUnitAssertRector extends AbstractPhpSpecToPHPUni
         'assertSame' => ['shouldBe', 'shouldReturn'],
         'assertNotSame' => ['shouldNotBe', 'shouldNotReturn'],
         'assertCount' => ['shouldHaveCount'],
-        'assertEquals' => ['shouldBeEqualTo'],
+        'assertEquals' => ['shouldBeEqualTo', 'shouldEqual'],
         'assertNotEquals' => ['shouldNotBeEqualTo'],
         'assertContains' => ['shouldContain'],
         'assertNotContains' => ['shouldNotContain'],
@@ -71,234 +69,202 @@ final class PhpSpecPromisesToPHPUnitAssertRector extends AbstractPhpSpecToPHPUni
         'assertFinite' => ['shouldBeFinite', 'shouldNotBeFinite'],
         'assertInfinite' => ['shouldBeInfinite', 'shouldNotBeInfinite'],
     ];
-
     /**
      * @var string
      */
     private const THIS = 'this';
-
     /**
-     * @var string
+     * @var string|null
      */
     private $testedClass;
-
     /**
      * @var bool
      */
-    private $isPrepared = false;
-
+    private $isPrepared = \false;
     /**
      * @var string[]
      */
     private $matchersKeys = [];
-
     /**
-     * @var PropertyFetch
+     * @var \PhpParser\Node\Expr\PropertyFetch|null
      */
     private $testedObjectPropertyFetch;
-
     /**
-     * @var PhpSpecRenaming
-     */
-    private $phpSpecRenaming;
-
-    /**
-     * @var MatchersManipulator
+     * @var \Rector\PhpSpecToPHPUnit\MatchersManipulator
      */
     private $matchersManipulator;
-
     /**
-     * @var AssertMethodCallFactory
+     * @var \Rector\PhpSpecToPHPUnit\Naming\PhpSpecRenaming
+     */
+    private $phpSpecRenaming;
+    /**
+     * @var \Rector\PhpSpecToPHPUnit\NodeFactory\AssertMethodCallFactory
      */
     private $assertMethodCallFactory;
-
     /**
-     * @var BeConstructedWithAssignFactory
+     * @var \Rector\PhpSpecToPHPUnit\NodeFactory\BeConstructedWithAssignFactory
      */
     private $beConstructedWithAssignFactory;
-
     /**
-     * @var DuringMethodCallFactory
+     * @var \Rector\PhpSpecToPHPUnit\NodeFactory\DuringMethodCallFactory
      */
     private $duringMethodCallFactory;
-
-    public function __construct(
-        MatchersManipulator $matchersManipulator,
-        PhpSpecRenaming $phpSpecRenaming,
-        AssertMethodCallFactory $assertMethodCallFactory,
-        BeConstructedWithAssignFactory $beConstructedWithAssignFactory,
-        DuringMethodCallFactory $duringMethodCallFactory
-    ) {
-        $this->phpSpecRenaming = $phpSpecRenaming;
+    public function __construct(\Rector\PhpSpecToPHPUnit\MatchersManipulator $matchersManipulator, \Rector\PhpSpecToPHPUnit\Naming\PhpSpecRenaming $phpSpecRenaming, \Rector\PhpSpecToPHPUnit\NodeFactory\AssertMethodCallFactory $assertMethodCallFactory, \Rector\PhpSpecToPHPUnit\NodeFactory\BeConstructedWithAssignFactory $beConstructedWithAssignFactory, \Rector\PhpSpecToPHPUnit\NodeFactory\DuringMethodCallFactory $duringMethodCallFactory)
+    {
         $this->matchersManipulator = $matchersManipulator;
+        $this->phpSpecRenaming = $phpSpecRenaming;
         $this->assertMethodCallFactory = $assertMethodCallFactory;
         $this->beConstructedWithAssignFactory = $beConstructedWithAssignFactory;
         $this->duringMethodCallFactory = $duringMethodCallFactory;
     }
-
     /**
      * @return array<class-string<Node>>
      */
-    public function getNodeTypes(): array
+    public function getNodeTypes() : array
     {
-        return [MethodCall::class];
+        return [\PhpParser\Node\Expr\MethodCall::class];
     }
-
     /**
      * @param MethodCall $node
      */
-    public function refactor(Node $node): ?Node
+    public function refactor(\PhpParser\Node $node) : ?\PhpParser\Node
     {
-        $this->isPrepared = false;
+        $this->isPrepared = \false;
         $this->matchersKeys = [];
-
-        if (! $this->isInPhpSpecBehavior($node)) {
+        if (!$this->isInPhpSpecBehavior($node)) {
             return null;
         }
-
         if ($this->isName($node->name, 'getWrappedObject')) {
             return $node->var;
         }
-
         if ($this->isName($node->name, 'during')) {
-            return $this->duringMethodCallFactory->create($node, $this->testedObjectPropertyFetch);
+            return $this->duringMethodCallFactory->create($node, $this->getTestedObjectPropertyFetch());
         }
-
         if ($this->isName($node->name, 'duringInstantiation')) {
             return $this->processDuringInstantiation($node);
         }
-
-        if ($this->isName($node->name, 'getMatchers')) {
+        // skip reserved names
+        if ($this->isNames($node->name, ['getMatchers', 'expectException', 'assert*'])) {
             return null;
         }
-
         $this->prepareMethodCall($node);
-
         if ($this->isName($node->name, 'beConstructed*')) {
-            return $this->beConstructedWithAssignFactory->create(
-                $node,
-                $this->testedClass,
-                $this->testedObjectPropertyFetch
-            );
+            return $this->beConstructedWithAssignFactory->create($node, $this->getTestedClass(), $this->getTestedObjectPropertyFetch());
         }
-
         $this->processMatchersKeys($node);
-
+        $args = $node->args;
         foreach (self::NEW_METHOD_TO_OLD_METHODS as $newMethod => $oldMethods) {
-            if (! $this->isNames($node->name, $oldMethods)) {
+            if (!$this->isNames($node->name, $oldMethods)) {
                 continue;
             }
-
-            return $this->assertMethodCallFactory->createAssertMethod(
-                $newMethod,
-                $node->var,
-                $node->args[0]->value ?? null,
-                $this->testedObjectPropertyFetch
-            );
+            return $this->assertMethodCallFactory->createAssertMethod($newMethod, $node->var, $args[0]->value ?? null, $this->getTestedObjectPropertyFetch());
         }
-
         if ($this->shouldSkip($node)) {
             return null;
         }
-
         if ($this->isName($node->name, 'clone')) {
-            return new Clone_($this->testedObjectPropertyFetch);
+            return new \PhpParser\Node\Expr\Clone_($this->getTestedObjectPropertyFetch());
         }
-
         $methodName = $this->getName($node->name);
         if ($methodName === null) {
             return null;
         }
-
         /** @var Class_ $classLike */
-        $classLike = $node->getAttribute(AttributeKey::CLASS_NODE);
+        $classLike = $this->betterNodeFinder->findParentType($node, \PhpParser\Node\Stmt\Class_::class);
         $classMethod = $classLike->getMethod($methodName);
         // it's a method call, skip
         if ($classMethod !== null) {
             return null;
         }
-
-        $node->var = $this->testedObjectPropertyFetch;
-
+        // direct PHPUnit method calls, no need to call on property
+        if (\in_array($methodName, ['atLeastOnce', 'equalTo', 'isInstanceOf', 'isType'], \true)) {
+            return $node;
+        }
+        $node->var = $this->getTestedObjectPropertyFetch();
         return $node;
     }
-
-    private function processDuringInstantiation(MethodCall $methodCall): MethodCall
+    private function processDuringInstantiation(\PhpParser\Node\Expr\MethodCall $methodCall) : \PhpParser\Node\Expr\MethodCall
     {
         /** @var MethodCall $parentMethodCall */
         $parentMethodCall = $methodCall->var;
-        $parentMethodCall->name = new Identifier('expectException');
-
+        $parentMethodCall->name = new \PhpParser\Node\Identifier('expectException');
         return $parentMethodCall;
     }
-
-    private function prepareMethodCall(MethodCall $methodCall): void
+    private function prepareMethodCall(\PhpParser\Node\Expr\MethodCall $methodCall) : void
     {
         if ($this->isPrepared) {
             return;
         }
-
-        /** @var Class_ $classLike */
-        $classLike = $methodCall->getAttribute(AttributeKey::CLASS_NODE);
-
-        $this->matchersKeys = $this->matchersManipulator->resolveMatcherNamesFromClass($classLike);
-        $this->testedClass = $this->phpSpecRenaming->resolveTestedClass($methodCall);
-        $this->testedObjectPropertyFetch = $this->createTestedObjectPropertyFetch($classLike);
-
-        $this->isPrepared = true;
+        $class = $this->betterNodeFinder->findParentType($methodCall, \PhpParser\Node\Stmt\Class_::class);
+        if (!$class instanceof \PhpParser\Node\Stmt\Class_) {
+            return;
+        }
+        $className = $this->getName($class);
+        if (!\is_string($className)) {
+            return;
+        }
+        $this->matchersKeys = $this->matchersManipulator->resolveMatcherNamesFromClass($class);
+        $this->testedClass = $this->phpSpecRenaming->resolveTestedClass($class);
+        $this->testedObjectPropertyFetch = $this->createTestedObjectPropertyFetch($class);
+        $this->isPrepared = \true;
     }
-
+    private function getTestedObjectPropertyFetch() : \PhpParser\Node\Expr\PropertyFetch
+    {
+        if ($this->testedObjectPropertyFetch === null) {
+            throw new \Rector\Core\Exception\ShouldNotHappenException();
+        }
+        return $this->testedObjectPropertyFetch;
+    }
+    private function getTestedClass() : string
+    {
+        if ($this->testedClass === null) {
+            throw new \Rector\Core\Exception\ShouldNotHappenException();
+        }
+        return $this->testedClass;
+    }
     /**
-     * @see https://johannespichler.com/writing-custom-phpspec-matchers/
+     * @changelog https://johannespichler.com/writing-custom-phpspec-matchers/
      */
-    private function processMatchersKeys(MethodCall $methodCall): void
+    private function processMatchersKeys(\PhpParser\Node\Expr\MethodCall $methodCall) : void
     {
         foreach ($this->matchersKeys as $matcherKey) {
-            if (! $this->isName($methodCall->name, 'should' . ucfirst($matcherKey))) {
+            if (!$this->isName($methodCall->name, 'should' . \ucfirst($matcherKey))) {
                 continue;
             }
-
-            if (! $methodCall->var instanceof MethodCall) {
+            if (!$methodCall->var instanceof \PhpParser\Node\Expr\MethodCall) {
                 continue;
             }
-
             // 1. assign callable to variable
             $thisGetMatchers = $this->nodeFactory->createMethodCall(self::THIS, 'getMatchers');
-            $arrayDimFetch = new ArrayDimFetch($thisGetMatchers, new String_($matcherKey));
-            $matcherCallableVariable = new Variable('matcherCallable');
-            $assign = new Assign($matcherCallableVariable, $arrayDimFetch);
-
+            $arrayDimFetch = new \PhpParser\Node\Expr\ArrayDimFetch($thisGetMatchers, new \PhpParser\Node\Scalar\String_($matcherKey));
+            $matcherCallableVariable = new \PhpParser\Node\Expr\Variable('matcherCallable');
+            $assign = new \PhpParser\Node\Expr\Assign($matcherCallableVariable, $arrayDimFetch);
             // 2. call it on result
-            $funcCall = new FuncCall($matcherCallableVariable);
+            $funcCall = new \PhpParser\Node\Expr\FuncCall($matcherCallableVariable);
             $funcCall->args = $methodCall->args;
-
             $methodCall->name = $methodCall->var->name;
-            $methodCall->var = $this->testedObjectPropertyFetch;
+            $methodCall->var = $this->getTestedObjectPropertyFetch();
             $methodCall->args = [];
-            $funcCall->args[] = new Arg($methodCall);
-
-            $this->addNodesAfterNode([$assign, $funcCall], $methodCall);
-
+            $funcCall->args[] = new \PhpParser\Node\Arg($methodCall);
+            $this->nodesToAddCollector->addNodesAfterNode([$assign, $funcCall], $methodCall);
             $this->removeNode($methodCall);
-
             return;
         }
     }
-
-    private function shouldSkip(MethodCall $methodCall): bool
+    private function shouldSkip(\PhpParser\Node\Expr\MethodCall $methodCall) : bool
     {
-        if (! $this->nodeNameResolver->isVariableName($methodCall->var, self::THIS)) {
-            return true;
+        if (!$methodCall->var instanceof \PhpParser\Node\Expr\Variable) {
+            return \true;
         }
-
+        if (!$this->nodeNameResolver->isName($methodCall->var, self::THIS)) {
+            return \true;
+        }
         // skip "createMock" method
         return $this->isName($methodCall->name, 'createMock');
     }
-
-    private function createTestedObjectPropertyFetch(Class_ $class): PropertyFetch
+    private function createTestedObjectPropertyFetch(\PhpParser\Node\Stmt\Class_ $class) : \PhpParser\Node\Expr\PropertyFetch
     {
         $propertyName = $this->phpSpecRenaming->resolveObjectPropertyName($class);
-
-        return new PropertyFetch(new Variable(self::THIS), $propertyName);
+        return new \PhpParser\Node\Expr\PropertyFetch(new \PhpParser\Node\Expr\Variable(self::THIS), $propertyName);
     }
 }

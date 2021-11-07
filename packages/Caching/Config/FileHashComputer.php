@@ -1,75 +1,58 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Caching\Config;
 
 use Rector\Core\Exception\ShouldNotHappenException;
-use Symfony\Component\Config\FileLocator;
-use Symfony\Component\Config\Loader\LoaderInterface;
-use Symfony\Component\Config\Loader\LoaderResolver;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Loader\GlobFileLoader;
-use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
-use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
-use Symplify\SmartFileSystem\SmartFileInfo;
-
+use RectorPrefix20211107\Symfony\Component\Config\FileLocator;
+use RectorPrefix20211107\Symfony\Component\Config\Loader\LoaderInterface;
+use RectorPrefix20211107\Symfony\Component\Config\Loader\LoaderResolver;
+use RectorPrefix20211107\Symfony\Component\DependencyInjection\ContainerBuilder;
+use RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\GlobFileLoader;
+use RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
 /**
  * Inspired by https://github.com/symplify/easy-coding-standard/blob/e598ab54686e416788f28fcfe007fd08e0f371d9/packages/changed-files-detector/src/FileHashComputer.php
- * @see \Rector\Caching\Tests\Config\FileHashComputerTest
  */
 final class FileHashComputer
 {
-    public function compute(SmartFileInfo $fileInfo): string
+    public function compute(string $filePath) : string
     {
-        $this->ensureIsYamlOrPhp($fileInfo);
-
-        $containerBuilder = new ContainerBuilder();
-        $fileLoader = $this->createFileLoader($fileInfo, $containerBuilder);
-
-        $fileLoader->load($fileInfo->getRealPath());
-
+        $this->ensureIsPhp($filePath);
+        $containerBuilder = new \RectorPrefix20211107\Symfony\Component\DependencyInjection\ContainerBuilder();
+        $fileLoader = $this->createFileLoader($filePath, $containerBuilder);
+        $fileLoader->load($filePath);
         $parameterBag = $containerBuilder->getParameterBag();
         return $this->arrayToHash($containerBuilder->getDefinitions()) . $this->arrayToHash($parameterBag->all());
     }
-
-    private function ensureIsYamlOrPhp(SmartFileInfo $fileInfo): void
+    private function ensureIsPhp(string $filePath) : void
     {
-        if ($fileInfo->hasSuffixes(['yml', 'yaml', 'php'])) {
+        $fileExtension = \pathinfo($filePath, \PATHINFO_EXTENSION);
+        if ($fileExtension === 'php') {
             return;
         }
-
-        throw new ShouldNotHappenException(sprintf(
+        throw new \Rector\Core\Exception\ShouldNotHappenException(\sprintf(
             // getRealPath() cannot be used, as it breaks in phar
-            'Provide only YAML/PHP file, ready for Symfony Dependency Injection. "%s" given', $fileInfo->getRelativeFilePath()
+            'Provide only PHP file, ready for Symfony Dependency Injection. "%s" given',
+            $filePath
         ));
     }
-
-    private function createFileLoader(SmartFileInfo $fileInfo, ContainerBuilder $containerBuilder): LoaderInterface
+    private function createFileLoader(string $filePath, \RectorPrefix20211107\Symfony\Component\DependencyInjection\ContainerBuilder $containerBuilder) : \RectorPrefix20211107\Symfony\Component\Config\Loader\LoaderInterface
     {
-        $fileLocator = new FileLocator([$fileInfo->getPath()]);
-
-        $fileLoaders = [
-            new GlobFileLoader($containerBuilder, $fileLocator),
-            new PhpFileLoader($containerBuilder, $fileLocator),
-            new YamlFileLoader($containerBuilder, $fileLocator),
-        ];
-
-        $loaderResolver = new LoaderResolver($fileLoaders);
-        $loader = $loaderResolver->resolve($fileInfo->getRealPath());
-        if (! $loader) {
-            throw new ShouldNotHappenException();
+        $fileLocator = new \RectorPrefix20211107\Symfony\Component\Config\FileLocator([$filePath]);
+        $fileLoaders = [new \RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\GlobFileLoader($containerBuilder, $fileLocator), new \RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\PhpFileLoader($containerBuilder, $fileLocator)];
+        $loaderResolver = new \RectorPrefix20211107\Symfony\Component\Config\Loader\LoaderResolver($fileLoaders);
+        $loader = $loaderResolver->resolve($filePath);
+        if (!$loader) {
+            throw new \Rector\Core\Exception\ShouldNotHappenException();
         }
-
         return $loader;
     }
-
     /**
      * @param mixed[] $array
      */
-    private function arrayToHash(array $array): string
+    private function arrayToHash(array $array) : string
     {
-        $serializedArray = serialize($array);
-        return md5($serializedArray);
+        $serializedArray = \serialize($array);
+        return \md5($serializedArray);
     }
 }

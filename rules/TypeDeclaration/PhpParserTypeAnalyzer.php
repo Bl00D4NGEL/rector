@@ -1,98 +1,55 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\TypeDeclaration;
 
-use PhpParser\Node;
+use PhpParser\Node\ComplexType;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\UnionType;
-use Rector\NodeNameResolver\NodeNameResolver;
-
+use Rector\StaticTypeMapper\StaticTypeMapper;
 final class PhpParserTypeAnalyzer
 {
     /**
-     * @var NodeNameResolver
+     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $nodeNameResolver;
-
-    public function __construct(NodeNameResolver $nodeNameResolver)
+    private $staticTypeMapper;
+    public function __construct(\Rector\StaticTypeMapper\StaticTypeMapper $staticTypeMapper)
     {
-        $this->nodeNameResolver = $nodeNameResolver;
+        $this->staticTypeMapper = $staticTypeMapper;
     }
-
     /**
-     * @param Name|NullableType|UnionType|Identifier $possibleSubtype
-     * @param Name|NullableType|UnionType|Identifier $possibleParentType
+     * @param \PhpParser\Node\Identifier|\PhpParser\Node\Name|\PhpParser\Node\NullableType|\PhpParser\Node\UnionType $possibleSubtype
+     * @param \PhpParser\Node\ComplexType|\PhpParser\Node\Identifier|\PhpParser\Node\Name|\PhpParser\Node\NullableType|\PhpParser\Node\UnionType $possibleParentType
      */
-    public function isSubtypeOf(Node $possibleSubtype, Node $possibleParentType): bool
+    public function isCovariantSubtypeOf($possibleSubtype, $possibleParentType) : bool
     {
         // skip until PHP 8 is out
         if ($this->isUnionType($possibleSubtype, $possibleParentType)) {
-            return false;
+            return \false;
         }
-
         // possible - https://3v4l.org/ZuJCh
-        if ($possibleSubtype instanceof NullableType && ! $possibleParentType instanceof NullableType) {
-            return $this->isSubtypeOf($possibleSubtype->type, $possibleParentType);
+        if ($possibleSubtype instanceof \PhpParser\Node\NullableType && !$possibleParentType instanceof \PhpParser\Node\NullableType) {
+            return $this->isCovariantSubtypeOf($possibleSubtype->type, $possibleParentType);
         }
-
         // not possible - https://3v4l.org/iNDTc
-        if (! $possibleSubtype instanceof NullableType && $possibleParentType instanceof NullableType) {
-            return false;
+        if (!$possibleSubtype instanceof \PhpParser\Node\NullableType && $possibleParentType instanceof \PhpParser\Node\NullableType) {
+            return \false;
         }
-
-        // unwrap nullable types
-        $possibleParentType = $this->unwrapNullableAndToString($possibleParentType);
-        $possibleSubtype = $this->unwrapNullableAndToString($possibleSubtype);
-
-        if (is_a($possibleSubtype, $possibleParentType, true)) {
-            return true;
-        }
-
-        if ($this->isTraversableOrIterableSubtype($possibleSubtype, $possibleParentType)) {
-            return true;
-        }
-
-        if ($possibleParentType === $possibleSubtype) {
-            return true;
-        }
-        if (! ctype_upper($possibleSubtype[0])) {
-            return false;
-        }
-        return $possibleParentType === 'object';
+        $subtypeType = $this->staticTypeMapper->mapPhpParserNodePHPStanType($possibleParentType);
+        $parentType = $this->staticTypeMapper->mapPhpParserNodePHPStanType($possibleSubtype);
+        return $parentType->isSuperTypeOf($subtypeType)->yes();
     }
-
-    private function isUnionType(Node $possibleSubtype, Node $possibleParentType): bool
+    /**
+     * @param \PhpParser\Node\Identifier|\PhpParser\Node\Name|\PhpParser\Node\NullableType|\PhpParser\Node\UnionType $possibleSubtype
+     * @param \PhpParser\Node\ComplexType|\PhpParser\Node\Identifier|\PhpParser\Node\Name $possibleParentType
+     */
+    private function isUnionType($possibleSubtype, $possibleParentType) : bool
     {
-        if ($possibleSubtype instanceof UnionType) {
-            return true;
+        if ($possibleSubtype instanceof \PhpParser\Node\UnionType) {
+            return \true;
         }
-
-        return $possibleParentType instanceof UnionType;
-    }
-
-    private function unwrapNullableAndToString(Node $node): string
-    {
-        if (! $node instanceof NullableType) {
-            return $this->nodeNameResolver->getName($node);
-        }
-
-        return $this->nodeNameResolver->getName($node->type);
-    }
-
-    private function isTraversableOrIterableSubtype(string $possibleSubtype, string $possibleParentType): bool
-    {
-        if (in_array($possibleSubtype, ['array', 'Traversable'], true) && $possibleParentType === 'iterable') {
-            return true;
-        }
-
-        if (! in_array($possibleSubtype, ['array', 'ArrayIterator'], true)) {
-            return false;
-        }
-
-        return $possibleParentType === 'countable';
+        return $possibleParentType instanceof \PhpParser\Node\UnionType;
     }
 }

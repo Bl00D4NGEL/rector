@@ -1,72 +1,58 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\PSR4\Composer;
 
-use Nette\Utils\Strings;
+use RectorPrefix20211107\Nette\Utils\Strings;
 use PhpParser\Node;
-use Rector\Core\Exception\ShouldNotHappenException;
-use Rector\NodeTypeResolver\FileSystem\CurrentFileInfoProvider;
+use Rector\Core\ValueObject\Application\File;
 use Rector\PSR4\Contract\PSR4AutoloadNamespaceMatcherInterface;
 use Symplify\SmartFileSystem\SmartFileInfo;
-
-final class PSR4NamespaceMatcher implements PSR4AutoloadNamespaceMatcherInterface
+/**
+ * @see \Rector\Tests\PSR4\Composer\PSR4NamespaceMatcherTest
+ */
+final class PSR4NamespaceMatcher implements \Rector\PSR4\Contract\PSR4AutoloadNamespaceMatcherInterface
 {
     /**
-     * @var PSR4AutoloadPathsProvider
+     * @var \Rector\PSR4\Composer\PSR4AutoloadPathsProvider
      */
     private $psr4AutoloadPathsProvider;
-
-    /**
-     * @var CurrentFileInfoProvider
-     */
-    private $currentFileInfoProvider;
-
-    public function __construct(
-        PSR4AutoloadPathsProvider $psr4AutoloadPathsProvider,
-        CurrentFileInfoProvider $currentFileInfoProvider
-    ) {
-        $this->psr4AutoloadPathsProvider = $psr4AutoloadPathsProvider;
-        $this->currentFileInfoProvider = $currentFileInfoProvider;
-    }
-
-    public function getExpectedNamespace(Node $node): ?string
+    public function __construct(\Rector\PSR4\Composer\PSR4AutoloadPathsProvider $psr4AutoloadPathsProvider)
     {
-        $smartFileInfo = $this->currentFileInfoProvider->getSmartFileInfo();
-        if (! $smartFileInfo instanceof SmartFileInfo) {
-            throw new ShouldNotHappenException();
-        }
-
+        $this->psr4AutoloadPathsProvider = $psr4AutoloadPathsProvider;
+    }
+    /**
+     * @param \Rector\Core\ValueObject\Application\File $file
+     * @param \PhpParser\Node $node
+     */
+    public function getExpectedNamespace($file, $node) : ?string
+    {
+        $smartFileInfo = $file->getSmartFileInfo();
         $psr4Autoloads = $this->psr4AutoloadPathsProvider->provide();
-
         foreach ($psr4Autoloads as $namespace => $path) {
             // remove extra slash
-            $paths = is_array($path) ? $path : [$path];
-
-            foreach ($paths as $singlePath) {
-                $singlePath = rtrim($singlePath, '/');
-                if (! Strings::startsWith($smartFileInfo->getRelativeDirectoryPath(), $singlePath)) {
+            $paths = \is_array($path) ? $path : [$path];
+            foreach ($paths as $path) {
+                $path = \rtrim($path, '/');
+                if (\strncmp($smartFileInfo->getRelativeDirectoryPath(), $path, \strlen($path)) !== 0) {
                     continue;
                 }
-
-                $expectedNamespace = $namespace . $this->resolveExtraNamespace($smartFileInfo, $singlePath);
-
-                return rtrim($expectedNamespace, '\\');
+                $expectedNamespace = $namespace . $this->resolveExtraNamespace($smartFileInfo, $path);
+                if (\strpos($expectedNamespace, '-') !== \false) {
+                    return null;
+                }
+                return \rtrim($expectedNamespace, '\\');
             }
         }
-
         return null;
     }
-
     /**
      * Get the extra path that is not included in root PSR-4 namespace
      */
-    private function resolveExtraNamespace(SmartFileInfo $smartFileInfo, string $path): string
+    private function resolveExtraNamespace(\Symplify\SmartFileSystem\SmartFileInfo $smartFileInfo, string $path) : string
     {
-        $extraNamespace = Strings::substring($smartFileInfo->getRelativeDirectoryPath(), Strings::length($path) + 1);
-        $extraNamespace = Strings::replace($extraNamespace, '#/#', '\\');
-
-        return trim($extraNamespace);
+        $extraNamespace = \RectorPrefix20211107\Nette\Utils\Strings::substring($smartFileInfo->getRelativeDirectoryPath(), \RectorPrefix20211107\Nette\Utils\Strings::length($path) + 1);
+        $extraNamespace = \RectorPrefix20211107\Nette\Utils\Strings::replace($extraNamespace, '#/#', '\\');
+        return \trim($extraNamespace);
     }
 }

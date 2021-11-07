@@ -1,84 +1,62 @@
-# 656 Rules Overview
+# 476 Rules Overview
 
 <br>
 
 ## Categories
 
-- [Arguments](#arguments) (3)
+- [Arguments](#arguments) (4)
 
 - [Autodiscovery](#autodiscovery) (4)
 
-- [CakePHP](#cakephp) (6)
-
 - [Carbon](#carbon) (2)
 
-- [CodeQuality](#codequality) (65)
+- [CodeQuality](#codequality) (68)
 
-- [CodeQualityStrict](#codequalitystrict) (4)
+- [CodingStyle](#codingstyle) (38)
 
-- [CodingStyle](#codingstyle) (37)
+- [Composer](#composer) (6)
 
-- [Composer](#composer) (5)
+- [DeadCode](#deadcode) (49)
 
-- [DeadCode](#deadcode) (48)
+- [DependencyInjection](#dependencyinjection) (3)
 
-- [DeadDocBlock](#deaddocblock) (5)
+- [DowngradePhp53](#downgradephp53) (1)
 
-- [Defluent](#defluent) (9)
+- [DowngradePhp54](#downgradephp54) (1)
 
-- [DependencyInjection](#dependencyinjection) (5)
+- [DowngradePhp70](#downgradephp70) (11)
 
-- [Doctrine](#doctrine) (6)
+- [DowngradePhp71](#downgradephp71) (10)
 
-- [DoctrineCodeQuality](#doctrinecodequality) (11)
+- [DowngradePhp72](#downgradephp72) (4)
 
-- [DoctrineGedmoToKnplabs](#doctrinegedmotoknplabs) (7)
-
-- [DowngradePhp70](#downgradephp70) (1)
-
-- [DowngradePhp71](#downgradephp71) (7)
-
-- [DowngradePhp72](#downgradephp72) (2)
-
-- [DowngradePhp73](#downgradephp73) (4)
+- [DowngradePhp73](#downgradephp73) (6)
 
 - [DowngradePhp74](#downgradephp74) (11)
 
-- [DowngradePhp80](#downgradephp80) (10)
+- [DowngradePhp80](#downgradephp80) (18)
+
+- [DowngradePhp81](#downgradephp81) (1)
 
 - [EarlyReturn](#earlyreturn) (11)
 
 - [Generics](#generics) (1)
 
-- [Laravel](#laravel) (11)
+- [LeagueEvent](#leagueevent) (1)
 
 - [MockeryToProphecy](#mockerytoprophecy) (2)
 
 - [MysqlToMysqli](#mysqltomysqli) (4)
 
-- [Naming](#naming) (9)
+- [Naming](#naming) (6)
 
-- [Nette](#nette) (21)
-
-- [NetteCodeQuality](#nettecodequality) (8)
-
-- [NetteKdyby](#nettekdyby) (4)
-
-- [NetteTesterToPHPUnit](#nettetestertophpunit) (3)
-
-- [NetteToSymfony](#nettetosymfony) (9)
-
-- [Order](#order) (6)
-
-- [PHPOffice](#phpoffice) (14)
-
-- [PHPUnit](#phpunit) (38)
+- [Order](#order) (1)
 
 - [PSR4](#psr4) (2)
 
 - [Php52](#php52) (2)
 
-- [Php53](#php53) (4)
+- [Php53](#php53) (3)
 
 - [Php54](#php54) (2)
 
@@ -94,39 +72,33 @@
 
 - [Php73](#php73) (9)
 
-- [Php74](#php74) (14)
+- [Php74](#php74) (15)
 
-- [Php80](#php80) (16)
+- [Php80](#php80) (17)
+
+- [Php81](#php81) (6)
 
 - [PhpSpecToPHPUnit](#phpspectophpunit) (7)
 
 - [PostRector](#postrector) (7)
 
-- [Privatization](#privatization) (15)
+- [Privatization](#privatization) (10)
 
 - [Removing](#removing) (6)
 
-- [RemovingStatic](#removingstatic) (9)
+- [RemovingStatic](#removingstatic) (5)
 
 - [Renaming](#renaming) (11)
 
-- [Restoration](#restoration) (8)
+- [Restoration](#restoration) (5)
 
-- [Symfony](#symfony) (13)
+- [Strict](#strict) (5)
 
-- [Symfony2](#symfony2) (3)
+- [Transform](#transform) (35)
 
-- [Symfony3](#symfony3) (12)
+- [TypeDeclaration](#typedeclaration) (21)
 
-- [Symfony4](#symfony4) (12)
-
-- [Symfony5](#symfony5) (10)
-
-- [Transform](#transform) (37)
-
-- [TypeDeclaration](#typedeclaration) (18)
-
-- [Visibility](#visibility) (3)
+- [Visibility](#visibility) (2)
 
 <br>
 
@@ -141,6 +113,7 @@ This Rector adds new default arguments in calls of defined methods and class typ
 - class: [`Rector\Arguments\Rector\ClassMethod\ArgumentAdderRector`](../rules/Arguments/Rector/ClassMethod/ArgumentAdderRector.php)
 
 ```php
+use PHPStan\Type\ObjectType;
 use Rector\Arguments\Rector\ClassMethod\ArgumentAdderRector;
 use Rector\Arguments\ValueObject\ArgumentAdder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -152,7 +125,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(ArgumentAdderRector::class)
         ->call('configure', [[
             ArgumentAdderRector::ADDED_ARGUMENTS => ValueObjectInliner::inline([
-                new ArgumentAdder('SomeExampleClass', 'someMethod', 0, 'someArgument', 'true', 'SomeType', null),
+                new ArgumentAdder('SomeExampleClass', 'someMethod', 0, 'someArgument', true, new ObjectType('SomeType')),
             ]),
         ]]);
 };
@@ -164,31 +137,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
  $someObject = new SomeExampleClass;
 -$someObject->someMethod();
 +$someObject->someMethod(true);
-```
 
-<br>
-
-```php
-use Rector\Arguments\Rector\ClassMethod\ArgumentAdderRector;
-use Rector\Arguments\ValueObject\ArgumentAdder;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use Symplify\SymfonyPhpConfig\ValueObjectInliner;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(ArgumentAdderRector::class)
-        ->call('configure', [[
-            ArgumentAdderRector::ADDED_ARGUMENTS => ValueObjectInliner::inline([
-                new ArgumentAdder('SomeExampleClass', 'someMethod', 0, 'someArgument', 'true', 'SomeType', null),
-            ]),
-        ]]);
-};
-```
-
-↓
-
-```diff
  class MyCustomClass extends SomeExampleClass
  {
 -    public function someMethod()
@@ -200,27 +149,62 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
 <br>
 
-### ArgumentDefaultValueReplacerRector
+### FunctionArgumentDefaultValueReplacerRector
 
-Replaces defined map of arguments in defined methods and their calls.
+Streamline the operator arguments of version_compare function
 
 :wrench: **configure it!**
 
-- class: [`Rector\Arguments\Rector\ClassMethod\ArgumentDefaultValueReplacerRector`](../rules/Arguments/Rector/ClassMethod/ArgumentDefaultValueReplacerRector.php)
+- class: [`Rector\Arguments\Rector\FuncCall\FunctionArgumentDefaultValueReplacerRector`](../rules/Arguments/Rector/FuncCall/FunctionArgumentDefaultValueReplacerRector.php)
 
 ```php
-use Rector\Arguments\Rector\ClassMethod\ArgumentDefaultValueReplacerRector;
-use Rector\Arguments\ValueObject\ArgumentDefaultValueReplacer;
+use Rector\Arguments\Rector\FuncCall\FunctionArgumentDefaultValueReplacerRector;
+use Rector\Arguments\ValueObject\ReplaceFuncCallArgumentDefaultValue;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symplify\SymfonyPhpConfig\ValueObjectInliner;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
 
-    $services->set(ArgumentDefaultValueReplacerRector::class)
+    $services->set(FunctionArgumentDefaultValueReplacerRector::class)
         ->call('configure', [[
-            ArgumentDefaultValueReplacerRector::REPLACED_ARGUMENTS => ValueObjectInliner::inline([
-                new ArgumentDefaultValueReplacer('SomeExampleClass', 'someMethod', 0, 'SomeClass::OLD_CONSTANT', 'false'),
+            FunctionArgumentDefaultValueReplacerRector::REPLACED_ARGUMENTS => ValueObjectInliner::inline([
+                new ReplaceFuncCallArgumentDefaultValue('version_compare', 2, 'gte', 'ge'),
+            ]),
+        ]]);
+};
+```
+
+↓
+
+```diff
+-version_compare(PHP_VERSION, '5.6', 'gte');
++version_compare(PHP_VERSION, '5.6', 'ge');
+```
+
+<br>
+
+### ReplaceArgumentDefaultValueRector
+
+Replaces defined map of arguments in defined methods and their calls.
+
+:wrench: **configure it!**
+
+- class: [`Rector\Arguments\Rector\ClassMethod\ReplaceArgumentDefaultValueRector`](../rules/Arguments/Rector/ClassMethod/ReplaceArgumentDefaultValueRector.php)
+
+```php
+use Rector\Arguments\Rector\ClassMethod\ReplaceArgumentDefaultValueRector;
+use Rector\Arguments\ValueObject\ReplaceArgumentDefaultValue;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symplify\SymfonyPhpConfig\ValueObjectInliner;
+
+return static function (ContainerConfigurator $containerConfigurator): void {
+    $services = $containerConfigurator->services();
+
+    $services->set(ReplaceArgumentDefaultValueRector::class)
+        ->call('configure', [[
+            ReplaceArgumentDefaultValueRector::REPLACED_ARGUMENTS => ValueObjectInliner::inline([
+                new ReplaceArgumentDefaultValue('SomeClass', 'someMethod', 0, 'SomeClass::OLD_CONSTANT', false),
             ]),
         ]]);
 };
@@ -231,7 +215,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 ```diff
  $someObject = new SomeClass;
 -$someObject->someMethod(SomeClass::OLD_CONSTANT);
-+$someObject->someMethod(false);'
++$someObject->someMethod(false);
 ```
 
 <br>
@@ -283,7 +267,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
 Move entities to Entity namespace
 
-- class: [`Rector\Autodiscovery\Rector\FileNode\MoveEntitiesToEntityDirectoryRector`](../rules/Autodiscovery/Rector/FileNode/MoveEntitiesToEntityDirectoryRector.php)
+- class: [`Rector\Autodiscovery\Rector\Class_\MoveEntitiesToEntityDirectoryRector`](../rules/Autodiscovery/Rector/Class_/MoveEntitiesToEntityDirectoryRector.php)
 
 ```diff
 -// file: app/Controller/Product.php
@@ -308,7 +292,7 @@ Move entities to Entity namespace
 
 Move interface to "Contract" namespace
 
-- class: [`Rector\Autodiscovery\Rector\FileNode\MoveInterfacesToContractNamespaceDirectoryRector`](../rules/Autodiscovery/Rector/FileNode/MoveInterfacesToContractNamespaceDirectoryRector.php)
+- class: [`Rector\Autodiscovery\Rector\Interface_\MoveInterfacesToContractNamespaceDirectoryRector`](../rules/Autodiscovery/Rector/Interface_/MoveInterfacesToContractNamespaceDirectoryRector.php)
 
 ```diff
 -// file: app/Exception/Rule.php
@@ -330,10 +314,10 @@ Move classes by their suffix to their own group/directory
 
 :wrench: **configure it!**
 
-- class: [`Rector\Autodiscovery\Rector\FileNode\MoveServicesBySuffixToDirectoryRector`](../rules/Autodiscovery/Rector/FileNode/MoveServicesBySuffixToDirectoryRector.php)
+- class: [`Rector\Autodiscovery\Rector\Class_\MoveServicesBySuffixToDirectoryRector`](../rules/Autodiscovery/Rector/Class_/MoveServicesBySuffixToDirectoryRector.php)
 
 ```php
-use Rector\Autodiscovery\Rector\FileNode\MoveServicesBySuffixToDirectoryRector;
+use Rector\Autodiscovery\Rector\Class_\MoveServicesBySuffixToDirectoryRector;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
@@ -352,8 +336,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 -// file: app/Entity/ProductRepository.php
 +// file: app/Repository/ProductRepository.php
 
--namespace App/Entity;
-+namespace App/Repository;
+-namespace App\Entity;
++namespace App\Repository;
 
  class ProductRepository
  {
@@ -368,10 +352,10 @@ Move value object to ValueObject namespace/directory
 
 :wrench: **configure it!**
 
-- class: [`Rector\Autodiscovery\Rector\FileNode\MoveValueObjectsToValueObjectDirectoryRector`](../rules/Autodiscovery/Rector/FileNode/MoveValueObjectsToValueObjectDirectoryRector.php)
+- class: [`Rector\Autodiscovery\Rector\Class_\MoveValueObjectsToValueObjectDirectoryRector`](../rules/Autodiscovery/Rector/Class_/MoveValueObjectsToValueObjectDirectoryRector.php)
 
 ```php
-use Rector\Autodiscovery\Rector\FileNode\MoveValueObjectsToValueObjectDirectoryRector;
+use Rector\Autodiscovery\Rector\Class_\MoveValueObjectsToValueObjectDirectoryRector;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
@@ -379,11 +363,9 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(MoveValueObjectsToValueObjectDirectoryRector::class)
         ->call('configure', [[
-            MoveValueObjectsToValueObjectDirectoryRector::TYPES => [
-                'ValueObjectInterfaceClassName',
-            ], MoveValueObjectsToValueObjectDirectoryRector::SUFFIXES => [
-                'Search',
-            ], MoveValueObjectsToValueObjectDirectoryRector::ENABLE_VALUE_OBJECT_GUESSING => true,
+            MoveValueObjectsToValueObjectDirectoryRector::TYPES => ['ValueObjectInterfaceClassName'],
+            MoveValueObjectsToValueObjectDirectoryRector::SUFFIXES => ['Search'],
+            MoveValueObjectsToValueObjectDirectoryRector::ENABLE_VALUE_OBJECT_GUESSING => true,
         ]]);
 };
 ```
@@ -411,198 +393,11 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
 <br>
 
-## CakePHP
-
-### AppUsesStaticCallToUseStatementRector
-
-Change `App::uses()` to use imports
-
-- class: [`Rector\CakePHP\Rector\Namespace_\AppUsesStaticCallToUseStatementRector`](../rules/CakePHP/Rector/Namespace_/AppUsesStaticCallToUseStatementRector.php)
-
-```diff
--App::uses('NotificationListener', 'Event');
-+use Event\NotificationListener;
-
- CakeEventManager::instance()->attach(new NotificationListener());
-```
-
-<br>
-
-### ArrayToFluentCallRector
-
-Moves array options to fluent setter method calls.
-
-:wrench: **configure it!**
-
-- class: [`Rector\CakePHP\Rector\MethodCall\ArrayToFluentCallRector`](../rules/CakePHP/Rector/MethodCall/ArrayToFluentCallRector.php)
-
-```php
-use Rector\CakePHP\Rector\MethodCall\ArrayToFluentCallRector;
-use Rector\CakePHP\ValueObject\ArrayToFluentCall;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use Symplify\SymfonyPhpConfig\ValueObjectInliner;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(ArrayToFluentCallRector::class)
-        ->call('configure', [[
-            ArrayToFluentCallRector::ARRAYS_TO_FLUENT_CALLS => ValueObjectInliner::inline([
-                new ArrayToFluentCall('ArticlesTable', ['setForeignKey', 'setProperty']), ]
-            ),
-        ]]);
-};
-```
-
-↓
-
-```diff
- use Cake\ORM\Table;
-
- final class ArticlesTable extends Table
- {
-     public function initialize(array $config)
-     {
--        $this->belongsTo('Authors', [
--            'foreignKey' => 'author_id',
--            'propertyName' => 'person'
--        ]);
-+        $this->belongsTo('Authors')
-+            ->setForeignKey('author_id')
-+            ->setProperty('person');
-     }
- }
-```
-
-<br>
-
-### ChangeSnakedFixtureNameToPascalRector
-
-Changes `$fixtues` style from snake_case to PascalCase.
-
-- class: [`Rector\CakePHP\Rector\Property\ChangeSnakedFixtureNameToPascalRector`](../rules/CakePHP/Rector/Property/ChangeSnakedFixtureNameToPascalRector.php)
-
-```diff
- class SomeTest
- {
-     protected $fixtures = [
--        'app.posts',
--        'app.users',
--        'some_plugin.posts/special_posts',
-+        'app.Posts',
-+        'app.Users',
-+        'some_plugin.Posts/SpecialPosts',
-     ];
-```
-
-<br>
-
-### ImplicitShortClassNameUseStatementRector
-
-Collect implicit class names and add imports
-
-- class: [`Rector\CakePHP\Rector\FileWithoutNamespace\ImplicitShortClassNameUseStatementRector`](../rules/CakePHP/Rector/FileWithoutNamespace/ImplicitShortClassNameUseStatementRector.php)
-
-```diff
- use App\Foo\Plugin;
-+use Cake\TestSuite\Fixture\TestFixture;
-
- class LocationsFixture extends TestFixture implements Plugin
- {
- }
-```
-
-<br>
-
-### ModalToGetSetRector
-
-Changes combined set/get `value()` to specific `getValue()` or `setValue(x)`.
-
-:wrench: **configure it!**
-
-- class: [`Rector\CakePHP\Rector\MethodCall\ModalToGetSetRector`](../rules/CakePHP/Rector/MethodCall/ModalToGetSetRector.php)
-
-```php
-use Rector\CakePHP\Rector\MethodCall\ModalToGetSetRector;
-use Rector\CakePHP\ValueObject\ModalToGetSet;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use Symplify\SymfonyPhpConfig\ValueObjectInliner;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(ModalToGetSetRector::class)
-        ->call('configure', [[
-            ModalToGetSetRector::UNPREFIXED_METHODS_TO_GET_SET => ValueObjectInliner::inline([
-                new ModalToGetSet('InstanceConfigTrait', 'config', 'getConfig', 'setConfig', 1, null),
-            ]),
-        ]]);
-};
-```
-
-↓
-
-```diff
- $object = new InstanceConfigTrait;
-
--$config = $object->config();
--$config = $object->config('key');
-+$config = $object->getConfig();
-+$config = $object->getConfig('key');
-
--$object->config('key', 'value');
--$object->config(['key' => 'value']);
-+$object->setConfig('key', 'value');
-+$object->setConfig(['key' => 'value']);
-```
-
-<br>
-
-### RenameMethodCallBasedOnParameterRector
-
-Changes method calls based on matching the first parameter value.
-
-:wrench: **configure it!**
-
-- class: [`Rector\CakePHP\Rector\MethodCall\RenameMethodCallBasedOnParameterRector`](../rules/CakePHP/Rector/MethodCall/RenameMethodCallBasedOnParameterRector.php)
-
-```php
-use Rector\CakePHP\Rector\MethodCall\RenameMethodCallBasedOnParameterRector;
-use Rector\CakePHP\ValueObject\RenameMethodCallBasedOnParameter;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use Symplify\SymfonyPhpConfig\ValueObjectInliner;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(RenameMethodCallBasedOnParameterRector::class)
-        ->call('configure', [[
-            RenameMethodCallBasedOnParameterRector::CALLS_WITH_PARAM_RENAMES => ValueObjectInliner::inline([
-                new RenameMethodCallBasedOnParameter('getParam', 'paging', 'getAttribute', 'ServerRequest'),
-                new RenameMethodCallBasedOnParameter('withParam', 'paging', 'withAttribute', 'ServerRequest'),
-            ]),
-        ]]);
-};
-```
-
-↓
-
-```diff
- $object = new ServerRequest();
-
--$config = $object->getParam('paging');
--$object = $object->withParam('paging', ['a value']);
-+$config = $object->getAttribute('paging');
-+$object = $object->withAttribute('paging', ['a value']);
-```
-
-<br>
-
 ## Carbon
 
 ### ChangeCarbonSingularMethodCallToPluralRector
 
-Change setter methods with args to their plural names on Carbon\Carbon
+Change setter methods with args to their plural names on `Carbon\Carbon`
 
 - class: [`Rector\Carbon\Rector\MethodCall\ChangeCarbonSingularMethodCallToPluralRector`](../rules/Carbon/Rector/MethodCall/ChangeCarbonSingularMethodCallToPluralRector.php)
 
@@ -623,7 +418,7 @@ Change setter methods with args to their plural names on Carbon\Carbon
 
 ### ChangeDiffForHumansArgsRector
 
-Change methods arguments of `diffForHumans()` on Carbon\Carbon
+Change methods arguments of `diffForHumans()` on `Carbon\Carbon`
 
 - class: [`Rector\Carbon\Rector\MethodCall\ChangeDiffForHumansArgsRector`](../rules/Carbon/Rector/MethodCall/ChangeDiffForHumansArgsRector.php)
 
@@ -670,7 +465,7 @@ include/require to absolute path. This Rector might introduce backwards incompat
 
 ### AddPregQuoteDelimiterRector
 
-Add `preg_quote` delimiter when missing
+Add preg_quote delimiter when missing
 
 - class: [`Rector\CodeQuality\Rector\FuncCall\AddPregQuoteDelimiterRector`](../rules/CodeQuality/Rector/FuncCall/AddPregQuoteDelimiterRector.php)
 
@@ -743,7 +538,7 @@ Replace `array_keys()` and `in_array()` to `array_key_exists()`
 
 ### ArrayMergeOfNonArraysToSimpleArrayRector
 
-Change `array_merge` of non arrays to array directly
+Change array_merge of non arrays to array directly
 
 - class: [`Rector\CodeQuality\Rector\FuncCall\ArrayMergeOfNonArraysToSimpleArrayRector`](../rules/CodeQuality/Rector/FuncCall/ArrayMergeOfNonArraysToSimpleArrayRector.php)
 
@@ -806,6 +601,25 @@ Negated identical boolean compare to not identical compare (does not apply to no
 +        var_dump($a !== $b); // true
 +        var_dump($a !== $b); // true
          var_dump($a !== $b); // true
+     }
+ }
+```
+
+<br>
+
+### CallUserFuncWithArrowFunctionToInlineRector
+
+Refactor `call_user_func()` with arrow function to direct call
+
+- class: [`Rector\CodeQuality\Rector\FuncCall\CallUserFuncWithArrowFunctionToInlineRector`](../rules/CodeQuality/Rector/FuncCall/CallUserFuncWithArrowFunctionToInlineRector.php)
+
+```diff
+ final class SomeClass
+ {
+     public function run()
+     {
+-        $result = \call_user_func(fn () => 100);
++        $result = 100;
      }
  }
 ```
@@ -952,6 +766,7 @@ Add missing dynamic properties
 +     * @var int
 +     */
 +    public $value;
++
      public function set()
      {
          $this->value = 5;
@@ -1030,24 +845,33 @@ Make if conditions more explicit
 
 <br>
 
-### FixClassCaseSensitivityNameRector
+### ExplicitMethodCallOverMagicGetSetRector
 
-Change miss-typed case sensitivity name to correct one
+Replace magic property fetch using `__get()` and `__set()` with existing method get*()/set*() calls
 
-- class: [`Rector\CodeQuality\Rector\Name\FixClassCaseSensitivityNameRector`](../rules/CodeQuality/Rector/Name/FixClassCaseSensitivityNameRector.php)
+- class: [`Rector\CodeQuality\Rector\PropertyFetch\ExplicitMethodCallOverMagicGetSetRector`](../rules/CodeQuality/Rector/PropertyFetch/ExplicitMethodCallOverMagicGetSetRector.php)
 
 ```diff
- final class SomeClass
+ class MagicCallsObject
  {
-     public function run()
+     // adds magic __get() and __set() methods
+     use \Nette\SmartObject;
+
+     private $name;
+
+     public function getName()
      {
--        $anotherClass = new anotherclass;
-+        $anotherClass = new AnotherClass;
+         return $this->name;
      }
  }
 
- final class AnotherClass
+ class SomeClass
  {
+     public function run(MagicObject $magicObject)
+     {
+-        return $magicObject->name;
++        return $magicObject->getName();
+     }
  }
 ```
 
@@ -1166,7 +990,7 @@ Simplify `foreach` loops into `in_array` when possible
 
 ### GetClassToInstanceOfRector
 
-Changes comparison with `get_class` to instanceof
+Changes comparison with get_class to instanceof
 
 - class: [`Rector\CodeQuality\Rector\Identical\GetClassToInstanceOfRector`](../rules/CodeQuality/Rector/Identical/GetClassToInstanceOfRector.php)
 
@@ -1306,6 +1130,26 @@ Change OR, AND to ||, && with more common understanding
 
 <br>
 
+### NarrowUnionTypeDocRector
+
+Changes docblock by narrowing type
+
+- class: [`Rector\CodeQuality\Rector\ClassMethod\NarrowUnionTypeDocRector`](../rules/CodeQuality/Rector/ClassMethod/NarrowUnionTypeDocRector.php)
+
+```diff
+ class SomeClass {
+     /**
+-     * @param object|DateTime $message
++     * @param DateTime $message
+      */
+     public function getMessage(object $message)
+     {
+     }
+ }
+```
+
+<br>
+
 ### NewStaticToNewSelfRector
 
 Change unsafe new `static()` to new `self()`
@@ -1385,8 +1229,7 @@ Changes `settype()` to (type) where possible
 ```diff
  class SomeClass
  {
--    public function run($foo)
-+    public function run(array $items)
+     public function run($foo)
      {
 -        settype($foo, 'string');
 +        $foo = (string) $foo;
@@ -1427,7 +1270,7 @@ Shortens else/if to elseif
 
 ### SimplifyArraySearchRector
 
-Simplify `array_search` to `in_array`
+Simplify array_search to in_array
 
 - class: [`Rector\CodeQuality\Rector\Identical\SimplifyArraySearchRector`](../rules/CodeQuality/Rector/Identical/SimplifyArraySearchRector.php)
 
@@ -1567,7 +1410,7 @@ Changes foreach that returns set value to ??
 
 ### SimplifyFuncGetArgsCountRector
 
-Simplify `count` of `func_get_args()` to `func_num_args()`
+Simplify count of `func_get_args()` to `func_num_args()`
 
 - class: [`Rector\CodeQuality\Rector\FuncCall\SimplifyFuncGetArgsCountRector`](../rules/CodeQuality/Rector/FuncCall/SimplifyFuncGetArgsCountRector.php)
 
@@ -1631,13 +1474,38 @@ Changes redundant null check to instant return
 - class: [`Rector\CodeQuality\Rector\If_\SimplifyIfNotNullReturnRector`](../rules/CodeQuality/Rector/If_/SimplifyIfNotNullReturnRector.php)
 
 ```diff
- $newNode = 'something ;
+ $newNode = 'something';
 -if ($newNode !== null) {
 -    return $newNode;
 -}
 -
 -return null;
 +return $newNode;
+```
+
+<br>
+
+### SimplifyIfNullableReturnRector
+
+Direct return on if nullable check before return
+
+- class: [`Rector\CodeQuality\Rector\If_\SimplifyIfNullableReturnRector`](../rules/CodeQuality/Rector/If_/SimplifyIfNullableReturnRector.php)
+
+```diff
+ class SomeClass
+ {
+     public function run()
+     {
+-        /** @var \stdClass|null $value */
+-        $value = $this->foo->bar();
+-        if (! $value instanceof \stdClass) {
+-            return null;
+-        }
+-
+-        return $value;
++        return $this->foo->bar();
+     }
+ }
 ```
 
 <br>
@@ -1698,8 +1566,8 @@ Simplify `strpos(strtolower()`, "...") calls
 - class: [`Rector\CodeQuality\Rector\FuncCall\SimplifyStrposLowerRector`](../rules/CodeQuality/Rector/FuncCall/SimplifyStrposLowerRector.php)
 
 ```diff
--strpos(strtolower($var), "...")"
-+stripos($var, "...")"
+-strpos(strtolower($var), "...")
++stripos($var, "...")
 ```
 
 <br>
@@ -1801,14 +1669,14 @@ Splits `[$a, $b] = [5, 10]` scalar assign to standalone lines
 
 ### StrlenZeroToIdenticalEmptyStringRector
 
-Changes `strlen` comparison to 0 to direct empty string compare
+Changes strlen comparison to 0 to direct empty string compare
 
 - class: [`Rector\CodeQuality\Rector\Identical\StrlenZeroToIdenticalEmptyStringRector`](../rules/CodeQuality/Rector/Identical/StrlenZeroToIdenticalEmptyStringRector.php)
 
 ```diff
  class SomeClass
  {
-     public function run($value)
+     public function run(string $value)
      {
 -        $empty = strlen($value) === 0;
 +        $empty = $value === '';
@@ -1933,82 +1801,6 @@ Use ===/!== over ==/!=, it values have the same type
 
 <br>
 
-## CodeQualityStrict
-
-### MoveOutMethodCallInsideIfConditionRector
-
-Move out method call inside If condition
-
-- class: [`Rector\CodeQualityStrict\Rector\If_\MoveOutMethodCallInsideIfConditionRector`](../rules/CodeQualityStrict/Rector/If_/MoveOutMethodCallInsideIfConditionRector.php)
-
-```diff
--if ($obj->run($arg) === 1) {
-+$objRun = $obj->run($arg);
-+if ($objRun === 1) {
-
- }
-```
-
-<br>
-
-### MoveVariableDeclarationNearReferenceRector
-
-Move variable declaration near its reference
-
-- class: [`Rector\CodeQualityStrict\Rector\Variable\MoveVariableDeclarationNearReferenceRector`](../rules/CodeQualityStrict/Rector/Variable/MoveVariableDeclarationNearReferenceRector.php)
-
-```diff
--$var = 1;
- if ($condition === null) {
-+    $var = 1;
-     return $var;
- }
-```
-
-<br>
-
-### ParamTypeToAssertTypeRector
-
-Turn `@param` type to `assert` type
-
-- class: [`Rector\CodeQualityStrict\Rector\ClassMethod\ParamTypeToAssertTypeRector`](../rules/CodeQualityStrict/Rector/ClassMethod/ParamTypeToAssertTypeRector.php)
-
-```diff
- class SomeClass
- {
-     /**
-      * @param \A|\B $arg
-      */
-     public function run($arg)
-     {
--
-+        \Webmozart\Assert\Assert::isAnyOf($arg, [\A::class, \B::class]);
-     }
- }
-```
-
-<br>
-
-### VarInlineAnnotationToAssertRector
-
-Turn `@var` inline checks above code to `assert()` of the type
-
-- class: [`Rector\CodeQualityStrict\Rector\Stmt\VarInlineAnnotationToAssertRector`](../rules/CodeQualityStrict/Rector/Stmt/VarInlineAnnotationToAssertRector.php)
-
-```diff
- class SomeClass
- {
-     public function run()
-     {
-         /** @var SpecificClass $value */
-+        assert($value instanceof SpecificClass);
-         $value->call();
-     }
- }
-```
-
-<br>
-
 ## CodingStyle
 
 ### AddArrayDefaultToArrayPropertyRector
@@ -2070,7 +1862,7 @@ Changes switch with 2 options to if-else
 -    default:
 -        $result = 'not ok';
 +if ($foo == 'my string') {
-+    $result = 'ok;
++    $result = 'ok';
 +} else {
 +    $result = 'not ok';
  }
@@ -2078,11 +1870,11 @@ Changes switch with 2 options to if-else
 
 <br>
 
-### CallUserFuncCallToVariadicRector
+### CallUserFuncArrayToVariadicRector
 
-Replace call_user_func_call with variadic
+Replace `call_user_func_array()` with variadic
 
-- class: [`Rector\CodingStyle\Rector\FuncCall\CallUserFuncCallToVariadicRector`](../rules/CodingStyle/Rector/FuncCall/CallUserFuncCallToVariadicRector.php)
+- class: [`Rector\CodingStyle\Rector\FuncCall\CallUserFuncArrayToVariadicRector`](../rules/CodingStyle/Rector/FuncCall/CallUserFuncArrayToVariadicRector.php)
 
 ```diff
  class SomeClass
@@ -2097,20 +1889,21 @@ Replace call_user_func_call with variadic
 
 <br>
 
-### CamelCaseFunctionNamingToUnderscoreRector
+### CallUserFuncToMethodCallRector
 
-Change CamelCase naming of functions to under_score naming
+Refactor `call_user_func()` on known class method to a method call
 
-- class: [`Rector\CodingStyle\Rector\Function_\CamelCaseFunctionNamingToUnderscoreRector`](../rules/CodingStyle/Rector/Function_/CamelCaseFunctionNamingToUnderscoreRector.php)
+- class: [`Rector\CodingStyle\Rector\FuncCall\CallUserFuncToMethodCallRector`](../rules/CodingStyle/Rector/FuncCall/CallUserFuncToMethodCallRector.php)
 
 ```diff
--function someCamelCaseFunction()
-+function some_camel_case_function()
+ final class SomeClass
  {
+     public function run()
+     {
+-        $result = \call_user_func([$this->property, 'method'], $args);
++        $result = $this->property->method($args);
+     }
  }
-
--someCamelCaseFunction();
-+some_camel_case_function();
 ```
 
 <br>
@@ -2141,7 +1934,7 @@ Type and name of catch exception should match
 
 ### ConsistentImplodeRector
 
-Changes various `implode` forms to consistent one
+Changes various implode forms to consistent one
 
 - class: [`Rector\CodingStyle\Rector\FuncCall\ConsistentImplodeRector`](../rules/CodingStyle/Rector/FuncCall/ConsistentImplodeRector.php)
 
@@ -2203,7 +1996,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
 ### CountArrayToEmptyArrayComparisonRector
 
-Change `count` array comparison to empty array comparison to improve performance
+Change count array comparison to empty array comparison to improve performance
 
 - class: [`Rector\CodingStyle\Rector\FuncCall\CountArrayToEmptyArrayComparisonRector`](../rules/CodingStyle/Rector/FuncCall/CountArrayToEmptyArrayComparisonRector.php)
 
@@ -2220,7 +2013,7 @@ Change `count` array comparison to empty array comparison to improve performance
 
 ### EncapsedStringsToSprintfRector
 
-Convert enscaped {$string} to more readable `sprintf`
+Convert enscaped {$string} to more readable sprintf
 
 - class: [`Rector\CodingStyle\Rector\Encapsed\EncapsedStringsToSprintfRector`](../rules/CodingStyle/Rector/Encapsed/EncapsedStringsToSprintfRector.php)
 
@@ -2256,6 +2049,22 @@ include/require should be followed by absolute path
 
 <br>
 
+### FuncGetArgsToVariadicParamRector
+
+Refactor `func_get_args()` in to a variadic param
+
+- class: [`Rector\CodingStyle\Rector\ClassMethod\FuncGetArgsToVariadicParamRector`](../rules/CodingStyle/Rector/ClassMethod/FuncGetArgsToVariadicParamRector.php)
+
+```diff
+-function run()
++function run(...$args)
+ {
+-    $args = \func_get_args();
+ }
+```
+
+<br>
+
 ### MakeInheritedMethodVisibilitySameAsParentRector
 
 Make method visibility same as parent one
@@ -2283,7 +2092,7 @@ Make method visibility same as parent one
 
 ### ManualJsonStringToJsonEncodeArrayRector
 
-Add extra space before new assign set
+Convert manual JSON string to JSON::encode array
 
 - class: [`Rector\CodingStyle\Rector\Assign\ManualJsonStringToJsonEncodeArrayRector`](../rules/CodingStyle/Rector/Assign/ManualJsonStringToJsonEncodeArrayRector.php)
 
@@ -2300,6 +2109,27 @@ Add extra space before new assign set
 +            'numberz' => ['id' => 10]
 +        ];
 +        $someJsonAsString = Json::encode($data);
+     }
+ }
+```
+
+<br>
+
+### NewlineAfterStatementRector
+
+Add new line after statements to tidify code
+
+- class: [`Rector\CodingStyle\Rector\Stmt\NewlineAfterStatementRector`](../rules/CodingStyle/Rector/Stmt/NewlineAfterStatementRector.php)
+
+```diff
+ class SomeClass
+ {
+     public function test()
+     {
+     }
++
+     public function test2()
+     {
      }
  }
 ```
@@ -2342,6 +2172,41 @@ Changes negate of empty comparison of nullable value to explicit === or !== comp
 
 -if (!$value) {
 +if ($value === null) {
+ }
+```
+
+<br>
+
+### OrderAttributesRector
+
+Order attributes by desired names
+
+:wrench: **configure it!**
+
+- class: [`Rector\CodingStyle\Rector\ClassMethod\OrderAttributesRector`](../rules/CodingStyle/Rector/ClassMethod/OrderAttributesRector.php)
+
+```php
+use Rector\CodingStyle\Rector\ClassMethod\OrderAttributesRector;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+
+return static function (ContainerConfigurator $containerConfigurator): void {
+    $services = $containerConfigurator->services();
+
+    $services->set(OrderAttributesRector::class)
+        ->call('configure', [[
+            OrderAttributesRector::ATTRIBUTES_ORDER => ['First', 'Second'],
+        ]]);
+};
+```
+
+↓
+
+```diff
++#[First]
+ #[Second]
+-#[First]
+ class Someclass
+ {
  }
 ```
 
@@ -2393,8 +2258,10 @@ Changes `$this->...` and static:: to self:: or vise versa for given types
 
 ```php
 use PHPUnit\Framework\TestCase;
+use Rector\CodingStyle\Enum\PreferenceSelfThis;
 use Rector\CodingStyle\Rector\MethodCall\PreferThisOrSelfMethodCallRector;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symplify\SymfonyPhpConfig\ValueObjectInliner;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
@@ -2402,7 +2269,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(PreferThisOrSelfMethodCallRector::class)
         ->call('configure', [[
             PreferThisOrSelfMethodCallRector::TYPE_TO_PREFERENCE => [
-                TestCase::class => 'prefer_self',
+                TestCase::class => ValueObjectInliner::inline(PreferenceSelfThis::PREFER_SELF()),
 
             ], ]]);
 };
@@ -2462,24 +2329,6 @@ Non-magic PHP object methods cannot start with "__"
 
 <br>
 
-### RemoveUnusedAliasRector
-
-Removes unused use aliases. Keep annotation aliases like "Doctrine\ORM\Mapping as ORM" to keep convention format
-
-- class: [`Rector\CodingStyle\Rector\Use_\RemoveUnusedAliasRector`](../rules/CodingStyle/Rector/Use_/RemoveUnusedAliasRector.php)
-
-```diff
--use Symfony\Kernel as BaseKernel;
-+use Symfony\Kernel;
-
--class SomeClass extends BaseKernel
-+class SomeClass extends Kernel
- {
- }
-```
-
-<br>
-
 ### ReturnArrayClassMethodToYieldRector
 
 Turns array return to yield return in specific type and method
@@ -2500,7 +2349,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(ReturnArrayClassMethodToYieldRector::class)
         ->call('configure', [[
             ReturnArrayClassMethodToYieldRector::METHODS_TO_YIELDS => ValueObjectInliner::inline([
-                new ReturnArrayClassMethodToYield('EventSubscriberInterface', 'getSubscribedEvents'),
+                new ReturnArrayClassMethodToYield('PHPUnit\Framework\TestCase', '*provide*'),
             ]),
         ]]);
 };
@@ -2509,13 +2358,36 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 ↓
 
 ```diff
- class SomeEventSubscriber implements EventSubscriberInterface
+ use PHPUnit\Framework\TestCase;
+
+ final class SomeTest implements TestCase
  {
-     public static function getSubscribedEvents()
+     public static function provideData()
      {
--        return ['event' => 'callback'];
-+        yield 'event' => 'callback';
+-        return [['some text']];
++        yield ['some text'];
      }
+ }
+```
+
+<br>
+
+### SeparateMultiUseImportsRector
+
+Split multi use imports and trait statements to standalone lines
+
+- class: [`Rector\CodingStyle\Rector\Use_\SeparateMultiUseImportsRector`](../rules/CodingStyle/Rector/Use_/SeparateMultiUseImportsRector.php)
+
+```diff
+-use A, B;
++use A;
++use B;
+
+ class SomeClass
+ {
+-    use SomeTrait, AnotherTrait;
++    use SomeTrait;
++    use AnotherTrait;
  }
 ```
 
@@ -2569,27 +2441,6 @@ Separate constant and properties to own lines
 
 <br>
 
-### SplitGroupedUseImportsRector
-
-Split grouped use imports and trait statements to standalone lines
-
-- class: [`Rector\CodingStyle\Rector\Use_\SplitGroupedUseImportsRector`](../rules/CodingStyle/Rector/Use_/SplitGroupedUseImportsRector.php)
-
-```diff
--use A, B;
-+use A;
-+use B;
-
- class SomeClass
- {
--    use SomeTrait, AnotherTrait;
-+    use SomeTrait;
-+    use AnotherTrait;
- }
-```
-
-<br>
-
 ### SplitStringClassConstantToClassConstFetchRector
 
 Separate class constant in a string to class constant fetch and string
@@ -2616,7 +2467,7 @@ Separate class constant in a string to class constant fetch and string
 
 ### StrictArraySearchRector
 
-Makes `array_search` search for identical elements
+Makes array_search search for identical elements
 
 - class: [`Rector\CodingStyle\Rector\FuncCall\StrictArraySearchRector`](../rules/CodingStyle/Rector/FuncCall/StrictArraySearchRector.php)
 
@@ -2744,7 +2595,7 @@ Decouple `$message` property from `sprintf()` calls in `$this->symfonyStyle->met
 
 ### VarConstantCommentRector
 
-`Constant` should have a `@var` comment with type
+Constant should have a `@var` comment with type
 
 - class: [`Rector\CodingStyle\Rector\ClassConst\VarConstantCommentRector`](../rules/CodingStyle/Rector/ClassConst/VarConstantCommentRector.php)
 
@@ -2788,47 +2639,8 @@ Wrap encapsed variables in curly braces
 ```diff
  function run($world)
  {
--    echo "Hello $world!"
-+    echo "Hello {$world}!"
- }
-```
-
-<br>
-
-### YieldClassMethodToArrayClassMethodRector
-
-Turns yield return to array return in specific type and method
-
-:wrench: **configure it!**
-
-- class: [`Rector\CodingStyle\Rector\ClassMethod\YieldClassMethodToArrayClassMethodRector`](../rules/CodingStyle/Rector/ClassMethod/YieldClassMethodToArrayClassMethodRector.php)
-
-```php
-use Rector\CodingStyle\Rector\ClassMethod\YieldClassMethodToArrayClassMethodRector;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(YieldClassMethodToArrayClassMethodRector::class)
-        ->call('configure', [[
-            YieldClassMethodToArrayClassMethodRector::METHODS_BY_TYPE => [
-                'EventSubscriberInterface' => ['getSubscribedEvents'],
-
-            ], ]]);
-};
-```
-
-↓
-
-```diff
- class SomeEventSubscriber implements EventSubscriberInterface
- {
-     public static function getSubscribedEvents()
-     {
--        yield 'event' => 'callback';
-+        return ['event' => 'callback'];
-     }
+-    echo "Hello $world!";
++    echo "Hello {$world}!";
  }
 ```
 
@@ -2986,6 +2798,45 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
 <br>
 
+### RenamePackageComposerRector
+
+Change package name in `composer.json`
+
+:wrench: **configure it!**
+
+- class: [`Rector\Composer\Rector\RenamePackageComposerRector`](../rules/Composer/Rector/RenamePackageComposerRector.php)
+
+```php
+use Rector\Composer\Rector\RenamePackageComposerRector;
+use Rector\Composer\ValueObject\RenamePackage;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symplify\SymfonyPhpConfig\ValueObjectInliner;
+
+return static function (ContainerConfigurator $containerConfigurator): void {
+    $services = $containerConfigurator->services();
+
+    $services->set(RenamePackageComposerRector::class)
+        ->call('configure', [[
+            RenamePackageComposerRector::RENAME_PACKAGES => ValueObjectInliner::inline([
+                new RenamePackage('rector/rector', 'rector/rector-src'),
+            ]),
+        ]]);
+};
+```
+
+↓
+
+```diff
+ {
+     "require": {
+-        "rector/rector": "dev-main"
++        "rector/rector-src": "dev-main"
+     }
+ }
+```
+
+<br>
+
 ### ReplacePackageAndVersionComposerRector
 
 Change package name and version `composer.json`
@@ -3082,6 +2933,41 @@ Remove and true that has no added value
 -        return true && 5 === 1;
 +        return 5 === 1;
      }
+ }
+```
+
+<br>
+
+### RemoveAnnotationRector
+
+Remove annotation by names
+
+:wrench: **configure it!**
+
+- class: [`Rector\DeadCode\Rector\ClassLike\RemoveAnnotationRector`](../rules/DeadCode/Rector/ClassLike/RemoveAnnotationRector.php)
+
+```php
+use Rector\DeadCode\Rector\ClassLike\RemoveAnnotationRector;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+
+return static function (ContainerConfigurator $containerConfigurator): void {
+    $services = $containerConfigurator->services();
+
+    $services->set(RemoveAnnotationRector::class)
+        ->call('configure', [[
+            RemoveAnnotationRector::ANNOTATIONS_TO_REMOVE => ['method'],
+        ]]);
+};
+```
+
+↓
+
+```diff
+-/**
+- * @method getName()
+- */
+ final class SomeClass
+ {
  }
 ```
 
@@ -3256,24 +3142,6 @@ Remove loop with no body
 
 <br>
 
-### RemoveDeadRecursiveClassMethodRector
-
-Remove unused public method that only calls itself recursively
-
-- class: [`Rector\DeadCode\Rector\ClassMethod\RemoveDeadRecursiveClassMethodRector`](../rules/DeadCode/Rector/ClassMethod/RemoveDeadRecursiveClassMethodRector.php)
-
-```diff
- class SomeClass
- {
--    public function run()
--    {
--        return $this->run();
--    }
- }
-```
-
-<br>
-
 ### RemoveDeadReturnRector
 
 Remove last return in the functions, since does not do anything
@@ -3357,37 +3225,6 @@ Remove operation with 1 and 0, that have no effect on the value
 
 <br>
 
-### RemoveDefaultArgumentValueRector
-
-Remove argument value, if it is the same as default value
-
-- class: [`Rector\DeadCode\Rector\MethodCall\RemoveDefaultArgumentValueRector`](../rules/DeadCode/Rector/MethodCall/RemoveDefaultArgumentValueRector.php)
-
-```diff
- class SomeClass
- {
-     public function run()
-     {
--        $this->runWithDefault([]);
--        $card = self::runWithStaticDefault([]);
-+        $this->runWithDefault();
-+        $card = self::runWithStaticDefault();
-     }
-
-     public function runWithDefault($items = [])
-     {
-         return $items;
-     }
-
-     public function runStaticWithDefault($cards = [])
-     {
-         return $cards;
-     }
- }
-```
-
-<br>
-
 ### RemoveDelegatingParentCallRector
 
 Removed dead parent call, that does not change anything
@@ -3421,7 +3258,7 @@ Simplify useless double assigns
 
 ### RemoveDuplicatedArrayKeyRector
 
-Remove duplicated `key` in defined arrays.
+Remove duplicated key in defined arrays.
 
 - class: [`Rector\DeadCode\Rector\Array_\RemoveDuplicatedArrayKeyRector`](../rules/DeadCode/Rector/Array_/RemoveDuplicatedArrayKeyRector.php)
 
@@ -3511,7 +3348,7 @@ Remove duplicated instanceof in one call
 
 ### RemoveEmptyClassMethodRector
 
-Remove empty method calls not required by parents
+Remove empty class methods not required by parents
 
 - class: [`Rector\DeadCode\Rector\ClassMethod\RemoveEmptyClassMethodRector`](../rules/DeadCode/Rector/ClassMethod/RemoveEmptyClassMethodRector.php)
 
@@ -3543,6 +3380,46 @@ Remove empty method call
 -$some = new SomeClass();
 -$some->callThis();
 +$some = new SomeClass();
+```
+
+<br>
+
+### RemoveLastReturnRector
+
+Remove very last `return` that has no meaning
+
+- class: [`Rector\DeadCode\Rector\ClassMethod\RemoveLastReturnRector`](../rules/DeadCode/Rector/ClassMethod/RemoveLastReturnRector.php)
+
+```diff
+ function some_function($value)
+ {
+     if ($value === 1000) {
+         return;
+     }
+
+     if ($value) {
+-        return;
+     }
+ }
+```
+
+<br>
+
+### RemoveNonExistingVarAnnotationRector
+
+Removes non-existing `@var` annotations above the code
+
+- class: [`Rector\DeadCode\Rector\Node\RemoveNonExistingVarAnnotationRector`](../rules/DeadCode/Rector/Node/RemoveNonExistingVarAnnotationRector.php)
+
+```diff
+ class SomeClass
+ {
+     public function get()
+     {
+-        /** @var Training[] $trainings */
+         return $this->getData();
+     }
+ }
 ```
 
 <br>
@@ -3601,29 +3478,39 @@ Remove unused parent call with no parent class
 
 <br>
 
-### RemoveSetterOnlyPropertyAndMethodCallRector
+### RemovePhpVersionIdCheckRector
 
-Removes method that set values that are never used
+Remove unneded PHP_VERSION_ID check
 
-- class: [`Rector\DeadCode\Rector\Property\RemoveSetterOnlyPropertyAndMethodCallRector`](../rules/DeadCode/Rector/Property/RemoveSetterOnlyPropertyAndMethodCallRector.php)
+:wrench: **configure it!**
+
+- class: [`Rector\DeadCode\Rector\ConstFetch\RemovePhpVersionIdCheckRector`](../rules/DeadCode/Rector/ConstFetch/RemovePhpVersionIdCheckRector.php)
+
+```php
+use Rector\DeadCode\Rector\ConstFetch\RemovePhpVersionIdCheckRector;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+
+return static function (ContainerConfigurator $containerConfigurator): void {
+    $services = $containerConfigurator->services();
+
+    $services->set(RemovePhpVersionIdCheckRector::class)
+        ->call('configure', [[
+            RemovePhpVersionIdCheckRector::PHP_VERSION_CONSTRAINT => 80000,
+        ]]);
+};
+```
+
+↓
 
 ```diff
  class SomeClass
  {
--    private $name;
--
--    public function setName($name)
--    {
--        $this->name = $name;
--    }
- }
-
- class ActiveOnlySetter
- {
      public function run()
      {
-         $someClass = new SomeClass();
--        $someClass->setName('Tom');
+-        if (PHP_VERSION_ID < 80000) {
+-            return;
+-        }
+         echo 'do something';
      }
  }
 ```
@@ -3675,25 +3562,6 @@ Remove assigned unused variable
 
 <br>
 
-### RemoveUnusedClassConstantRector
-
-Remove unused class constants
-
-- class: [`Rector\DeadCode\Rector\ClassConst\RemoveUnusedClassConstantRector`](../rules/DeadCode/Rector/ClassConst/RemoveUnusedClassConstantRector.php)
-
-```diff
- class SomeClass
- {
--    private const SOME_CONST = 'dead';
--
-     public function run()
-     {
-     }
- }
-```
-
-<br>
-
 ### RemoveUnusedConstructorParamRector
 
 Remove unused parameter in constructor
@@ -3715,42 +3583,9 @@ Remove unused parameter in constructor
 
 <br>
 
-### RemoveUnusedDoctrineEntityMethodAndPropertyRector
-
-Removes unused methods and properties from Doctrine entity classes
-
-- class: [`Rector\DeadCode\Rector\Class_\RemoveUnusedDoctrineEntityMethodAndPropertyRector`](../rules/DeadCode/Rector/Class_/RemoveUnusedDoctrineEntityMethodAndPropertyRector.php)
-
-```diff
- use Doctrine\ORM\Mapping as ORM;
-
- /**
-  * @ORM\Entity
-  */
- class UserEntity
- {
--    /**
--     * @ORM\Column
--     */
--    private $name;
--
--    public function getName()
--    {
--        return $this->name;
--    }
--
--    public function setName($name)
--    {
--        $this->name = $name;
--    }
- }
-```
-
-<br>
-
 ### RemoveUnusedForeachKeyRector
 
-Remove unused `key` in foreach
+Remove unused key in foreach
 
 - class: [`Rector\DeadCode\Rector\Foreach_\RemoveUnusedForeachKeyRector`](../rules/DeadCode/Rector/Foreach_/RemoveUnusedForeachKeyRector.php)
 
@@ -3760,26 +3595,6 @@ Remove unused `key` in foreach
 +foreach ($items as $value) {
      $result = $value;
  }
-```
-
-<br>
-
-### RemoveUnusedFunctionRector
-
-Remove unused function
-
-- class: [`Rector\DeadCode\Rector\Function_\RemoveUnusedFunctionRector`](../rules/DeadCode/Rector/Function_/RemoveUnusedFunctionRector.php)
-
-```diff
--function removeMe()
--{
--}
--
- function useMe()
- {
- }
-
- useMe();
 ```
 
 <br>
@@ -3809,38 +3624,38 @@ Remove unused if check to non-empty array before foreach of the array
 
 <br>
 
-### RemoveUnusedParameterRector
+### RemoveUnusedPrivateClassConstantRector
 
-Remove unused parameter, if not required by interface or parent class
+Remove unused class constants
 
-- class: [`Rector\DeadCode\Rector\ClassMethod\RemoveUnusedParameterRector`](../rules/DeadCode/Rector/ClassMethod/RemoveUnusedParameterRector.php)
+- class: [`Rector\DeadCode\Rector\ClassConst\RemoveUnusedPrivateClassConstantRector`](../rules/DeadCode/Rector/ClassConst/RemoveUnusedPrivateClassConstantRector.php)
 
 ```diff
  class SomeClass
  {
--    public function __construct($value, $value2)
-+    public function __construct($value)
+-    private const SOME_CONST = 'dead';
+-
+     public function run()
      {
-          $this->value = $value;
      }
  }
 ```
 
 <br>
 
-### RemoveUnusedPrivateConstantRector
+### RemoveUnusedPrivateMethodParameterRector
 
-Remove unused private constant
+Remove unused parameter, if not required by interface or parent class
 
-- class: [`Rector\DeadCode\Rector\ClassConst\RemoveUnusedPrivateConstantRector`](../rules/DeadCode/Rector/ClassConst/RemoveUnusedPrivateConstantRector.php)
+- class: [`Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPrivateMethodParameterRector`](../rules/DeadCode/Rector/ClassMethod/RemoveUnusedPrivateMethodParameterRector.php)
 
 ```diff
- final class SomeController
+ class SomeClass
  {
--    private const SOME_CONSTANT = 5;
-     public function run()
+-    private function run($value, $value2)
++    private function run($value)
      {
-         return 5;
+          $this->value = $value;
      }
  }
 ```
@@ -3885,29 +3700,24 @@ Remove unused private properties
 
 <br>
 
-### RemoveUnusedPublicMethodRector
+### RemoveUnusedPromotedPropertyRector
 
-Remove unused public method
+Remove unused promoted property
 
-- class: [`Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPublicMethodRector`](../rules/DeadCode/Rector/ClassMethod/RemoveUnusedPublicMethodRector.php)
+- class: [`Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPromotedPropertyRector`](../rules/DeadCode/Rector/ClassMethod/RemoveUnusedPromotedPropertyRector.php)
 
 ```diff
  class SomeClass
  {
--    public function unusedpublicMethod()
--    {
--        // ...
--    }
--
-     public function execute()
-     {
-         // ...
+     public function __construct(
+-        private $someUnusedDependency,
+         private $usedDependency
+     ) {
      }
 
-     public function run()
+     public function getUsedDependency()
      {
-         $obj = new self;
-         $obj->execute();
+         return $this->usedDependency;
      }
  }
 ```
@@ -3927,6 +3737,67 @@ Remove unused assigns to variables
      {
 -        $value = 5;
      }
+ }
+```
+
+<br>
+
+### RemoveUselessParamTagRector
+
+Remove `@param` docblock with same type as parameter type
+
+- class: [`Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector`](../rules/DeadCode/Rector/ClassMethod/RemoveUselessParamTagRector.php)
+
+```diff
+ class SomeClass
+ {
+     /**
+-     * @param string $a
+      * @param string $b description
+      */
+     public function foo(string $a, string $b)
+     {
+     }
+ }
+```
+
+<br>
+
+### RemoveUselessReturnTagRector
+
+Remove `@return` docblock with same type as defined in PHP
+
+- class: [`Rector\DeadCode\Rector\ClassMethod\RemoveUselessReturnTagRector`](../rules/DeadCode/Rector/ClassMethod/RemoveUselessReturnTagRector.php)
+
+```diff
+ use stdClass;
+
+ class SomeClass
+ {
+-    /**
+-     * @return stdClass
+-     */
+     public function foo(): stdClass
+     {
+     }
+ }
+```
+
+<br>
+
+### RemoveUselessVarTagRector
+
+Remove unused `@var` annotation for properties
+
+- class: [`Rector\DeadCode\Rector\Property\RemoveUselessVarTagRector`](../rules/DeadCode/Rector/Property/RemoveUselessVarTagRector.php)
+
+```diff
+ final class SomeClass
+ {
+-    /**
+-     * @var string
+-     */
+     public string $name = 'name';
  }
 ```
 
@@ -3962,7 +3833,9 @@ Removes unneeded $a = $a assigns
 - class: [`Rector\DeadCode\Rector\Expression\SimplifyMirrorAssignRector`](../rules/DeadCode/Rector/Expression/SimplifyMirrorAssignRector.php)
 
 ```diff
--$a = $a;
+ function run() {
+-                $a = $a;
+             }
 ```
 
 <br>
@@ -4029,319 +3902,6 @@ Remove php version checks if they are passed
 -    return 'is PHP 7.2+';
 -}
 +return 'is PHP 7.2+';
-```
-
-<br>
-
-## DeadDocBlock
-
-### RemoveAnnotationRector
-
-Remove annotation by names
-
-:wrench: **configure it!**
-
-- class: [`Rector\DeadDocBlock\Rector\ClassLike\RemoveAnnotationRector`](../rules/DeadDocBlock/Rector/ClassLike/RemoveAnnotationRector.php)
-
-```php
-use Rector\DeadDocBlock\Rector\ClassLike\RemoveAnnotationRector;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(RemoveAnnotationRector::class)
-        ->call('configure', [[
-            RemoveAnnotationRector::ANNOTATIONS_TO_REMOVE => ['method'],
-        ]]);
-};
-```
-
-↓
-
-```diff
--/**
-- * @method getName()
-- */
- final class SomeClass
- {
- }
-```
-
-<br>
-
-### RemoveNonExistingVarAnnotationRector
-
-Removes non-existing `@var` annotations above the code
-
-- class: [`Rector\DeadDocBlock\Rector\Node\RemoveNonExistingVarAnnotationRector`](../rules/DeadDocBlock/Rector/Node/RemoveNonExistingVarAnnotationRector.php)
-
-```diff
- class SomeClass
- {
-     public function get()
-     {
--        /** @var Training[] $trainings */
-         return $this->getData();
-     }
- }
-```
-
-<br>
-
-### RemoveUselessParamTagRector
-
-Remove `@param` docblock with same type as parameter type
-
-- class: [`Rector\DeadDocBlock\Rector\ClassMethod\RemoveUselessParamTagRector`](../rules/DeadDocBlock/Rector/ClassMethod/RemoveUselessParamTagRector.php)
-
-```diff
- class SomeClass
- {
-     /**
--     * @param string $a
-      * @param string $b description
-      */
-     public function foo(string $a, string $b)
-     {
-     }
- }
-```
-
-<br>
-
-### RemoveUselessReturnTagRector
-
-Remove `@return` docblock with same type as defined in PHP
-
-- class: [`Rector\DeadDocBlock\Rector\ClassMethod\RemoveUselessReturnTagRector`](../rules/DeadDocBlock/Rector/ClassMethod/RemoveUselessReturnTagRector.php)
-
-```diff
- use stdClass;
-
- class SomeClass
- {
--    /**
--     * @return stdClass
--     */
-     public function foo(): stdClass
-     {
-     }
- }
-```
-
-<br>
-
-### RemoveUselessVarTagRector
-
-Remove unused `@var` annotation for properties
-
-- class: [`Rector\DeadDocBlock\Rector\Property\RemoveUselessVarTagRector`](../rules/DeadDocBlock/Rector/Property/RemoveUselessVarTagRector.php)
-
-```diff
- final class SomeClass
- {
--    /**
--     * @var string
--     */
-     public string $name = 'name';
- }
-```
-
-<br>
-
-## Defluent
-
-### DefluentReturnMethodCallRector
-
-Turns return of fluent, to standalone call line and return of value
-
-- class: [`Rector\Defluent\Rector\Return_\DefluentReturnMethodCallRector`](../rules/Defluent/Rector/Return_/DefluentReturnMethodCallRector.php)
-
-```diff
- $someClass = new SomeClass();
--return $someClass->someFunction();
-+$someClass->someFunction();
-+return $someClass;
-```
-
-<br>
-
-### FluentChainMethodCallToNormalMethodCallRector
-
-Turns fluent interface calls to classic ones.
-
-- class: [`Rector\Defluent\Rector\MethodCall\FluentChainMethodCallToNormalMethodCallRector`](../rules/Defluent/Rector/MethodCall/FluentChainMethodCallToNormalMethodCallRector.php)
-
-```diff
- $someClass = new SomeClass();
--$someClass->someFunction()
--            ->otherFunction();
-+$someClass->someFunction();
-+$someClass->otherFunction();
-```
-
-<br>
-
-### InArgFluentChainMethodCallToStandaloneMethodCallRector
-
-Turns fluent interface calls to classic ones.
-
-- class: [`Rector\Defluent\Rector\MethodCall\InArgFluentChainMethodCallToStandaloneMethodCallRector`](../rules/Defluent/Rector/MethodCall/InArgFluentChainMethodCallToStandaloneMethodCallRector.php)
-
-```diff
- class UsedAsParameter
- {
-     public function someFunction(FluentClass $someClass)
-     {
--        $this->processFluentClass($someClass->someFunction()->otherFunction());
-+        $someClass->someFunction();
-+        $someClass->otherFunction();
-+        $this->processFluentClass($someClass);
-     }
-
-     public function processFluentClass(FluentClass $someClass)
-     {
-     }
- }
-```
-
-<br>
-
-### MethodCallOnSetterMethodCallToStandaloneAssignRector
-
-Change method call on setter to standalone assign before the setter
-
-- class: [`Rector\Defluent\Rector\MethodCall\MethodCallOnSetterMethodCallToStandaloneAssignRector`](../rules/Defluent/Rector/MethodCall/MethodCallOnSetterMethodCallToStandaloneAssignRector.php)
-
-```diff
- class SomeClass
- {
-     public function some()
-     {
--        $this->anotherMethod(new AnotherClass())
--            ->someFunction();
-+        $anotherClass = new AnotherClass();
-+        $anotherClass->someFunction();
-+        $this->anotherMethod($anotherClass);
-     }
-
-     public function anotherMethod(AnotherClass $anotherClass)
-     {
-     }
- }
-```
-
-<br>
-
-### NewFluentChainMethodCallToNonFluentRector
-
-Turns fluent interface calls to classic ones.
-
-- class: [`Rector\Defluent\Rector\MethodCall\NewFluentChainMethodCallToNonFluentRector`](../rules/Defluent/Rector/MethodCall/NewFluentChainMethodCallToNonFluentRector.php)
-
-```diff
--(new SomeClass())->someFunction()
--            ->otherFunction();
-+$someClass = new SomeClass();
-+$someClass->someFunction();
-+$someClass->otherFunction();
-```
-
-<br>
-
-### NormalToFluentRector
-
-Turns fluent interface calls to classic ones.
-
-:wrench: **configure it!**
-
-- class: [`Rector\Defluent\Rector\ClassMethod\NormalToFluentRector`](../rules/Defluent/Rector/ClassMethod/NormalToFluentRector.php)
-
-```php
-use Rector\Defluent\Rector\ClassMethod\NormalToFluentRector;
-use Rector\Defluent\ValueObject\NormalToFluent;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use Symplify\SymfonyPhpConfig\ValueObjectInliner;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(NormalToFluentRector::class)
-        ->call('configure', [[
-            NormalToFluentRector::CALLS_TO_FLUENT => ValueObjectInliner::inline([
-                new NormalToFluent('SomeClass', ['someFunction', 'otherFunction']), ]
-            ),
-        ]]);
-};
-```
-
-↓
-
-```diff
- $someObject = new SomeClass();
--$someObject->someFunction();
--$someObject->otherFunction();
-+$someObject->someFunction()
-+    ->otherFunction();
-```
-
-<br>
-
-### ReturnFluentChainMethodCallToNormalMethodCallRector
-
-Turns fluent interface calls to classic ones.
-
-- class: [`Rector\Defluent\Rector\Return_\ReturnFluentChainMethodCallToNormalMethodCallRector`](../rules/Defluent/Rector/Return_/ReturnFluentChainMethodCallToNormalMethodCallRector.php)
-
-```diff
- $someClass = new SomeClass();
-+$someClass->someFunction();
-+$someClass->otherFunction();
-
--return $someClass->someFunction()
--        ->otherFunction();
-+return $someClass;
-```
-
-<br>
-
-### ReturnNewFluentChainMethodCallToNonFluentRector
-
-Turns fluent interface calls to classic ones.
-
-- class: [`Rector\Defluent\Rector\Return_\ReturnNewFluentChainMethodCallToNonFluentRector`](../rules/Defluent/Rector/Return_/ReturnNewFluentChainMethodCallToNonFluentRector.php)
-
-```diff
--return (new SomeClass())->someFunction()
--            ->otherFunction();
-+$someClass = new SomeClass();
-+$someClass->someFunction();
-+$someClass->otherFunction();
-+return $someClass;
-```
-
-<br>
-
-### ReturnThisRemoveRector
-
-Removes "return `$this;"` from *fluent interfaces* for specified classes.
-
-- class: [`Rector\Defluent\Rector\ClassMethod\ReturnThisRemoveRector`](../rules/Defluent/Rector/ClassMethod/ReturnThisRemoveRector.php)
-
-```diff
- class SomeExampleClass
- {
-     public function someFunction()
-     {
--        return $this;
-     }
-
-     public function otherFunction()
-     {
--        return $this;
-     }
- }
 ```
 
 <br>
@@ -4417,87 +3977,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
 <br>
 
-### AnnotatedPropertyInjectToConstructorInjectionRector
-
-Turns properties with `@inject` to private properties and constructor injection
-
-- class: [`Rector\DependencyInjection\Rector\Property\AnnotatedPropertyInjectToConstructorInjectionRector`](../rules/DependencyInjection/Rector/Property/AnnotatedPropertyInjectToConstructorInjectionRector.php)
-
-```diff
- /**
-  * @var SomeService
-- * @inject
-  */
--public $someService;
-+private $someService;
-+
-+public function __construct(SomeService $someService)
-+{
-+    $this->someService = $someService;
-+}
-```
-
-<br>
-
-### MultiParentingToAbstractDependencyRector
-
-Move dependency passed to all children to parent as `@inject/@required` dependency
-
-:wrench: **configure it!**
-
-- class: [`Rector\DependencyInjection\Rector\Class_\MultiParentingToAbstractDependencyRector`](../rules/DependencyInjection/Rector/Class_/MultiParentingToAbstractDependencyRector.php)
-
-```php
-use Rector\DependencyInjection\Rector\Class_\MultiParentingToAbstractDependencyRector;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(MultiParentingToAbstractDependencyRector::class)
-        ->call('configure', [[
-            MultiParentingToAbstractDependencyRector::FRAMEWORK => 'nette',
-        ]]);
-};
-```
-
-↓
-
-```diff
- abstract class AbstractParentClass
- {
--    private $someDependency;
--
--    public function __construct(SomeDependency $someDependency)
--    {
--        $this->someDependency = $someDependency;
--    }
-+    /**
-+     * @inject
-+     * @var SomeDependency
-+     */
-+    public $someDependency;
- }
-
- class FirstChild extends AbstractParentClass
- {
--    public function __construct(SomeDependency $someDependency)
--    {
--        parent::__construct($someDependency);
--    }
- }
-
- class SecondChild extends AbstractParentClass
- {
--    public function __construct(SomeDependency $someDependency)
--    {
--        parent::__construct($someDependency);
--    }
- }
-```
-
-<br>
-
 ### ReplaceVariableByPropertyFetchRector
 
 Turns variable in controller action to property fetch, as follow up to action injection variable to property change.
@@ -4527,843 +4006,45 @@ Turns variable in controller action to property fetch, as follow up to action in
 
 <br>
 
-## Doctrine
+## DowngradePhp53
 
-### AddEntityIdByConditionRector
+### DirConstToFileConstRector
 
-Add entity id with annotations when meets condition
+Refactor __DIR__ to dirname(__FILE__)
 
-:wrench: **configure it!**
-
-- class: [`Rector\Doctrine\Rector\Class_\AddEntityIdByConditionRector`](../rules/Doctrine/Rector/Class_/AddEntityIdByConditionRector.php)
-
-```php
-use Rector\Doctrine\Rector\Class_\AddEntityIdByConditionRector;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(AddEntityIdByConditionRector::class)
-        ->call('configure', [[
-            AddEntityIdByConditionRector::DETECTED_TRAITS => [
-                'Knp\DoctrineBehaviors\Model\Translatable\Translation',
-                'Knp\DoctrineBehaviors\Model\Translatable\TranslationTrait',
-            ],
-        ]]);
-};
-```
-
-↓
+- class: [`Rector\DowngradePhp53\Rector\Dir\DirConstToFileConstRector`](../rules/DowngradePhp53/Rector/Dir/DirConstToFileConstRector.php)
 
 ```diff
- class SomeClass
+ final class SomeClass
  {
-     use SomeTrait;
-+
-+    /**
-+      * @ORM\Id
-+      * @ORM\Column(type="integer")
-+      * @ORM\GeneratedValue(strategy="AUTO")
-+      */
-+     private $id;
-+
-+    public function getId(): int
-+    {
-+        return $this->id;
-+    }
- }
-```
-
-<br>
-
-### EntityAliasToClassConstantReferenceRector
-
-Replaces doctrine alias with class.
-
-:wrench: **configure it!**
-
-- class: [`Rector\Doctrine\Rector\MethodCall\EntityAliasToClassConstantReferenceRector`](../rules/Doctrine/Rector/MethodCall/EntityAliasToClassConstantReferenceRector.php)
-
-```php
-use Rector\Doctrine\Rector\MethodCall\EntityAliasToClassConstantReferenceRector;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(EntityAliasToClassConstantReferenceRector::class)
-        ->call('configure', [[
-            EntityAliasToClassConstantReferenceRector::ALIASES_TO_NAMESPACES => [
-                App::class => 'App\Entity',
-
-            ], ]]);
-};
-```
-
-↓
-
-```diff
- $entityManager = new Doctrine\ORM\EntityManager();
--$entityManager->getRepository("AppBundle:Post");
-+$entityManager->getRepository(\App\Entity\Post::class);
-```
-
-<br>
-
-### ManagerRegistryGetManagerToEntityManagerRector
-
-Changes ManagerRegistry intermediate calls directly to EntityManager calls
-
-- class: [`Rector\Doctrine\Rector\Class_\ManagerRegistryGetManagerToEntityManagerRector`](../rules/Doctrine/Rector/Class_/ManagerRegistryGetManagerToEntityManagerRector.php)
-
-```diff
--use Doctrine\Common\Persistence\ManagerRegistry;
-+use Doctrine\ORM\EntityManagerInterface;
-
- class CustomRepository
- {
-     /**
--     * @var ManagerRegistry
-+     * @var EntityManagerInterface
-      */
--    private $managerRegistry;
-+    private $entityManager;
-
--    public function __construct(ManagerRegistry $managerRegistry)
-+    public function __construct(EntityManagerInterface $entityManager)
-     {
--        $this->managerRegistry = $managerRegistry;
-+        $this->entityManager = $entityManager;
-     }
-
      public function run()
      {
--        $entityManager = $this->managerRegistry->getManager();
--        $someRepository = $entityManager->getRepository('Some');
-+        $someRepository = $this->entityManager->getRepository('Some');
+-        return __DIR__;
++        return dirname(__FILE__);
      }
  }
 ```
 
 <br>
 
-### RemoveRepositoryFromEntityAnnotationRector
+## DowngradePhp54
 
-Removes repository class from `@Entity` annotation
+### DowngradeStaticClosureRector
 
-- class: [`Rector\Doctrine\Rector\Class_\RemoveRepositoryFromEntityAnnotationRector`](../rules/Doctrine/Rector/Class_/RemoveRepositoryFromEntityAnnotationRector.php)
+Remove static from closure
 
-```diff
- use Doctrine\ORM\Mapping as ORM;
-
- /**
-- * @ORM\Entity(repositoryClass="ProductRepository")
-+ * @ORM\Entity
-  */
- class Product
- {
- }
-```
-
-<br>
-
-### ReplaceParentRepositoryCallsByRepositoryPropertyRector
-
-Handles method calls in child of Doctrine EntityRepository and moves them to `$this->repository` property.
-
-- class: [`Rector\Doctrine\Rector\MethodCall\ReplaceParentRepositoryCallsByRepositoryPropertyRector`](../rules/Doctrine/Rector/MethodCall/ReplaceParentRepositoryCallsByRepositoryPropertyRector.php)
+- class: [`Rector\DowngradePhp54\Rector\Closure\DowngradeStaticClosureRector`](../rules/DowngradePhp54/Rector/Closure/DowngradeStaticClosureRector.php)
 
 ```diff
- use Doctrine\ORM\EntityRepository;
-
- class SomeRepository extends EntityRepository
+ final class SomeClass
  {
-     public function someMethod()
+     public function run()
      {
--        return $this->findAll();
-+        return $this->repository->findAll();
+-        return static function () {
++        return function () {
+             return true;
+         };
      }
- }
-```
-
-<br>
-
-### ServiceEntityRepositoryParentCallToDIRector
-
-Change ServiceEntityRepository to dependency injection, with repository property
-
-- class: [`Rector\Doctrine\Rector\ClassMethod\ServiceEntityRepositoryParentCallToDIRector`](../rules/Doctrine/Rector/ClassMethod/ServiceEntityRepositoryParentCallToDIRector.php)
-
-```diff
- use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
- use Doctrine\Persistence\ManagerRegistry;
-
- final class ProjectRepository extends ServiceEntityRepository
- {
--    public function __construct(ManagerRegistry $registry)
-+    /**
-+     * @var \Doctrine\ORM\EntityManagerInterface
-+     */
-+    private $entityManager;
-+
-+    /**
-+     * @var \Doctrine\ORM\EntityRepository<Project>
-+     */
-+    private $repository;
-+
-+    public function __construct(\Doctrine\ORM\EntityManagerInterface $entityManager)
-     {
--        parent::__construct($registry, Project::class);
-+        $this->repository = $entityManager->getRepository(Project::class);
-+        $this->entityManager = $entityManager;
-     }
- }
-```
-
-<br>
-
-## DoctrineCodeQuality
-
-### ChangeBigIntEntityPropertyToIntTypeRector
-
-Change database type "bigint" for @var/type declaration to string
-
-- class: [`Rector\DoctrineCodeQuality\Rector\Property\ChangeBigIntEntityPropertyToIntTypeRector`](../rules/DoctrineCodeQuality/Rector/Property/ChangeBigIntEntityPropertyToIntTypeRector.php)
-
-```diff
- use Doctrine\ORM\Mapping as ORM;
-
- /**
-  * @ORM\Entity()
-  */
- class SomeEntity
- {
-     /**
--     * @var int|null
-+     * @var string|null
-      * @ORM\Column(type="bigint", nullable=true)
-      */
-     private $bigNumber;
- }
-```
-
-<br>
-
-### ChangeSetParametersArrayToArrayCollectionRector
-
-Change array to ArrayCollection in setParameters method of query builder
-
-- class: [`Rector\DoctrineCodeQuality\Rector\MethodCall\ChangeSetParametersArrayToArrayCollectionRector`](../rules/DoctrineCodeQuality/Rector/MethodCall/ChangeSetParametersArrayToArrayCollectionRector.php)
-
-```diff
-+use Doctrine\Common\Collections\ArrayCollection;
- use Doctrine\ORM\EntityRepository;
-+use Doctrine\ORM\Query\Parameter;
-
- class SomeRepository extends EntityRepository
- {
-     public function getSomething()
-     {
-         return $this
-             ->createQueryBuilder('sm')
-             ->select('sm')
-             ->where('sm.foo = :bar')
--            ->setParameters([
--                'bar' => 'baz'
--            ])
-+            ->setParameters(new ArrayCollection([
-+                new  Parameter('bar', 'baz'),
-+            ]))
-             ->getQuery()
-             ->getResult()
-         ;
-     }
- }
-```
-
-<br>
-
-### CorrectDefaultTypesOnEntityPropertyRector
-
-Change default value types to match Doctrine annotation type
-
-- class: [`Rector\DoctrineCodeQuality\Rector\Property\CorrectDefaultTypesOnEntityPropertyRector`](../rules/DoctrineCodeQuality/Rector/Property/CorrectDefaultTypesOnEntityPropertyRector.php)
-
-```diff
- use Doctrine\ORM\Mapping as ORM;
-
- /**
-  * @ORM\Entity()
-  */
- class User
- {
-     /**
-      * @ORM\Column(name="is_old", type="boolean")
-      */
--    private $isOld = '0';
-+    private $isOld = false;
- }
-```
-
-<br>
-
-### ImproveDoctrineCollectionDocTypeInEntityRector
-
-Improve @var, `@param` and `@return` types for Doctrine collections to make them useful both for PHPStan and PHPStorm
-
-- class: [`Rector\DoctrineCodeQuality\Rector\Property\ImproveDoctrineCollectionDocTypeInEntityRector`](../rules/DoctrineCodeQuality/Rector/Property/ImproveDoctrineCollectionDocTypeInEntityRector.php)
-
-```diff
- use Doctrine\Common\Collections\Collection;
- use Doctrine\ORM\Mapping as ORM;
-
- /**
-  * @ORM\Entity
-  */
- class SomeClass
- {
-     /**
-      * @ORM\OneToMany(targetEntity=Training::class, mappedBy="trainer")
--     * @var Collection|Trainer[]
-+     * @var Collection<int, Training>|Trainer[]
-      */
-     private $trainings = [];
- }
-```
-
-<br>
-
-### InitializeDefaultEntityCollectionRector
-
-Initialize collection property in Entity constructor
-
-- class: [`Rector\DoctrineCodeQuality\Rector\Class_\InitializeDefaultEntityCollectionRector`](../rules/DoctrineCodeQuality/Rector/Class_/InitializeDefaultEntityCollectionRector.php)
-
-```diff
- use Doctrine\ORM\Mapping as ORM;
-
- /**
-  * @ORM\Entity
-  */
- class SomeClass
- {
-     /**
-      * @ORM\OneToMany(targetEntity="MarketingEvent")
-      */
-     private $marketingEvents = [];
-+
-+    public function __construct()
-+    {
-+        $this->marketingEvents = new ArrayCollection();
-+    }
- }
-```
-
-<br>
-
-### MakeEntityDateTimePropertyDateTimeInterfaceRector
-
-Make maker bundle generate DateTime property accept DateTimeInterface too
-
-- class: [`Rector\DoctrineCodeQuality\Rector\ClassMethod\MakeEntityDateTimePropertyDateTimeInterfaceRector`](../rules/DoctrineCodeQuality/Rector/ClassMethod/MakeEntityDateTimePropertyDateTimeInterfaceRector.php)
-
-```diff
- use Doctrine\ORM\Mapping as ORM;
-
- /**
-  * @ORM\Entity()
-  */
- class User
- {
-     /**
--     * @var DateTime|null
-+     * @var DateTimeInterface|null
-      */
-     private $bornAt;
-
-     public function setBornAt(DateTimeInterface $bornAt)
-     {
-         $this->bornAt = $bornAt;
-     }
- }
-```
-
-<br>
-
-### MakeEntitySetterNullabilityInSyncWithPropertyRector
-
-Make nullability in setter class method with respect to property
-
-- class: [`Rector\DoctrineCodeQuality\Rector\ClassMethod\MakeEntitySetterNullabilityInSyncWithPropertyRector`](../rules/DoctrineCodeQuality/Rector/ClassMethod/MakeEntitySetterNullabilityInSyncWithPropertyRector.php)
-
-```diff
- use Doctrine\ORM\Mapping as ORM;
-
- /**
-  * @ORM\Entity()
-  */
- class Product
- {
-     /**
-      * @ORM\ManyToOne(targetEntity="AnotherEntity")
-      */
-     private $anotherEntity;
-
--    public function setAnotherEntity(?AnotherEntity $anotherEntity)
-+    public function setAnotherEntity(AnotherEntity $anotherEntity)
-     {
-         $this->anotherEntity = $anotherEntity;
-     }
- }
-```
-
-<br>
-
-### MoveCurrentDateTimeDefaultInEntityToConstructorRector
-
-Move default value for entity property to constructor, the safest place
-
-- class: [`Rector\DoctrineCodeQuality\Rector\Class_\MoveCurrentDateTimeDefaultInEntityToConstructorRector`](../rules/DoctrineCodeQuality/Rector/Class_/MoveCurrentDateTimeDefaultInEntityToConstructorRector.php)
-
-```diff
- use Doctrine\ORM\Mapping as ORM;
-
- /**
-  * @ORM\Entity()
-  */
- class User
- {
-     /**
-      * @var DateTimeInterface
-      *
--     * @ORM\Column(type="datetime", nullable=false, options={"default"="now()"})
-+     * @ORM\Column(type="datetime", nullable=false)
-      */
--    private $when = 'now()';
-+    private $when;
-+
-+    public function __construct()
-+    {
-+        $this->when = new \DateTime();
-+    }
- }
-```
-
-<br>
-
-### MoveRepositoryFromParentToConstructorRector
-
-Turns parent EntityRepository class to constructor dependency
-
-- class: [`Rector\DoctrineCodeQuality\Rector\Class_\MoveRepositoryFromParentToConstructorRector`](../rules/DoctrineCodeQuality/Rector/Class_/MoveRepositoryFromParentToConstructorRector.php)
-
-```diff
- namespace App\Repository;
-
-+use App\Entity\Post;
- use Doctrine\ORM\EntityRepository;
-+use Doctrine\ORM\EntityManagerInterface;
-
--final class PostRepository extends EntityRepository
-+final class PostRepository
- {
-+    /**
-+     * @var \Doctrine\ORM\EntityRepository<Post>
-+     */
-+    private EntityRepository $repository;
-+
-+    public function __construct(EntityManagerInterface $entityManager)
-+    {
-+        $this->repository = $entityManager->getRepository(Post::class);
-+    }
- }
-```
-
-<br>
-
-### RemoveRedundantDefaultClassAnnotationValuesRector
-
-Removes redundant default values from Doctrine ORM annotations on class level
-
-- class: [`Rector\DoctrineCodeQuality\Rector\Class_\RemoveRedundantDefaultClassAnnotationValuesRector`](../rules/DoctrineCodeQuality/Rector/Class_/RemoveRedundantDefaultClassAnnotationValuesRector.php)
-
-```diff
- use Doctrine\ORM\Mapping as ORM;
-
- /**
-- * @ORM\Entity(readOnly=false)
-+ * @ORM\Entity()
-  */
- class SomeClass
- {
- }
-```
-
-<br>
-
-### RemoveRedundantDefaultPropertyAnnotationValuesRector
-
-Removes redundant default values from Doctrine ORM annotations on class property level
-
-- class: [`Rector\DoctrineCodeQuality\Rector\Property\RemoveRedundantDefaultPropertyAnnotationValuesRector`](../rules/DoctrineCodeQuality/Rector/Property/RemoveRedundantDefaultPropertyAnnotationValuesRector.php)
-
-```diff
- use Doctrine\ORM\Mapping as ORM;
-
- /**
-  * @ORM\Entity
-  */
- class SomeClass
- {
-     /**
-      * @ORM\ManyToOne(targetEntity=Training::class)
--     * @ORM\JoinColumn(name="training", unique=false)
-+     * @ORM\JoinColumn(name="training")
-      */
-     private $training;
- }
-```
-
-<br>
-
-## DoctrineGedmoToKnplabs
-
-### BlameableBehaviorRector
-
-Change Blameable from gedmo/doctrine-extensions to knplabs/doctrine-behaviors
-
-- class: [`Rector\DoctrineGedmoToKnplabs\Rector\Class_\BlameableBehaviorRector`](../rules/DoctrineGedmoToKnplabs/Rector/Class_/BlameableBehaviorRector.php)
-
-```diff
--use Gedmo\Mapping\Annotation as Gedmo;
- use Doctrine\ORM\Mapping as ORM;
-+use Knp\DoctrineBehaviors\Contract\Entity\BlameableInterface;
-+use Knp\DoctrineBehaviors\Model\Blameable\BlameableTrait;
-
- /**
-  * @ORM\Entity
-  */
--class SomeClass
-+class SomeClass implements BlameableInterface
- {
--    /**
--     * @Gedmo\Blameable(on="create")
--     */
--    private $createdBy;
--
--    /**
--     * @Gedmo\Blameable(on="update")
--     */
--    private $updatedBy;
--
--    /**
--     * @Gedmo\Blameable(on="change", field={"title", "body"})
--     */
--    private $contentChangedBy;
--
--    public function getCreatedBy()
--    {
--        return $this->createdBy;
--    }
--
--    public function getUpdatedBy()
--    {
--        return $this->updatedBy;
--    }
--
--    public function getContentChangedBy()
--    {
--        return $this->contentChangedBy;
--    }
-+    use BlameableTrait;
- }
-```
-
-<br>
-
-### LoggableBehaviorRector
-
-Change Loggable from gedmo/doctrine-extensions to knplabs/doctrine-behaviors
-
-- class: [`Rector\DoctrineGedmoToKnplabs\Rector\Class_\LoggableBehaviorRector`](../rules/DoctrineGedmoToKnplabs/Rector/Class_/LoggableBehaviorRector.php)
-
-```diff
--use Gedmo\Mapping\Annotation as Gedmo;
- use Doctrine\ORM\Mapping as ORM;
-+use Knp\DoctrineBehaviors\Model\Loggable\LoggableTrait;
-+use Knp\DoctrineBehaviors\Contract\Entity\LoggableInterface;
-
- /**
-  * @ORM\Entity
-- * @Gedmo\Loggable
-  */
--class SomeClass
-+class SomeClass implements LoggableInterface
- {
-+    use LoggableTrait;
-+
-     /**
--     * @Gedmo\Versioned
-      * @ORM\Column(name="title", type="string", length=8)
-      */
-     private $title;
- }
-```
-
-<br>
-
-### SluggableBehaviorRector
-
-Change Sluggable from gedmo/doctrine-extensions to knplabs/doctrine-behaviors
-
-- class: [`Rector\DoctrineGedmoToKnplabs\Rector\Class_\SluggableBehaviorRector`](../rules/DoctrineGedmoToKnplabs/Rector/Class_/SluggableBehaviorRector.php)
-
-```diff
- use Gedmo\Mapping\Annotation as Gedmo;
-+use Knp\DoctrineBehaviors\Model\Sluggable\SluggableTrait;
-+use Knp\DoctrineBehaviors\Contract\Entity\SluggableInterface;
-
--class SomeClass
-+class SomeClass implements SluggableInterface
- {
-+    use SluggableTrait;
-+
-     /**
--     * @Gedmo\Slug(fields={"name"})
-+     * @return string[]
-      */
--    private $slug;
--
--    public function getSlug(): ?string
-+    public function getSluggableFields(): array
-     {
--        return $this->slug;
--    }
--
--    public function setSlug(?string $slug): void
--    {
--        $this->slug = $slug;
-+        return ['name'];
-     }
- }
-```
-
-<br>
-
-### SoftDeletableBehaviorRector
-
-Change SoftDeletable from gedmo/doctrine-extensions to knplabs/doctrine-behaviors
-
-- class: [`Rector\DoctrineGedmoToKnplabs\Rector\Class_\SoftDeletableBehaviorRector`](../rules/DoctrineGedmoToKnplabs/Rector/Class_/SoftDeletableBehaviorRector.php)
-
-```diff
--use Gedmo\Mapping\Annotation as Gedmo;
-+use Knp\DoctrineBehaviors\Contract\Entity\SoftDeletableInterface;
-+use Knp\DoctrineBehaviors\Model\SoftDeletable\SoftDeletableTrait;
-
--/**
-- * @Gedmo\SoftDeleteable(fieldName="deletedAt", timeAware=false, hardDelete=true)
-- */
--class SomeClass
-+class SomeClass implements SoftDeletableInterface
- {
--    /**
--     * @ORM\Column(name="deletedAt", type="datetime", nullable=true)
--     */
--    private $deletedAt;
--
--    public function getDeletedAt()
--    {
--        return $this->deletedAt;
--    }
--
--    public function setDeletedAt($deletedAt)
--    {
--        $this->deletedAt = $deletedAt;
--    }
-+    use SoftDeletableTrait;
- }
-```
-
-<br>
-
-### TimestampableBehaviorRector
-
-Change Timestampable from gedmo/doctrine-extensions to knplabs/doctrine-behaviors
-
-- class: [`Rector\DoctrineGedmoToKnplabs\Rector\Class_\TimestampableBehaviorRector`](../rules/DoctrineGedmoToKnplabs/Rector/Class_/TimestampableBehaviorRector.php)
-
-```diff
--use Gedmo\Timestampable\Traits\TimestampableEntity;
-+use Knp\DoctrineBehaviors\Model\Timestampable\TimestampableTrait;
-+use Knp\DoctrineBehaviors\Contract\Entity\TimestampableInterface;
-
--class SomeClass
-+class SomeClass implements TimestampableInterface
- {
--    use TimestampableEntity;
-+    use TimestampableTrait;
- }
-```
-
-<br>
-
-### TranslationBehaviorRector
-
-Change Translation from gedmo/doctrine-extensions to knplabs/doctrine-behaviors
-
-- class: [`Rector\DoctrineGedmoToKnplabs\Rector\Class_\TranslationBehaviorRector`](../rules/DoctrineGedmoToKnplabs/Rector/Class_/TranslationBehaviorRector.php)
-
-```diff
--use Gedmo\Mapping\Annotation as Gedmo;
--use Doctrine\ORM\Mapping as ORM;
--use Gedmo\Translatable\Translatable;
-+use Knp\DoctrineBehaviors\Model\Translatable\TranslatableTrait;
-+use Knp\DoctrineBehaviors\Contract\Entity\TranslatableInterface;
-
--/**
-- * @ORM\Table
-- */
--class Article implements Translatable
-+class SomeClass implements TranslatableInterface
- {
-+    use TranslatableTrait;
-+}
-+
-+
-+use Knp\DoctrineBehaviors\Contract\Entity\TranslationInterface;
-+use Knp\DoctrineBehaviors\Model\Translatable\TranslationTrait;
-+
-+class SomeClassTranslation implements TranslationInterface
-+{
-+    use TranslationTrait;
-+
-     /**
--     * @Gedmo\Translatable
-      * @ORM\Column(length=128)
-      */
-     private $title;
-
-     /**
--     * @Gedmo\Translatable
-      * @ORM\Column(type="text")
-      */
-     private $content;
--
--    /**
--     * @Gedmo\Locale
--     * Used locale to override Translation listener`s locale
--     * this is not a mapped field of entity metadata, just a simple property
--     * and it is not necessary because globally locale can be set in listener
--     */
--    private $locale;
--
--    public function setTitle($title)
--    {
--        $this->title = $title;
--    }
--
--    public function getTitle()
--    {
--        return $this->title;
--    }
--
--    public function setContent($content)
--    {
--        $this->content = $content;
--    }
--
--    public function getContent()
--    {
--        return $this->content;
--    }
--
--    public function setTranslatableLocale($locale)
--    {
--        $this->locale = $locale;
--    }
- }
-```
-
-<br>
-
-### TreeBehaviorRector
-
-Change Tree from gedmo/doctrine-extensions to knplabs/doctrine-behaviors
-
-- class: [`Rector\DoctrineGedmoToKnplabs\Rector\Class_\TreeBehaviorRector`](../rules/DoctrineGedmoToKnplabs/Rector/Class_/TreeBehaviorRector.php)
-
-```diff
--use Doctrine\Common\Collections\Collection;
--use Gedmo\Mapping\Annotation as Gedmo;
-+use Knp\DoctrineBehaviors\Contract\Entity\TreeNodeInterface;
-+use Knp\DoctrineBehaviors\Model\Tree\TreeNodeTrait;
-
--/**
-- * @Gedmo\Tree(type="nested")
-- */
--class SomeClass
-+class SomeClass implements TreeNodeInterface
- {
--    /**
--     * @Gedmo\TreeLeft
--     * @ORM\Column(name="lft", type="integer")
--     * @var int
--     */
--    private $lft;
--
--    /**
--     * @Gedmo\TreeRight
--     * @ORM\Column(name="rgt", type="integer")
--     * @var int
--     */
--    private $rgt;
--
--    /**
--     * @Gedmo\TreeLevel
--     * @ORM\Column(name="lvl", type="integer")
--     * @var int
--     */
--    private $lvl;
--
--    /**
--     * @Gedmo\TreeRoot
--     * @ORM\ManyToOne(targetEntity="Category")
--     * @ORM\JoinColumn(name="tree_root", referencedColumnName="id", onDelete="CASCADE")
--     * @var Category
--     */
--    private $root;
--
--    /**
--     * @Gedmo\TreeParent
--     * @ORM\ManyToOne(targetEntity="Category", inversedBy="children")
--     * @ORM\JoinColumn(name="parent_id", referencedColumnName="id", onDelete="CASCADE")
--     * @var Category
--     */
--    private $parent;
--
--    /**
--     * @ORM\OneToMany(targetEntity="Category", mappedBy="parent")
--     * @var Category[]|Collection
--     */
--    private $children;
--
--    public function getRoot(): self
--    {
--        return $this->root;
--    }
--
--    public function setParent(self $category): void
--    {
--        $this->parent = $category;
--    }
--
--    public function getParent(): self
--    {
--        return $this->parent;
--    }
-+    use TreeNodeTrait;
  }
 ```
 
@@ -5371,11 +4052,118 @@ Change Tree from gedmo/doctrine-extensions to knplabs/doctrine-behaviors
 
 ## DowngradePhp70
 
-### DowngradeTypeDeclarationRector
+### DowngradeAnonymousClassRector
+
+Remove anonymous class
+
+- class: [`Rector\DowngradePhp70\Rector\New_\DowngradeAnonymousClassRector`](../rules/DowngradePhp70/Rector/New_/DowngradeAnonymousClassRector.php)
+
+```diff
++class Anonymous
++{
++    public function execute()
++    {
++    }
++}
+ class SomeClass
+ {
+     public function run()
+     {
+-        return new class {
+-            public function execute()
+-            {
+-            }
+-        };
++        return new Anonymous();
+     }
+ }
+```
+
+<br>
+
+### DowngradeDefineArrayConstantRector
+
+Change array contant definition via define to const
+
+- class: [`Rector\DowngradePhp70\Rector\Expression\DowngradeDefineArrayConstantRector`](../rules/DowngradePhp70/Rector/Expression/DowngradeDefineArrayConstantRector.php)
+
+```diff
+-define('ANIMALS', [
++const ANIMALS = [
+     'dog',
+     'cat',
+     'bird'
+-]);
++];
+```
+
+<br>
+
+### DowngradeGeneratedScalarTypesRector
+
+Refactor scalar types in PHP code in string snippets, e.g. generated container code from symfony/dependency-injection
+
+- class: [`Rector\DowngradePhp70\Rector\String_\DowngradeGeneratedScalarTypesRector`](../rules/DowngradePhp70/Rector/String_/DowngradeGeneratedScalarTypesRector.php)
+
+```diff
+ $code = <<<'EOF'
+-    public function getParameter(string $name)
++    /**
++     * @param string $name
++     */
++    public function getParameter($name)
+     {
+         return $name;
+     }
+ EOF;
+```
+
+<br>
+
+### DowngradeNullCoalesceRector
+
+Change null coalesce to isset ternary check
+
+- class: [`Rector\DowngradePhp70\Rector\Coalesce\DowngradeNullCoalesceRector`](../rules/DowngradePhp70/Rector/Coalesce/DowngradeNullCoalesceRector.php)
+
+```diff
+-$username = $_GET['user'] ?? 'nobody';
++$username = isset($_GET['user']) ? $_GET['user'] : 'nobody';
+```
+
+<br>
+
+### DowngradeParentTypeDeclarationRector
+
+Remove "parent" return type, add a `"@return` parent" tag instead
+
+- class: [`Rector\DowngradePhp70\Rector\ClassMethod\DowngradeParentTypeDeclarationRector`](../rules/DowngradePhp70/Rector/ClassMethod/DowngradeParentTypeDeclarationRector.php)
+
+```diff
+ class ParentClass
+ {
+ }
+
+ class SomeClass extends ParentClass
+ {
+-    public function foo(): parent
++    /**
++     * @return parent
++     */
++    public function foo()
+     {
+         return $this;
+     }
+ }
+```
+
+<br>
+
+### DowngradeScalarTypeDeclarationRector
 
 Remove the type params and return type, add `@param` and `@return` tags instead
 
-- class: [`Rector\DowngradePhp70\Rector\FunctionLike\DowngradeTypeDeclarationRector`](../rules/DowngradePhp70/Rector/FunctionLike/DowngradeTypeDeclarationRector.php)
+- class: [`Rector\DowngradePhp70\Rector\FunctionLike\DowngradeScalarTypeDeclarationRector`](../rules/DowngradePhp70/Rector/FunctionLike/DowngradeScalarTypeDeclarationRector.php)
 
 ```diff
  class SomeClass
@@ -5389,6 +4177,90 @@ Remove the type params and return type, add `@param` and `@return` tags instead
      {
      }
  }
+```
+
+<br>
+
+### DowngradeSelfTypeDeclarationRector
+
+Remove "self" return type, add a `"@return` self" tag instead
+
+- class: [`Rector\DowngradePhp70\Rector\ClassMethod\DowngradeSelfTypeDeclarationRector`](../rules/DowngradePhp70/Rector/ClassMethod/DowngradeSelfTypeDeclarationRector.php)
+
+```diff
+ class SomeClass
+ {
+-    public function foo(): self
++    public function foo()
+     {
+         return $this;
+     }
+ }
+```
+
+<br>
+
+### DowngradeSessionStartArrayOptionsRector
+
+Move array option of session_start($options) to before statement's `ini_set()`
+
+- class: [`Rector\DowngradePhp70\Rector\FuncCall\DowngradeSessionStartArrayOptionsRector`](../rules/DowngradePhp70/Rector/FuncCall/DowngradeSessionStartArrayOptionsRector.php)
+
+```diff
+-session_start([
+-    'cache_limiter' => 'private',
+-]);
++ini_set('session.cache_limiter', 'private');
++session_start();
+```
+
+<br>
+
+### DowngradeSpaceshipRector
+
+Change spaceship with check equal, and ternary to result 0, -1, 1
+
+- class: [`Rector\DowngradePhp70\Rector\Spaceship\DowngradeSpaceshipRector`](../rules/DowngradePhp70/Rector/Spaceship/DowngradeSpaceshipRector.php)
+
+```diff
+-return $a <=> $b;
++$battleShipcompare = function ($left, $right) {
++    if ($left === $right) {
++        return 0;
++    }
++    return $left < $right ? -1 : 1;
++};
++return $battleShipcompare($a, $b);
+```
+
+<br>
+
+### DowngradeStrictTypeDeclarationRector
+
+Remove the declare(strict_types=1)
+
+- class: [`Rector\DowngradePhp70\Rector\Declare_\DowngradeStrictTypeDeclarationRector`](../rules/DowngradePhp70/Rector/Declare_/DowngradeStrictTypeDeclarationRector.php)
+
+```diff
+-declare(strict_types=1);
+ echo 'something';
+```
+
+<br>
+
+### SplitGroupedUseImportsRector
+
+Refactor grouped use imports to standalone lines
+
+- class: [`Rector\DowngradePhp70\Rector\GroupUse\SplitGroupedUseImportsRector`](../rules/DowngradePhp70/Rector/GroupUse/SplitGroupedUseImportsRector.php)
+
+```diff
+-use SomeNamespace\{
+-    First,
+-    Second
+-};
++use SomeNamespace\First;
++use SomeNamespace\Second;
 ```
 
 <br>
@@ -5410,6 +4282,41 @@ Downgrade class constant visibility
 +   const PUBLIC_CONST_B = 2;
 +   const PROTECTED_CONST = 3;
 +   const PRIVATE_CONST = 4;
+ }
+```
+
+<br>
+
+### DowngradeClosureFromCallableRector
+
+Converts `Closure::fromCallable()` to compatible alternative.
+
+- class: [`Rector\DowngradePhp71\Rector\StaticCall\DowngradeClosureFromCallableRector`](../rules/DowngradePhp71/Rector/StaticCall/DowngradeClosureFromCallableRector.php)
+
+```diff
+-\Closure::fromCallable('callable');
++$callable = 'callable';
++function () use ($callable) {
++    return $callable(...func_get_args());
++};
+```
+
+<br>
+
+### DowngradeIsIterableRector
+
+Change is_iterable with array and Traversable object type check
+
+- class: [`Rector\DowngradePhp71\Rector\FuncCall\DowngradeIsIterableRector`](../rules/DowngradePhp71/Rector/FuncCall/DowngradeIsIterableRector.php)
+
+```diff
+ class SomeClass
+ {
+     public function run($obj)
+     {
+-        is_iterable($obj);
++        is_array($obj) || $obj instanceof \Traversable;
+     }
  }
 ```
 
@@ -5438,9 +4345,33 @@ Remove the iterable pseudo type params and returns, add `@param` and `@return` t
 
 <br>
 
+### DowngradeKeysInListRector
+
+Extract keys in list to its own variable assignment
+
+- class: [`Rector\DowngradePhp71\Rector\List_\DowngradeKeysInListRector`](../rules/DowngradePhp71/Rector/List_/DowngradeKeysInListRector.php)
+
+```diff
+ class SomeClass
+ {
+     public function run(): void
+     {
+         $data = [
+             ["id" => 1, "name" => 'Tom'],
+             ["id" => 2, "name" => 'Fred'],
+         ];
+-        list("id" => $id1, "name" => $name1) = $data[0];
++        $id1 = $data[0]["id"];
++        $name1 = $data[0]["name"];
+     }
+ }
+```
+
+<br>
+
 ### DowngradeNegativeStringOffsetToStrlenRector
 
-Downgrade negative string offset to `strlen`
+Downgrade negative string offset to strlen
 
 - class: [`Rector\DowngradePhp71\Rector\String_\DowngradeNegativeStringOffsetToStrlenRector`](../rules/DowngradePhp71/Rector/String_/DowngradeNegativeStringOffsetToStrlenRector.php)
 
@@ -5467,7 +4398,7 @@ Remove the nullable type params, add `@param` tags instead
 -    public function run(?string $input): ?string
 +    /**
 +     * @param string|null $input
-+     * @return string|null $input
++     * @return string|null
 +     */
 +    public function run($input)
      {
@@ -5486,13 +4417,12 @@ Downgrade single one | separated to multi catch exception
 ```diff
  try {
      // Some code...
-- } catch (ExceptionType1 | ExceptionType2 $exception) {
+-} catch (ExceptionType1 | ExceptionType2 $exception) {
 +} catch (ExceptionType1 $exception) {
-     $sameCode;
-- }
-+} catch (ExceptionType2 $exception) {
 +    $sameCode;
-+}
++} catch (ExceptionType2 $exception) {
+     $sameCode;
+ }
 ```
 
 <br>
@@ -5557,32 +4487,106 @@ Remove the "object" param and return type, add a `@param` and `@return` tags ins
 
 ### DowngradeParameterTypeWideningRector
 
-Remove argument type declarations in the parent and in all child classes, whenever some child class removes it
+Change param type to match the lowest type in whole family tree
+
+:wrench: **configure it!**
 
 - class: [`Rector\DowngradePhp72\Rector\ClassMethod\DowngradeParameterTypeWideningRector`](../rules/DowngradePhp72/Rector/ClassMethod/DowngradeParameterTypeWideningRector.php)
 
+```php
+use Rector\DowngradePhp72\Rector\ClassMethod\DowngradeParameterTypeWideningRector;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+
+return static function (ContainerConfigurator $containerConfigurator): void {
+    $services = $containerConfigurator->services();
+
+    $services->set(DowngradeParameterTypeWideningRector::class)
+        ->call('configure', [[
+            DowngradeParameterTypeWideningRector::SAFE_TYPES => [],
+            DowngradeParameterTypeWideningRector::SAFE_TYPES_TO_METHODS => [],
+        ]]);
+};
+```
+
+↓
+
 ```diff
- interface A
+ interface SomeInterface
  {
 -    public function test(array $input);
 +    /**
-+     * @param array $input
++     * @param mixed[] $input
 +     */
 +    public function test($input);
  }
 
- class B implements A
+ final class SomeClass implements SomeInterface
  {
-     public function test($input){} // type omitted for $input
+     public function test($input)
+     {
+     }
  }
+```
 
- class C implements A
+<br>
+
+### DowngradePregUnmatchedAsNullConstantRector
+
+Remove PREG_UNMATCHED_AS_NULL from preg_match and set null value on empty string matched on each match
+
+- class: [`Rector\DowngradePhp72\Rector\FuncCall\DowngradePregUnmatchedAsNullConstantRector`](../rules/DowngradePhp72/Rector/FuncCall/DowngradePregUnmatchedAsNullConstantRector.php)
+
+```diff
+ class SomeClass
  {
--    public function test(array $input){}
-+    /**
-+     * @param array $input
-+     */
-+    public function test($input);
+     public function run()
+     {
+-        preg_match('/(a)(b)*(c)/', 'ac', $matches, PREG_UNMATCHED_AS_NULL);
++        preg_match('/(a)(b)*(c)/', 'ac', $matches);
++        array_walk_recursive($matches, function (&$value) {
++            if ($value === '') {
++                $value = null;
++            }
++        });
+     }
+ }
+```
+
+<br>
+
+### DowngradeStreamIsattyRector
+
+Downgrade `stream_isatty()` function
+
+- class: [`Rector\DowngradePhp72\Rector\FuncCall\DowngradeStreamIsattyRector`](../rules/DowngradePhp72/Rector/FuncCall/DowngradeStreamIsattyRector.php)
+
+```diff
+ class SomeClass
+ {
+     public function run($stream)
+     {
+-        $isStream = stream_isatty($stream);
++        $streamIsatty = function ($stream) {
++            if (\function_exists('stream_isatty')) {
++                return stream_isatty($stream);
++            }
++
++            if (!\is_resource($stream)) {
++                trigger_error('stream_isatty() expects parameter 1 to be resource, '.\gettype($stream).' given', \E_USER_WARNING);
++
++                return false;
++            }
++
++            if ('\\' === \DIRECTORY_SEPARATOR) {
++                $stat = @fstat($stream);
++                // Check if formatted mode is S_IFCHR
++                return $stat ? 0020000 === ($stat['mode'] & 0170000) : false;
++            }
++
++            return \function_exists('posix_isatty') && @posix_isatty($stream);
++        };
++        $isStream = $streamIsatty($stream);
+     }
  }
 ```
 
@@ -5590,9 +4594,29 @@ Remove argument type declarations in the parent and in all child classes, whenev
 
 ## DowngradePhp73
 
+### DowngradeArrayKeyFirstLastRector
+
+Downgrade `array_key_first()` and `array_key_last()` functions
+
+- class: [`Rector\DowngradePhp73\Rector\FuncCall\DowngradeArrayKeyFirstLastRector`](../rules/DowngradePhp73/Rector/FuncCall/DowngradeArrayKeyFirstLastRector.php)
+
+```diff
+ class SomeClass
+ {
+     public function run($items)
+     {
+-        $firstItemKey = array_key_first($items);
++        reset($items);
++        $firstItemKey = key($items);
+     }
+ }
+```
+
+<br>
+
 ### DowngradeFlexibleHeredocSyntaxRector
 
-Changes heredoc/nowdoc that contains closing word to safe wrapper name
+Remove indentation from heredoc/nowdoc
 
 - class: [`Rector\DowngradePhp73\Rector\String_\DowngradeFlexibleHeredocSyntaxRector`](../rules/DowngradePhp73/Rector/String_/DowngradeFlexibleHeredocSyntaxRector.php)
 
@@ -5606,6 +4630,20 @@ Changes heredoc/nowdoc that contains closing word to safe wrapper name
 +FROM `table`
 +WHERE `column` = true;
 +SQL;
+```
+
+<br>
+
+### DowngradeIsCountableRector
+
+Downgrade `is_countable()` to former version
+
+- class: [`Rector\DowngradePhp73\Rector\FuncCall\DowngradeIsCountableRector`](../rules/DowngradePhp73/Rector/FuncCall/DowngradeIsCountableRector.php)
+
+```diff
+ $items = [];
+-return is_countable($items);
++return is_array($items) || $items instanceof Countable;
 ```
 
 <br>
@@ -5665,7 +4703,7 @@ Remove trailing commas in function calls
 
 ### SetCookieOptionsArrayToArgumentsRector
 
-Convert `setcookie` option array to arguments
+Convert setcookie option array to arguments
 
 - class: [`Rector\DowngradePhp73\Rector\FuncCall\SetCookieOptionsArrayToArgumentsRector`](../rules/DowngradePhp73/Rector/FuncCall/SetCookieOptionsArrayToArgumentsRector.php)
 
@@ -5723,7 +4761,7 @@ Add missing param to `array_merge` and `array_merge_recursive`
 
 ### DowngradeArraySpreadRector
 
-Replace array spread with `array_merge` function
+Replace array spread with array_merge function
 
 - class: [`Rector\DowngradePhp74\Rector\Array_\DowngradeArraySpreadRector`](../rules/DowngradePhp74/Rector/Array_/DowngradeArraySpreadRector.php)
 
@@ -5761,9 +4799,8 @@ Remove contravariant argument type declarations
  class A
  {
      public function contraVariantArguments(ChildType $type)
--    {
--    }
-+    { }
+     {
+     }
  }
 
  class B extends A
@@ -5861,20 +4898,20 @@ Remove "_" as thousands separator in numbers
 
 <br>
 
-### DowngradeSelfTypeDeclarationRector
+### DowngradePreviouslyImplementedInterfaceRector
 
-Remove "self" return type, add a `"@return` self" tag instead
+Downgrade previously implemented interface
 
-- class: [`Rector\DowngradePhp74\Rector\ClassMethod\DowngradeSelfTypeDeclarationRector`](../rules/DowngradePhp74/Rector/ClassMethod/DowngradeSelfTypeDeclarationRector.php)
+- class: [`Rector\DowngradePhp74\Rector\Interface_\DowngradePreviouslyImplementedInterfaceRector`](../rules/DowngradePhp74/Rector/Interface_/DowngradePreviouslyImplementedInterfaceRector.php)
 
 ```diff
- class SomeClass
+ interface ContainerExceptionInterface extends Throwable
  {
--    public function foo(): self
-+    public function foo()
-     {
-         return $this;
-     }
+ }
+
+-interface ExceptionInterface extends ContainerExceptionInterface, Throwable
++interface ExceptionInterface extends ContainerExceptionInterface
+ {
  }
 ```
 
@@ -5921,8 +4958,8 @@ Changes property type definition from type definitions to `@var` annotations.
  {
 -    private string $property;
 +    /**
-+    * @var string
-+    */
++     * @var string
++     */
 +    private $property;
  }
 ```
@@ -5930,6 +4967,67 @@ Changes property type definition from type definitions to `@var` annotations.
 <br>
 
 ## DowngradePhp80
+
+### DowngradeAbstractPrivateMethodInTraitRector
+
+Remove "abstract" from private methods in traits and adds an empty function body
+
+- class: [`Rector\DowngradePhp80\Rector\ClassMethod\DowngradeAbstractPrivateMethodInTraitRector`](../rules/DowngradePhp80/Rector/ClassMethod/DowngradeAbstractPrivateMethodInTraitRector.php)
+
+```diff
+ trait SomeTrait
+ {
+-    abstract private function someAbstractPrivateFunction();
++    private function someAbstractPrivateFunction() {}
+ }
+```
+
+<br>
+
+### DowngradeAttributeToAnnotationRector
+
+Refactor PHP attribute markers to annotations notation
+
+:wrench: **configure it!**
+
+- class: [`Rector\DowngradePhp80\Rector\Class_\DowngradeAttributeToAnnotationRector`](../rules/DowngradePhp80/Rector/Class_/DowngradeAttributeToAnnotationRector.php)
+
+```php
+use Rector\DowngradePhp80\Rector\Class_\DowngradeAttributeToAnnotationRector;
+use Rector\DowngradePhp80\ValueObject\DowngradeAttributeToAnnotation;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symplify\SymfonyPhpConfig\ValueObjectInliner;
+
+return static function (ContainerConfigurator $containerConfigurator): void {
+    $services = $containerConfigurator->services();
+
+    $services->set(DowngradeAttributeToAnnotationRector::class)
+        ->call('configure', [[
+            DowngradeAttributeToAnnotationRector::ATTRIBUTE_TO_ANNOTATION => ValueObjectInliner::inline([
+                new DowngradeAttributeToAnnotation('Symfony\Component\Routing\Annotation\Route'),
+            ]),
+        ]]);
+};
+```
+
+↓
+
+```diff
+ use Symfony\Component\Routing\Annotation\Route;
+
+ class SymfonyRoute
+ {
+-    #[Route(path: '/path', name: 'action')]
++    /**
++     * @Route("/path", name="action")
++     */
+     public function action()
+     {
+     }
+ }
+```
+
+<br>
 
 ### DowngradeClassOnObjectToGetClassRector
 
@@ -6006,6 +5104,29 @@ Remove the "mixed" param and return type, add a `@param` and `@return` tag inste
 
 <br>
 
+### DowngradeNamedArgumentRector
+
+Remove named argument
+
+- class: [`Rector\DowngradePhp80\Rector\MethodCall\DowngradeNamedArgumentRector`](../rules/DowngradePhp80/Rector/MethodCall/DowngradeNamedArgumentRector.php)
+
+```diff
+ class SomeClass
+ {
+     public function run()
+     {
+-        $this->execute(b: 100);
++        $this->execute(null, 100);
+     }
+
+     private function execute($a = null, $b = null)
+     {
+     }
+ }
+```
+
+<br>
+
 ### DowngradeNonCapturingCatchesRector
 
 Downgrade catch () without variable to one
@@ -6038,8 +5159,29 @@ Change nullsafe operator to ternary operator rector
 ```diff
 -$dateAsString = $booking->getStartDate()?->asDateTimeString();
 -$dateAsString = $booking->startDate?->dateTimeString;
-+$dateAsString = $booking->getStartDate() ? $booking->getStartDate()->asDateTimeString() : null;
-+$dateAsString = $booking->startDate ? $booking->startDate->dateTimeString : null;
++$dateAsString = ($bookingGetStartDate = $booking->getStartDate()) ? $bookingGetStartDate->asDateTimeString() : null;
++$dateAsString = ($bookingGetStartDate = $booking->startDate) ? $bookingGetStartDate->dateTimeString : null;
+```
+
+<br>
+
+### DowngradePhpTokenRector
+
+`"something()"` will be renamed to `"somethingElse()"`
+
+- class: [`Rector\DowngradePhp80\Rector\StaticCall\DowngradePhpTokenRector`](../rules/DowngradePhp80/Rector/StaticCall/DowngradePhpTokenRector.php)
+
+```diff
+-$tokens = \PhpToken::tokenize($code);
++$tokens = token_get_all($code);
+
+-foreach ($tokens as $phpToken) {
+-   $name = $phpToken->getTokenName();
+-   $text = $phpToken->text;
++foreach ($tokens as $token) {
++    $name = is_array($token) ? token_name($token[0]) : null;
++    $text = is_array($token) ? $token[1] : $token;
+ }
 ```
 
 <br>
@@ -6081,6 +5223,73 @@ Remove "static" return and param type, add a `"@param` `$this"` and `"@return` `
 +    public function getStatic()
      {
          return new static();
+     }
+ }
+```
+
+<br>
+
+### DowngradeStrContainsRector
+
+Replace `str_contains()` with `strpos()` !== false
+
+- class: [`Rector\DowngradePhp80\Rector\FuncCall\DowngradeStrContainsRector`](../rules/DowngradePhp80/Rector/FuncCall/DowngradeStrContainsRector.php)
+
+```diff
+ class SomeClass
+ {
+     public function run()
+     {
+-        return str_contains('abc', 'a');
++        return strpos('abc', 'a') !== false;
+     }
+ }
+```
+
+<br>
+
+### DowngradeStrEndsWithRector
+
+Downgrade `str_ends_with()` to `strncmp()` version
+
+- class: [`Rector\DowngradePhp80\Rector\FuncCall\DowngradeStrEndsWithRector`](../rules/DowngradePhp80/Rector/FuncCall/DowngradeStrEndsWithRector.php)
+
+```diff
+-str_ends_with($haystack, $needle);
++"" === $needle || ("" !== $haystack && 0 === substr_compare($haystack, $needle, -\strlen($needle)));
+```
+
+<br>
+
+### DowngradeStrStartsWithRector
+
+Downgrade `str_starts_with()` to `strncmp()` version
+
+- class: [`Rector\DowngradePhp80\Rector\FuncCall\DowngradeStrStartsWithRector`](../rules/DowngradePhp80/Rector/FuncCall/DowngradeStrStartsWithRector.php)
+
+```diff
+-str_starts_with($haystack, $needle);
++strncmp($haystack, $needle, strlen($needle)) === 0;
+```
+
+<br>
+
+### DowngradeThrowExprRector
+
+Downgrade throw as expr
+
+- class: [`Rector\DowngradePhp80\Rector\Expression\DowngradeThrowExprRector`](../rules/DowngradePhp80/Rector/Expression/DowngradeThrowExprRector.php)
+
+```diff
+ class SomeClass
+ {
+     public function run()
+     {
+-        $id = $somethingNonexistent ?? throw new RuntimeException();
++        if (!isset($somethingNonexistent)) {
++            throw new RuntimeException();
++        }
++        $id = $somethingNonexistent;
      }
  }
 ```
@@ -6151,9 +5360,27 @@ Removes union type property type definition, adding `@var` annotations instead.
  {
 -    private string|int $property;
 +    /**
-+    * @var string|int
-+    */
++     * @var string|int
++     */
 +    private $property;
+ }
+```
+
+<br>
+
+## DowngradePhp81
+
+### DowngradeFinalizePublicClassConstantRector
+
+Remove final from class constants
+
+- class: [`Rector\DowngradePhp81\Rector\ClassConst\DowngradeFinalizePublicClassConstantRector`](../rules/DowngradePhp81/Rector/ClassConst/DowngradeFinalizePublicClassConstantRector.php)
+
+```diff
+ class SomeClass
+ {
+-    final public const NAME = 'value';
++    public const NAME = 'value';
  }
 ```
 
@@ -6281,7 +5508,7 @@ Change nested ifs to early return
 
 ### ChangeOrIfContinueToMultiContinueRector
 
-Changes if && to early return
+Changes if || to early return
 
 - class: [`Rector\EarlyReturn\Rector\If_\ChangeOrIfContinueToMultiContinueRector`](../rules/EarlyReturn/Rector/If_/ChangeOrIfContinueToMultiContinueRector.php)
 
@@ -6464,286 +5691,73 @@ Changes Single return of || to early returns
 
 ## Generics
 
-### GenericsPHPStormMethodAnnotationRector
+### GenericClassMethodParamRector
 
-Complete PHPStorm `@method` annotations, to make it understand the PHPStan/Psalm generics
+Make class methods generic based on implemented interface
 
-- class: [`Rector\Generics\Rector\Class_\GenericsPHPStormMethodAnnotationRector`](../rules/Generics/Rector/Class_/GenericsPHPStormMethodAnnotationRector.php)
+:wrench: **configure it!**
+
+- class: [`Rector\Generics\Rector\ClassMethod\GenericClassMethodParamRector`](../rules/Generics/Rector/ClassMethod/GenericClassMethodParamRector.php)
+
+```php
+use Rector\Generics\Rector\ClassMethod\GenericClassMethodParamRector;
+use Rector\Generics\ValueObject\GenericClassMethodParam;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symplify\SymfonyPhpConfig\ValueObjectInliner;
+
+return static function (ContainerConfigurator $containerConfigurator): void {
+    $services = $containerConfigurator->services();
+
+    $services->set(GenericClassMethodParamRector::class)
+        ->call('configure', [[
+            GenericClassMethodParamRector::GENERIC_CLASS_METHOD_PARAMS => ValueObjectInliner::inline([
+                new GenericClassMethodParam('SomeInterface', 'getParams', 0, 'ParamInterface'),
+            ]),
+        ]]);
+};
+```
+
+↓
 
 ```diff
- /**
-  * @template TEntity as object
-  */
- abstract class AbstractRepository
+ final class SomeClass implements SomeInterface
  {
-     /**
-      * @return TEntity
-      */
-     public function find($id)
+-    private method getParams(SomeSpecificType $someParam)
++    /**
++     * @param SomeSpecificType $someParam
++     */
++    public method getParams(ParamInterface $someParam)
      {
      }
- }
-
- /**
-  * @template TEntity as SomeObject
-  * @extends AbstractRepository<TEntity>
-+ * @method SomeObject find($id)
-  */
- final class AndroidDeviceRepository extends AbstractRepository
- {
  }
 ```
 
 <br>
 
-## Laravel
+## LeagueEvent
 
-### AddGuardToLoginEventRector
+### DispatchStringToObjectRector
 
-Add new `$guard` argument to Illuminate\Auth\Events\Login
+Change string events to anonymous class which implement \League\Event\HasEventName
 
-- class: [`Rector\Laravel\Rector\New_\AddGuardToLoginEventRector`](../rules/Laravel/Rector/New_/AddGuardToLoginEventRector.php)
+- class: [`Rector\LeagueEvent\Rector\MethodCall\DispatchStringToObjectRector`](../rules/LeagueEvent/Rector/MethodCall/DispatchStringToObjectRector.php)
 
 ```diff
- use Illuminate\Auth\Events\Login;
-
  final class SomeClass
  {
-     public function run(): void
-     {
--        $loginEvent = new Login('user', false);
-+        $guard = config('auth.defaults.guard');
-+        $loginEvent = new Login($guard, 'user', false);
-     }
- }
-```
-
-<br>
-
-### AddMockConsoleOutputFalseToConsoleTestsRector
-
-Add "$this->mockConsoleOutput = false"; to console tests that work with output content
-
-- class: [`Rector\Laravel\Rector\Class_\AddMockConsoleOutputFalseToConsoleTestsRector`](../rules/Laravel/Rector/Class_/AddMockConsoleOutputFalseToConsoleTestsRector.php)
-
-```diff
- use Illuminate\Support\Facades\Artisan;
- use Illuminate\Foundation\Testing\TestCase;
-
- final class SomeTest extends TestCase
- {
-+    public function setUp(): void
-+    {
-+        parent::setUp();
-+
-+        $this->mockConsoleOutput = false;
-+    }
-+
-     public function test(): void
-     {
-         $this->assertEquals('content', \trim((new Artisan())::output()));
-     }
- }
-```
-
-<br>
-
-### AddParentBootToModelClassMethodRector
-
-Add `parent::boot();` call to `boot()` class method in child of Illuminate\Database\Eloquent\Model
-
-- class: [`Rector\Laravel\Rector\ClassMethod\AddParentBootToModelClassMethodRector`](../rules/Laravel/Rector/ClassMethod/AddParentBootToModelClassMethodRector.php)
-
-```diff
- use Illuminate\Database\Eloquent\Model;
-
- class Product extends Model
- {
-     public function boot()
-     {
-+        parent::boot();
-     }
- }
-```
-
-<br>
-
-### CallOnAppArrayAccessToStandaloneAssignRector
-
-Replace magical call on `$this->app["something"]` to standalone type assign variable
-
-- class: [`Rector\Laravel\Rector\Assign\CallOnAppArrayAccessToStandaloneAssignRector`](../rules/Laravel/Rector/Assign/CallOnAppArrayAccessToStandaloneAssignRector.php)
-
-```diff
- class SomeClass
- {
-     /**
-      * @var \Illuminate\Contracts\Foundation\Application
-      */
-     private $app;
+     /** @var \League\Event\EventDispatcher */
+     private $dispatcher;
 
      public function run()
      {
--        $validator = $this->app['validator']->make('...');
-+        /** @var \Illuminate\Validation\Factory $validationFactory */
-+        $validationFactory = $this->app['validator'];
-+        $validator = $validationFactory->make('...');
-     }
- }
-```
-
-<br>
-
-### ChangeQueryWhereDateValueWithCarbonRector
-
-Add `parent::boot();` call to `boot()` class method in child of Illuminate\Database\Eloquent\Model
-
-- class: [`Rector\Laravel\Rector\MethodCall\ChangeQueryWhereDateValueWithCarbonRector`](../rules/Laravel/Rector/MethodCall/ChangeQueryWhereDateValueWithCarbonRector.php)
-
-```diff
- use Illuminate\Database\Query\Builder;
-
- final class SomeClass
- {
-     public function run(Builder $query)
-     {
--        $query->whereDate('created_at', '<', Carbon::now());
-+        $dateTime = Carbon::now();
-+        $query->whereDate('created_at', '<=', $dateTime);
-+        $query->whereTime('created_at', '<=', $dateTime);
-     }
- }
-```
-
-<br>
-
-### HelperFuncCallToFacadeClassRector
-
-Change `app()` func calls to facade calls
-
-- class: [`Rector\Laravel\Rector\FuncCall\HelperFuncCallToFacadeClassRector`](../rules/Laravel/Rector/FuncCall/HelperFuncCallToFacadeClassRector.php)
-
-```diff
- class SomeClass
- {
-     public function run()
-     {
--        return app('translator')->trans('value');
-+        return \Illuminate\Support\Facades\App::get('translator')->trans('value');
-     }
- }
-```
-
-<br>
-
-### MakeTaggedPassedToParameterIterableTypeRector
-
-Change param type to iterable, if passed one
-
-- class: [`Rector\Laravel\Rector\New_\MakeTaggedPassedToParameterIterableTypeRector`](../rules/Laravel/Rector/New_/MakeTaggedPassedToParameterIterableTypeRector.php)
-
-```diff
- class AnotherClass
- {
-     /**
-      * @var \Illuminate\Contracts\Foundation\Application
-      */
-     private $app;
-
-     public function create()
-     {
-         $tagged = $this->app->tagged('some_tagged');
-         return new SomeClass($tagged);
-     }
- }
-
- class SomeClass
- {
--    public function __construct(array $items)
-+    public function __construct(iterable $items)
-     {
-     }
- }
-```
-
-<br>
-
-### MinutesToSecondsInCacheRector
-
-Change minutes argument to seconds in Illuminate\Contracts\Cache\Store and Illuminate\Support\Facades\Cache
-
-- class: [`Rector\Laravel\Rector\StaticCall\MinutesToSecondsInCacheRector`](../rules/Laravel/Rector/StaticCall/MinutesToSecondsInCacheRector.php)
-
-```diff
- class SomeClass
- {
-     public function run()
-     {
--        Illuminate\Support\Facades\Cache::put('key', 'value', 60);
-+        Illuminate\Support\Facades\Cache::put('key', 'value', 60 * 60);
-     }
- }
-```
-
-<br>
-
-### PropertyDeferToDeferrableProviderToRector
-
-Change deprecated `$defer` = true; to Illuminate\Contracts\Support\DeferrableProvider interface
-
-- class: [`Rector\Laravel\Rector\Class_\PropertyDeferToDeferrableProviderToRector`](../rules/Laravel/Rector/Class_/PropertyDeferToDeferrableProviderToRector.php)
-
-```diff
- use Illuminate\Support\ServiceProvider;
-+use Illuminate\Contracts\Support\DeferrableProvider;
-
--final class SomeServiceProvider extends ServiceProvider
-+final class SomeServiceProvider extends ServiceProvider implements DeferrableProvider
- {
--    /**
--     * @var bool
--     */
--    protected $defer = true;
- }
-```
-
-<br>
-
-### Redirect301ToPermanentRedirectRector
-
-Change "redirect" call with 301 to "permanentRedirect"
-
-- class: [`Rector\Laravel\Rector\StaticCall\Redirect301ToPermanentRedirectRector`](../rules/Laravel/Rector/StaticCall/Redirect301ToPermanentRedirectRector.php)
-
-```diff
- class SomeClass
- {
-     public function run()
-     {
--        Illuminate\Routing\Route::redirect('/foo', '/bar', 301);
-+        Illuminate\Routing\Route::permanentRedirect('/foo', '/bar');
-     }
- }
-```
-
-<br>
-
-### RequestStaticValidateToInjectRector
-
-Change static `validate()` method to `$request->validate()`
-
-- class: [`Rector\Laravel\Rector\StaticCall\RequestStaticValidateToInjectRector`](../rules/Laravel/Rector/StaticCall/RequestStaticValidateToInjectRector.php)
-
-```diff
- use Illuminate\Http\Request;
-
- class SomeClass
- {
--    public function store()
-+    public function store(\Illuminate\Http\Request $request)
-     {
--        $validatedData = Request::validate(['some_attribute' => 'required']);
-+        $validatedData = $request->validate(['some_attribute' => 'required']);
+-        $this->dispatcher->dispatch('my-event');
++        $this->dispatcher->dispatch(new class implements \League\Event\HasEventName
++        {
++            public function eventName(): string
++            {
++                return 'my-event';
++            }
++        });
      }
  }
 ```
@@ -6860,77 +5874,6 @@ Add mysql_query and mysql_error with connection
 
 ## Naming
 
-### MakeBoolPropertyRespectIsHasWasMethodNamingRector
-
-Renames property to respect is/has/was method naming
-
-- class: [`Rector\Naming\Rector\Property\MakeBoolPropertyRespectIsHasWasMethodNamingRector`](../rules/Naming/Rector/Property/MakeBoolPropertyRespectIsHasWasMethodNamingRector.php)
-
-```diff
- class SomeClass
- {
--private $full = false;
-+private $isFull = false;
-
- public function isFull()
- {
--    return $this->full;
-+    return $this->isFull;
- }
-+
- }
-```
-
-<br>
-
-### MakeGetterClassMethodNameStartWithGetRector
-
-Change getter method names to start with get/provide
-
-- class: [`Rector\Naming\Rector\ClassMethod\MakeGetterClassMethodNameStartWithGetRector`](../rules/Naming/Rector/ClassMethod/MakeGetterClassMethodNameStartWithGetRector.php)
-
-```diff
- class SomeClass
- {
-     /**
-      * @var string
-      */
-     private $name;
-
--    public function name(): string
-+    public function getName(): string
-     {
-         return $this->name;
-     }
- }
-```
-
-<br>
-
-### MakeIsserClassMethodNameStartWithIsRector
-
-Change is method names to start with is/has/was
-
-- class: [`Rector\Naming\Rector\ClassMethod\MakeIsserClassMethodNameStartWithIsRector`](../rules/Naming/Rector/ClassMethod/MakeIsserClassMethodNameStartWithIsRector.php)
-
-```diff
- class SomeClass
- {
-     /**
-      * @var bool
-      */
-     private $isActive = false;
-
--    public function getIsActive()
-+    public function isActive()
-     {
-         return $this->isActive;
-     }
- }
-```
-
-<br>
-
 ### RenameForeachValueVariableToMatchExprVariableRector
 
 Renames value variable name in foreach loop to match expression variable
@@ -6943,7 +5886,7 @@ Renames value variable name in foreach loop to match expression variable
  public function run()
  {
      $array = [];
--    foreach ($variables as $foo) {
+-    foreach ($variables as $property) {
 -        $array[] = $property;
 +    foreach ($variables as $variable) {
 +        $array[] = $variable;
@@ -6979,7 +5922,7 @@ Renames value variable name in foreach loop to match method type
 
 ### RenameParamToMatchTypeRector
 
-Rename variable to match new ClassType
+Rename param to match ClassType
 
 - class: [`Rector\Naming\Rector\ClassMethod\RenameParamToMatchTypeRector`](../rules/Naming/Rector/ClassMethod/RenameParamToMatchTypeRector.php)
 
@@ -7068,1213 +6011,7 @@ Rename variable to match new ClassType
 
 <br>
 
-## Nette
-
-### AddNextrasDatePickerToDateControlRector
-
-Nextras/Form upgrade of addDatePicker method call to DateControl assign
-
-- class: [`Rector\Nette\Rector\MethodCall\AddNextrasDatePickerToDateControlRector`](../rules/Nette/Rector/MethodCall/AddNextrasDatePickerToDateControlRector.php)
-
-```diff
- use Nette\Application\UI\Form;
-
- class SomeClass
- {
-     public function run()
-     {
-         $form = new Form();
--        $form->addDatePicker('key', 'Label');
-+        $form['key'] = new \Nextras\FormComponents\Controls\DateControl('Label');
-     }
- }
-```
-
-<br>
-
-### BuilderExpandToHelperExpandRector
-
-Change `containerBuilder->expand()` to static call with parameters
-
-- class: [`Rector\Nette\Rector\MethodCall\BuilderExpandToHelperExpandRector`](../rules/Nette/Rector/MethodCall/BuilderExpandToHelperExpandRector.php)
-
-```diff
- use Nette\DI\CompilerExtension;
-
- final class SomeClass extends CompilerExtension
- {
-     public function loadConfiguration()
-     {
--        $value = $this->getContainerBuilder()->expand('%value');
-+        $value = \Nette\DI\Helpers::expand('%value', $this->getContainerBuilder()->parameters);
-     }
- }
-```
-
-<br>
-
-### ContextGetByTypeToConstructorInjectionRector
-
-Move dependency get via `$context->getByType()` to constructor injection
-
-- class: [`Rector\Nette\Rector\MethodCall\ContextGetByTypeToConstructorInjectionRector`](../rules/Nette/Rector/MethodCall/ContextGetByTypeToConstructorInjectionRector.php)
-
-```diff
- class SomeClass
- {
-     /**
-      * @var \Nette\DI\Container
-      */
-     private $context;
-
-+    public function __construct(private SomeTypeToInject $someTypeToInject)
-+    {
-+    }
-+
-     public function run()
-     {
--        $someTypeToInject = $this->context->getByType(SomeTypeToInject::class);
-+        $someTypeToInject = $this->someTypeToInject;
-     }
- }
-```
-
-<br>
-
-### ConvertAddUploadWithThirdArgumentTrueToAddMultiUploadRector
-
-convert `addUpload()` with 3rd argument true to `addMultiUpload()`
-
-- class: [`Rector\Nette\Rector\MethodCall\ConvertAddUploadWithThirdArgumentTrueToAddMultiUploadRector`](../rules/Nette/Rector/MethodCall/ConvertAddUploadWithThirdArgumentTrueToAddMultiUploadRector.php)
-
-```diff
- $form = new Nette\Forms\Form();
--$form->addUpload('...', '...', true);
-+$form->addMultiUpload('...', '...');
-```
-
-<br>
-
-### EndsWithFunctionToNetteUtilsStringsRector
-
-Use `Nette\Utils\Strings::endsWith()` over bare string-functions
-
-- class: [`Rector\Nette\Rector\Identical\EndsWithFunctionToNetteUtilsStringsRector`](../rules/Nette/Rector/Identical/EndsWithFunctionToNetteUtilsStringsRector.php)
-
-```diff
-+use Nette\Utils\Strings;
-+
- class SomeClass
- {
-     public function end($needle)
-     {
-         $content = 'Hi, my name is Tom';
--
--        $yes = substr($content, -strlen($needle)) === $needle;
-+        $yes = Strings::endsWith($content, $needle);
-     }
- }
-```
-
-<br>
-
-### FilePutContentsToFileSystemWriteRector
-
-Change `file_put_contents()` to `FileSystem::write()`
-
-- class: [`Rector\Nette\Rector\FuncCall\FilePutContentsToFileSystemWriteRector`](../rules/Nette/Rector/FuncCall/FilePutContentsToFileSystemWriteRector.php)
-
-```diff
- class SomeClass
- {
-     public function run()
-     {
--        file_put_contents('file.txt', 'content');
-+        \Nette\Utils\FileSystem::write('file.txt', 'content');
-
-         file_put_contents('file.txt', 'content_to_append', FILE_APPEND);
-     }
- }
-```
-
-<br>
-
-### JsonDecodeEncodeToNetteUtilsJsonDecodeEncodeRector
-
-Changes `json_encode()/json_decode()` to safer and more verbose `Nette\Utils\Json::encode()/decode()` calls
-
-- class: [`Rector\Nette\Rector\FuncCall\JsonDecodeEncodeToNetteUtilsJsonDecodeEncodeRector`](../rules/Nette/Rector/FuncCall/JsonDecodeEncodeToNetteUtilsJsonDecodeEncodeRector.php)
-
-```diff
- class SomeClass
- {
-     public function decodeJson(string $jsonString)
-     {
--        $stdClass = json_decode($jsonString);
-+        $stdClass = \Nette\Utils\Json::decode($jsonString);
-
--        $array = json_decode($jsonString, true);
--        $array = json_decode($jsonString, false);
-+        $array = \Nette\Utils\Json::decode($jsonString, \Nette\Utils\Json::FORCE_ARRAY);
-+        $array = \Nette\Utils\Json::decode($jsonString);
-     }
-
-     public function encodeJson(array $data)
-     {
--        $jsonString = json_encode($data);
-+        $jsonString = \Nette\Utils\Json::encode($data);
-
--        $prettyJsonString = json_encode($data, JSON_PRETTY_PRINT);
-+        $prettyJsonString = \Nette\Utils\Json::encode($data, \Nette\Utils\Json::PRETTY);
-     }
- }
-```
-
-<br>
-
-### MagicHtmlCallToAppendAttributeRector
-
-Change magic `addClass()` etc. calls on Html to explicit methods
-
-- class: [`Rector\Nette\Rector\MethodCall\MagicHtmlCallToAppendAttributeRector`](../rules/Nette/Rector/MethodCall/MagicHtmlCallToAppendAttributeRector.php)
-
-```diff
- use Nette\Utils\Html;
-
- final class SomeClass
- {
-     public function run()
-     {
-         $html = Html::el();
--        $html->setClass('first');
-+        $html->appendAttribute('class', 'first');
-     }
- }
-```
-
-<br>
-
-### MergeDefaultsInGetConfigCompilerExtensionRector
-
-Change `$this->getConfig($defaults)` to `array_merge`
-
-- class: [`Rector\Nette\Rector\MethodCall\MergeDefaultsInGetConfigCompilerExtensionRector`](../rules/Nette/Rector/MethodCall/MergeDefaultsInGetConfigCompilerExtensionRector.php)
-
-```diff
- use Nette\DI\CompilerExtension;
-
- final class SomeExtension extends CompilerExtension
- {
-     private $defaults = [
-         'key' => 'value'
-     ];
-
-     public function loadConfiguration()
-     {
--        $config = $this->getConfig($this->defaults);
-+        $config = array_merge($this->defaults, $this->getConfig());
-     }
- }
-```
-
-<br>
-
-### MoveFinalGetUserToCheckRequirementsClassMethodRector
-
-Presenter method `getUser()` is now final, move logic to `checkRequirements()`
-
-- class: [`Rector\Nette\Rector\Class_\MoveFinalGetUserToCheckRequirementsClassMethodRector`](../rules/Nette/Rector/Class_/MoveFinalGetUserToCheckRequirementsClassMethodRector.php)
-
-```diff
- use Nette\Application\UI\Presenter;
-
- class SomeControl extends Presenter
- {
--    public function getUser()
-+    public function checkRequirements()
-     {
--        $user = parent::getUser();
-+        $user = $this->getUser();
-         $user->getStorage()->setNamespace('admin_session');
--        return $user;
-+
-+        parent::checkRequirements();
-     }
- }
-```
-
-<br>
-
-### PregFunctionToNetteUtilsStringsRector
-
-Use `Nette\Utils\Strings` over bare `preg_split()` and `preg_replace()` functions
-
-- class: [`Rector\Nette\Rector\FuncCall\PregFunctionToNetteUtilsStringsRector`](../rules/Nette/Rector/FuncCall/PregFunctionToNetteUtilsStringsRector.php)
-
-```diff
-+use Nette\Utils\Strings;
-+
- class SomeClass
- {
-     public function run()
-     {
-         $content = 'Hi my name is Tom';
--        $splitted = preg_split('#Hi#', $content);
-+        $splitted = \Nette\Utils\Strings::split($content, '#Hi#');
-     }
- }
-```
-
-<br>
-
-### PregMatchFunctionToNetteUtilsStringsRector
-
-Use `Nette\Utils\Strings` over bare `preg_match()` and `preg_match_all()` functions
-
-- class: [`Rector\Nette\Rector\FuncCall\PregMatchFunctionToNetteUtilsStringsRector`](../rules/Nette/Rector/FuncCall/PregMatchFunctionToNetteUtilsStringsRector.php)
-
-```diff
-+use Nette\Utils\Strings;
-+
- class SomeClass
- {
-     public function run()
-     {
-         $content = 'Hi my name is Tom';
--        preg_match('#Hi#', $content, $matches);
-+        $matches = Strings::match($content, '#Hi#');
-     }
- }
-```
-
-<br>
-
-### RemoveParentAndNameFromComponentConstructorRector
-
-Remove `$parent` and `$name` in control constructor
-
-- class: [`Rector\Nette\Rector\ClassMethod\RemoveParentAndNameFromComponentConstructorRector`](../rules/Nette/Rector/ClassMethod/RemoveParentAndNameFromComponentConstructorRector.php)
-
-```diff
- use Nette\Application\UI\Control;
-
- class SomeControl extends Control
- {
--    public function __construct(IContainer $parent = null, $name = null, int $value)
-+    public function __construct(int $value)
-     {
--        parent::__construct($parent, $name);
-         $this->value = $value;
-     }
- }
-```
-
-<br>
-
-### ReplaceTimeNumberWithDateTimeConstantRector
-
-Replace `time` numbers with `Nette\Utils\DateTime` constants
-
-- class: [`Rector\Nette\Rector\LNumber\ReplaceTimeNumberWithDateTimeConstantRector`](../rules/Nette/Rector/LNumber/ReplaceTimeNumberWithDateTimeConstantRector.php)
-
-```diff
- final class SomeClass
- {
-     public function run()
-     {
--        return 86400;
-+        return \Nette\Utils\DateTime::DAY;
-     }
- }
-```
-
-<br>
-
-### RequestGetCookieDefaultArgumentToCoalesceRector
-
-Add removed `Nette\Http\Request::getCookies()` default value as coalesce
-
-- class: [`Rector\Nette\Rector\MethodCall\RequestGetCookieDefaultArgumentToCoalesceRector`](../rules/Nette/Rector/MethodCall/RequestGetCookieDefaultArgumentToCoalesceRector.php)
-
-```diff
- use Nette\Http\Request;
-
- class SomeClass
- {
-     public function run(Request $request)
-     {
--        return $request->getCookie('name', 'default');
-+        return $request->getCookie('name') ?? 'default';
-     }
- }
-```
-
-<br>
-
-### SetClassWithArgumentToSetFactoryRector
-
-Change setClass with class and arguments to separated methods
-
-- class: [`Rector\Nette\Rector\MethodCall\SetClassWithArgumentToSetFactoryRector`](../rules/Nette/Rector/MethodCall/SetClassWithArgumentToSetFactoryRector.php)
-
-```diff
- use Nette\DI\ContainerBuilder;
-
- class SomeClass
- {
-     public function run(ContainerBuilder $containerBuilder)
-     {
-         $containerBuilder->addDefinition('...')
--            ->setClass('SomeClass', [1, 2]);
-+            ->setFactory('SomeClass', [1, 2]);
-     }
- }
-```
-
-<br>
-
-### StartsWithFunctionToNetteUtilsStringsRector
-
-Use `Nette\Utils\Strings::startsWith()` over bare string-functions
-
-- class: [`Rector\Nette\Rector\Identical\StartsWithFunctionToNetteUtilsStringsRector`](../rules/Nette/Rector/Identical/StartsWithFunctionToNetteUtilsStringsRector.php)
-
-```diff
-+use Nette\Utils\Strings;
-+
- class SomeClass
- {
- public function start($needle)
- {
-     $content = 'Hi, my name is Tom';
--    $yes = substr($content, 0, strlen($needle)) === $needle;
-+    $yes = Strings::startsWith($content, $needle);
- }
- }
-```
-
-<br>
-
-### StrposToStringsContainsRector
-
-Use `Nette\Utils\Strings` over bare string-functions
-
-- class: [`Rector\Nette\Rector\NotIdentical\StrposToStringsContainsRector`](../rules/Nette/Rector/NotIdentical/StrposToStringsContainsRector.php)
-
-```diff
- class SomeClass
- {
-     public function run()
-     {
-         $name = 'Hi, my name is Tom';
--        return strpos($name, 'Hi') !== false;
-+        return \Nette\Utils\Strings::contains($name, 'Hi');
-     }
- }
-```
-
-<br>
-
-### SubstrStrlenFunctionToNetteUtilsStringsRector
-
-Use `Nette\Utils\Strings` over bare string-functions
-
-- class: [`Rector\Nette\Rector\FuncCall\SubstrStrlenFunctionToNetteUtilsStringsRector`](../rules/Nette/Rector/FuncCall/SubstrStrlenFunctionToNetteUtilsStringsRector.php)
-
-```diff
- class SomeClass
- {
-     public function run()
-     {
--        return substr($value, 0, 3);
-+        return \Nette\Utils\Strings::substring($value, 0, 3);
-     }
- }
-```
-
-<br>
-
-### TemplateMagicAssignToExplicitVariableArrayRector
-
-Change `$this->templates->{magic}` to `$this->template->render(..., $values)` in components
-
-- class: [`Rector\Nette\Rector\ClassMethod\TemplateMagicAssignToExplicitVariableArrayRector`](../rules/Nette/Rector/ClassMethod/TemplateMagicAssignToExplicitVariableArrayRector.php)
-
-```diff
- use Nette\Application\UI\Control;
-
- class SomeControl extends Control
- {
-     public function render()
-     {
--        $this->template->param = 'some value';
--        $this->template->render(__DIR__ . '/poll.latte');
-+        $this->template->render(__DIR__ . '/poll.latte', ['param' => 'some value']);
-     }
- }
-```
-
-<br>
-
-### TranslateClassMethodToVariadicsRector
-
-Change `translate()` method call 2nd arg to variadic
-
-- class: [`Rector\Nette\Rector\ClassMethod\TranslateClassMethodToVariadicsRector`](../rules/Nette/Rector/ClassMethod/TranslateClassMethodToVariadicsRector.php)
-
-```diff
- use Nette\Localization\ITranslator;
-
- final class SomeClass implements ITranslator
- {
--    public function translate($message, $count = null)
-+    public function translate($message, ... $parameters)
-     {
-+        $count = $parameters[0] ?? null;
-         return [$message, $count];
-     }
- }
-```
-
-<br>
-
-## NetteCodeQuality
-
-### AnnotateMagicalControlArrayAccessRector
-
-Change magic `$this["some_component"]` to variable assign with `@var` annotation
-
-- class: [`Rector\NetteCodeQuality\Rector\ArrayDimFetch\AnnotateMagicalControlArrayAccessRector`](../rules/NetteCodeQuality/Rector/ArrayDimFetch/AnnotateMagicalControlArrayAccessRector.php)
-
-```diff
- use Nette\Application\UI\Presenter;
- use Nette\Application\UI\Form;
-
- final class SomePresenter extends Presenter
- {
-     public function run()
-     {
--        if ($this['some_form']->isSubmitted()) {
-+        /** @var \Nette\Application\UI\Form $someForm */
-+        $someForm = $this['some_form'];
-+        if ($someForm->isSubmitted()) {
-         }
-     }
-
-     protected function createComponentSomeForm()
-     {
-         return new Form();
-     }
- }
-```
-
-<br>
-
-### ArrayAccessGetControlToGetComponentMethodCallRector
-
-Change magic arrays access get, to explicit `$this->getComponent(...)` method
-
-- class: [`Rector\NetteCodeQuality\Rector\Assign\ArrayAccessGetControlToGetComponentMethodCallRector`](../rules/NetteCodeQuality/Rector/Assign/ArrayAccessGetControlToGetComponentMethodCallRector.php)
-
-```diff
- use Nette\Application\UI\Presenter;
-
- class SomeClass extends Presenter
- {
-     public function some()
-     {
--        $someControl = $this['whatever'];
-+        $someControl = $this->getComponent('whatever');
-     }
- }
-```
-
-<br>
-
-### ArrayAccessSetControlToAddComponentMethodCallRector
-
-Change magic arrays access set, to explicit `$this->setComponent(...)` method
-
-- class: [`Rector\NetteCodeQuality\Rector\Assign\ArrayAccessSetControlToAddComponentMethodCallRector`](../rules/NetteCodeQuality/Rector/Assign/ArrayAccessSetControlToAddComponentMethodCallRector.php)
-
-```diff
- use Nette\Application\UI\Control;
- use Nette\Application\UI\Presenter;
-
- class SomeClass extends Presenter
- {
-     public function some()
-     {
-         $someControl = new Control();
--        $this['whatever'] = $someControl;
-+        $this->addComponent($someControl, 'whatever');
-     }
- }
-```
-
-<br>
-
-### ChangeFormArrayAccessToAnnotatedControlVariableRector
-
-Change array access magic on `$form` to explicit standalone typed variable
-
-- class: [`Rector\NetteCodeQuality\Rector\ArrayDimFetch\ChangeFormArrayAccessToAnnotatedControlVariableRector`](../rules/NetteCodeQuality/Rector/ArrayDimFetch/ChangeFormArrayAccessToAnnotatedControlVariableRector.php)
-
-```diff
- use Nette\Application\UI\Form;
-
- class SomePresenter
- {
-     public function run()
-     {
-         $form = new Form();
-         $this->addText('email', 'Email');
-
--        $form['email']->value = 'hey@hi.hello';
-+        /** @var \Nette\Forms\Controls\TextInput $emailControl */
-+        $emailControl = $form['email'];
-+        $emailControl->value = 'hey@hi.hello';
-     }
- }
-```
-
-<br>
-
-### MakeGetComponentAssignAnnotatedRector
-
-Add doc type for magic `$control->getComponent(...)` assign
-
-- class: [`Rector\NetteCodeQuality\Rector\Assign\MakeGetComponentAssignAnnotatedRector`](../rules/NetteCodeQuality/Rector/Assign/MakeGetComponentAssignAnnotatedRector.php)
-
-```diff
- use Nette\Application\UI\Control;
-
- final class SomeClass
- {
-     public function run()
-     {
-         $externalControl = new ExternalControl();
-+        /** @var AnotherControl $anotherControl */
-         $anotherControl = $externalControl->getComponent('another');
-     }
- }
-
- final class ExternalControl extends Control
- {
-     public function createComponentAnother(): AnotherControl
-     {
-         return new AnotherControl();
-     }
- }
-
- final class AnotherControl extends Control
- {
- }
-```
-
-<br>
-
-### MergeTemplateSetFileToTemplateRenderRector
-
-Change `$this->template->setFile()` `$this->template->render()`
-
-- class: [`Rector\NetteCodeQuality\Rector\ClassMethod\MergeTemplateSetFileToTemplateRenderRector`](../rules/NetteCodeQuality/Rector/ClassMethod/MergeTemplateSetFileToTemplateRenderRector.php)
-
-```diff
- use Nette\Application\UI\Control;
-
- final class SomeControl extends Control
- {
-     public function render()
-     {
--        $this->template->setFile(__DIR__ . '/someFile.latte');
--        $this->template->render();
-+        $this->template->render(__DIR__ . '/someFile.latte');
-     }
- }
-```
-
-<br>
-
-### MoveInjectToExistingConstructorRector
-
-Move `@inject` properties to constructor, if there already is one
-
-- class: [`Rector\NetteCodeQuality\Rector\Class_\MoveInjectToExistingConstructorRector`](../rules/NetteCodeQuality/Rector/Class_/MoveInjectToExistingConstructorRector.php)
-
-```diff
- final class SomeClass
- {
-     /**
-      * @var SomeDependency
--     * @inject
-      */
--    public $someDependency;
-+    private $someDependency;
-
-     /**
-      * @var OtherDependency
-      */
-     private $otherDependency;
-
--    public function __construct(OtherDependency $otherDependency)
-+    public function __construct(OtherDependency $otherDependency, SomeDependency $someDependency)
-     {
-         $this->otherDependency = $otherDependency;
-+        $this->someDependency = $someDependency;
-     }
- }
-```
-
-<br>
-
-### SubstrMinusToStringEndsWithRector
-
-Change `substr` function with minus to `Strings::endsWith()`
-
-- class: [`Rector\NetteCodeQuality\Rector\Identical\SubstrMinusToStringEndsWithRector`](../rules/NetteCodeQuality/Rector/Identical/SubstrMinusToStringEndsWithRector.php)
-
-```diff
--substr($var, -4) !== 'Test';
--substr($var, -4) === 'Test';
-+! \Nette\Utils\Strings::endsWith($var, 'Test');
-+\Nette\Utils\Strings::endsWith($var, 'Test');
-```
-
-<br>
-
-## NetteKdyby
-
-### ChangeNetteEventNamesInGetSubscribedEventsRector
-
-Change EventSubscriber from Kdyby to Contributte
-
-- class: [`Rector\NetteKdyby\Rector\ClassMethod\ChangeNetteEventNamesInGetSubscribedEventsRector`](../rules/NetteKdyby/Rector/ClassMethod/ChangeNetteEventNamesInGetSubscribedEventsRector.php)
-
-```diff
-+use Contributte\Events\Extra\Event\Application\ShutdownEvent;
- use Kdyby\Events\Subscriber;
- use Nette\Application\Application;
--use Nette\Application\UI\Presenter;
-
- class GetApplesSubscriber implements Subscriber
- {
--    public function getSubscribedEvents()
-+    public static function getSubscribedEvents()
-     {
-         return [
--            Application::class . '::onShutdown',
-+            ShutdownEvent::class => 'onShutdown',
-         ];
-     }
-
--    public function onShutdown(Presenter $presenter)
-+    public function onShutdown(ShutdownEvent $shutdownEvent)
-     {
-+        $presenter = $shutdownEvent->getPresenter();
-         $presenterName = $presenter->getName();
-         // ...
-     }
- }
-```
-
-<br>
-
-### ReplaceEventManagerWithEventSubscriberRector
-
-Change Kdyby EventManager to EventDispatcher
-
-- class: [`Rector\NetteKdyby\Rector\MethodCall\ReplaceEventManagerWithEventSubscriberRector`](../rules/NetteKdyby/Rector/MethodCall/ReplaceEventManagerWithEventSubscriberRector.php)
-
-```diff
- use Kdyby\Events\EventManager;
-
- final class SomeClass
- {
-     /**
-      * @var EventManager
-      */
-     private $eventManager;
-
-     public function __construct(EventManager $eventManager)
-     {
-         $this->eventManager = eventManager;
-     }
-
-     public function run()
-     {
-         $key = '2000';
--        $this->eventManager->dispatchEvent(static::class . '::onCopy', new EventArgsList([$this, $key]));
-+        $this->eventManager->dispatch(new SomeClassCopyEvent($this, $key));
-     }
- }
-```
-
-<br>
-
-### ReplaceMagicPropertyEventWithEventClassRector
-
-Change `$onProperty` magic call with event disptacher and class dispatch
-
-- class: [`Rector\NetteKdyby\Rector\MethodCall\ReplaceMagicPropertyEventWithEventClassRector`](../rules/NetteKdyby/Rector/MethodCall/ReplaceMagicPropertyEventWithEventClassRector.php)
-
-```diff
- final class FileManager
- {
--    public $onUpload;
-+    use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
-
-+    public function __construct(EventDispatcherInterface $eventDispatcher)
-+    {
-+        $this->eventDispatcher = $eventDispatcher;
-+    }
-+
-     public function run(User $user)
-     {
--        $this->onUpload($user);
-+        $onFileManagerUploadEvent = new FileManagerUploadEvent($user);
-+        $this->eventDispatcher->dispatch($onFileManagerUploadEvent);
-     }
- }
-```
-
-<br>
-
-### ReplaceMagicPropertyWithEventClassRector
-
-Change `getSubscribedEvents()` from on magic property, to Event class
-
-- class: [`Rector\NetteKdyby\Rector\ClassMethod\ReplaceMagicPropertyWithEventClassRector`](../rules/NetteKdyby/Rector/ClassMethod/ReplaceMagicPropertyWithEventClassRector.php)
-
-```diff
- use Kdyby\Events\Subscriber;
-
- final class ActionLogEventSubscriber implements Subscriber
- {
-     public function getSubscribedEvents(): array
-     {
-         return [
--            AlbumService::class . '::onApprove' => 'onAlbumApprove',
-+            AlbumServiceApproveEvent::class => 'onAlbumApprove',
-         ];
-     }
-
--    public function onAlbumApprove(Album $album, int $adminId): void
-+    public function onAlbumApprove(AlbumServiceApproveEventAlbum $albumServiceApproveEventAlbum): void
-     {
-+        $album = $albumServiceApproveEventAlbum->getAlbum();
-         $album->play();
-     }
- }
-```
-
-<br>
-
-## NetteTesterToPHPUnit
-
-### NetteAssertToPHPUnitAssertRector
-
-Migrate Nette/Assert calls to PHPUnit
-
-- class: [`Rector\NetteTesterToPHPUnit\Rector\StaticCall\NetteAssertToPHPUnitAssertRector`](../rules/NetteTesterToPHPUnit/Rector/StaticCall/NetteAssertToPHPUnitAssertRector.php)
-
-```diff
- use Tester\Assert;
-
- function someStaticFunctions()
- {
--    Assert::true(10 == 5);
-+    \PHPUnit\Framework\Assert::assertTrue(10 == 5);
- }
-```
-
-<br>
-
-### NetteTesterClassToPHPUnitClassRector
-
-Migrate Nette Tester test case to PHPUnit
-
-- class: [`Rector\NetteTesterToPHPUnit\Rector\Class_\NetteTesterClassToPHPUnitClassRector`](../rules/NetteTesterToPHPUnit/Rector/Class_/NetteTesterClassToPHPUnitClassRector.php)
-
-```diff
- namespace KdybyTests\Doctrine;
-
- use Tester\TestCase;
- use Tester\Assert;
-
--require_once __DIR__ . '/../bootstrap.php';
--
--class ExtensionTest extends TestCase
-+class ExtensionTest extends \PHPUnit\Framework\TestCase
- {
-     public function testFunctionality()
-     {
--        Assert::true($default instanceof Kdyby\Doctrine\EntityManager);
--        Assert::true(5);
--        Assert::same($container->getService('kdyby.doctrine.default.entityManager'), $default);
-+        $this->assertInstanceOf(\Kdyby\Doctrine\EntityManager::cllass, $default);
-+        $this->assertTrue(5);
-+        $this->same($container->getService('kdyby.doctrine.default.entityManager'), $default);
-     }
--}
--
--(new \ExtensionTest())->run();
-+}
-```
-
-<br>
-
-### RenameTesterTestToPHPUnitToTestFileRector
-
-Rename "*.phpt" file to "*Test.php" file
-
-- class: [`Rector\NetteTesterToPHPUnit\Rector\FileNode\RenameTesterTestToPHPUnitToTestFileRector`](../rules/NetteTesterToPHPUnit/Rector/FileNode/RenameTesterTestToPHPUnitToTestFileRector.php)
-
-```diff
--// tests/SomeTestCase.phpt
-+// tests/SomeTestCase.php
-```
-
-<br>
-
-## NetteToSymfony
-
-### DeleteFactoryInterfaceRector
-
-Interface factories are not needed in Symfony. Clear constructor injection is used instead
-
-- class: [`Rector\NetteToSymfony\Rector\Interface_\DeleteFactoryInterfaceRector`](../rules/NetteToSymfony/Rector/Interface_/DeleteFactoryInterfaceRector.php)
-
-```diff
--interface SomeControlFactoryInterface
--{
--    public function create();
--}
-```
-
-<br>
-
-### FormControlToControllerAndFormTypeRector
-
-Change Form that extends Control to Controller and decoupled FormType
-
-- class: [`Rector\NetteToSymfony\Rector\Class_\FormControlToControllerAndFormTypeRector`](../rules/NetteToSymfony/Rector/Class_/FormControlToControllerAndFormTypeRector.php)
-
-```diff
--use Nette\Application\UI\Form;
--use Nette\Application\UI\Control;
--
--class SomeForm extends Control
-+class SomeFormController extends \Symfony\Bundle\FrameworkBundle\Controller\AbstractController
- {
--    public function createComponentForm()
-+    /**
-+     * @Route(...)
-+     */
-+    public function actionSomeForm(\Symfony\Component\HttpFoundation\Request $request): \Symfony\Component\HttpFoundation\Response
-     {
--        $form = new Form();
--        $form->addText('name', 'Your name');
-+        $form = $this->createForm(SomeFormType::class);
-+        $form->handleRequest($request);
-
--        $form->onSuccess[] = [$this, 'processForm'];
--    }
--
--    public function processForm(Form $form)
--    {
--        // process me
-+        if ($form->isSuccess() && $form->isValid()) {
-+            // process me
-+        }
-     }
- }
-```
-
-Extra file:
-
-```php
-use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\FormBuilderInterface;
-
-class SomeFormType extends AbstractType
-{
-    public function buildForm(FormBuilderInterface $formBuilder, array $options)
-    {
-        $formBuilder->add('name', TextType::class, [
-            'label' => 'Your name',
-        ]);
-    }
-}
-```
-
-<br>
-
-### FromHttpRequestGetHeaderToHeadersGetRector
-
-Changes `getHeader()` to `$request->headers->get()`
-
-- class: [`Rector\NetteToSymfony\Rector\MethodCall\FromHttpRequestGetHeaderToHeadersGetRector`](../rules/NetteToSymfony/Rector/MethodCall/FromHttpRequestGetHeaderToHeadersGetRector.php)
-
-```diff
- use Nette\Request;
-
- final class SomeController
- {
-     public static function someAction(Request $request)
-     {
--        $header = $this->httpRequest->getHeader('x');
-+        $header = $request->headers->get('x');
-     }
- }
-```
-
-<br>
-
-### FromRequestGetParameterToAttributesGetRector
-
-Changes `"getParameter()"` to `"attributes->get()"` from Nette to Symfony
-
-- class: [`Rector\NetteToSymfony\Rector\MethodCall\FromRequestGetParameterToAttributesGetRector`](../rules/NetteToSymfony/Rector/MethodCall/FromRequestGetParameterToAttributesGetRector.php)
-
-```diff
- use Nette\Request;
-
- final class SomeController
- {
-     public static function someAction(Request $request)
-     {
--        $value = $request->getParameter('abz');
-+        $value = $request->attribute->get('abz');
-     }
- }
-```
-
-<br>
-
-### NetteControlToSymfonyControllerRector
-
-Migrate Nette Component to Symfony Controller
-
-- class: [`Rector\NetteToSymfony\Rector\Class_\NetteControlToSymfonyControllerRector`](../rules/NetteToSymfony/Rector/Class_/NetteControlToSymfonyControllerRector.php)
-
-```diff
--use Nette\Application\UI\Control;
-+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-+use Symfony\Component\HttpFoundation\Response;
-
--class SomeControl extends Control
-+class SomeController extends AbstractController
- {
--    public function render()
--    {
--        $this->template->param = 'some value';
--        $this->template->render(__DIR__ . '/poll.latte');
--    }
-+     public function some(): Response
-+     {
-+         return $this->render(__DIR__ . '/poll.latte', ['param' => 'some value']);
-+     }
- }
-```
-
-<br>
-
-### NetteFormToSymfonyFormRector
-
-Migrate Nette\Forms in Presenter to Symfony
-
-- class: [`Rector\NetteToSymfony\Rector\MethodCall\NetteFormToSymfonyFormRector`](../rules/NetteToSymfony/Rector/MethodCall/NetteFormToSymfonyFormRector.php)
-
-```diff
- use Nette\Application\UI;
-
- class SomePresenter extends UI\Presenter
- {
-     public function someAction()
-     {
--        $form = new UI\Form;
--        $form->addText('name', 'Name:');
--        $form->addPassword('password', 'Password:');
--        $form->addSubmit('login', 'Sign up');
-+        $form = $this->createFormBuilder();
-+        $form->add('name', \Symfony\Component\Form\Extension\Core\Type\TextType::class, [
-+            'label' => 'Name:'
-+        ]);
-+        $form->add('password', \Symfony\Component\Form\Extension\Core\Type\PasswordType::class, [
-+            'label' => 'Password:'
-+        ]);
-+        $form->add('login', \Symfony\Component\Form\Extension\Core\Type\SubmitType::class, [
-+            'label' => 'Sign up'
-+        ]);
-     }
- }
-```
-
-<br>
-
-### RenameEventNamesInEventSubscriberRector
-
-Changes event names from Nette ones to Symfony ones
-
-- class: [`Rector\NetteToSymfony\Rector\ClassMethod\RenameEventNamesInEventSubscriberRector`](../rules/NetteToSymfony/Rector/ClassMethod/RenameEventNamesInEventSubscriberRector.php)
-
-```diff
- use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-
- final class SomeClass implements EventSubscriberInterface
- {
-     public static function getSubscribedEvents()
-     {
--        return ['nette.application' => 'someMethod'];
-+        return [\SymfonyEvents::KERNEL => 'someMethod'];
-     }
- }
-```
-
-<br>
-
-### RouterListToControllerAnnotationsRector
-
-Change new `Route()` from RouteFactory to `@Route` annotation above controller method
-
-- class: [`Rector\NetteToSymfony\Rector\ClassMethod\RouterListToControllerAnnotationsRector`](../rules/NetteToSymfony/Rector/ClassMethod/RouterListToControllerAnnotationsRector.php)
-
-```diff
- final class RouterFactory
- {
-     public function create(): RouteList
-     {
-         $routeList = new RouteList();
-+
-+        // case of single action controller, usually get() or __invoke() method
-         $routeList[] = new Route('some-path', SomePresenter::class);
-
-         return $routeList;
-     }
- }
-
-+use Symfony\Component\Routing\Annotation\Route;
-+
- final class SomePresenter
- {
-+    /**
-+     * @Route(path="some-path")
-+     */
-     public function run()
-     {
-     }
- }
-```
-
-<br>
-
-### WrapTransParameterNameRector
-
-Adds %% to placeholder name of `trans()` method if missing
-
-- class: [`Rector\NetteToSymfony\Rector\MethodCall\WrapTransParameterNameRector`](../rules/NetteToSymfony/Rector/MethodCall/WrapTransParameterNameRector.php)
-
-```diff
- use Symfony\Component\Translation\Translator;
-
- final class SomeController
- {
-     public function run()
-     {
-         $translator = new Translator('');
-         $translated = $translator->trans(
-             'Hello %name%',
--            ['name' => $name]
-+            ['%name%' => $name]
-         );
-     }
- }
-```
-
-<br>
-
 ## Order
-
-### OrderClassConstantsByIntegerValueRector
-
-Order class constant order by their integer value
-
-- class: [`Rector\Order\Rector\Class_\OrderClassConstantsByIntegerValueRector`](../rules/Order/Rector/Class_/OrderClassConstantsByIntegerValueRector.php)
-
-```diff
- class SomeClass
- {
-     const MODE_ON = 0;
-
-+    const MODE_MAYBE = 1;
-+
-     const MODE_OFF = 2;
--
--    const MODE_MAYBE = 1;
- }
-```
-
-<br>
-
-### OrderConstantsByVisibilityRector
-
-Orders constants by visibility
-
-- class: [`Rector\Order\Rector\Class_\OrderConstantsByVisibilityRector`](../rules/Order/Rector/Class_/OrderConstantsByVisibilityRector.php)
-
-```diff
- final class SomeClass
- {
-+    public const PUBLIC_CONST = 'public';
-+    protected const PROTECTED_CONST = 'protected';
-     private const PRIVATE_CONST = 'private';
--    protected const PROTECTED_CONST = 'protected';
--    public const PUBLIC_CONST = 'public';
- }
-```
-
-<br>
-
-### OrderFirstLevelClassStatementsRector
-
-Orders first level Class statements
-
-- class: [`Rector\Order\Rector\Class_\OrderFirstLevelClassStatementsRector`](../rules/Order/Rector/Class_/OrderFirstLevelClassStatementsRector.php)
-
-```diff
- final class SomeClass
- {
-+    use TraitName;
-+    private const CONST_NAME = 'constant_value';
-+    protected $propertyName;
-     public function functionName();
--    protected $propertyName;
--    private const CONST_NAME = 'constant_value';
--    use TraitName;
- }
-```
-
-<br>
-
-### OrderMethodsByVisibilityRector
-
-Orders method by visibility
-
-- class: [`Rector\Order\Rector\Class_\OrderMethodsByVisibilityRector`](../rules/Order/Rector/Class_/OrderMethodsByVisibilityRector.php)
-
-```diff
- class SomeClass
- {
-+    public function publicFunctionName();
-     protected function protectedFunctionName();
-     private function privateFunctionName();
--    public function publicFunctionName();
- }
-```
-
-<br>
 
 ### OrderPrivateMethodsByUseRector
 
@@ -8299,1197 +6036,6 @@ Order private methods in order of their use
 -    private function call1()
 +    private function call2()
      {
-     }
- }
-```
-
-<br>
-
-### OrderPropertiesByVisibilityRector
-
-Orders properties by visibility
-
-- class: [`Rector\Order\Rector\Class_\OrderPropertiesByVisibilityRector`](../rules/Order/Rector/Class_/OrderPropertiesByVisibilityRector.php)
-
-```diff
- final class SomeClass
- {
-+    public $publicProperty;
-     protected $protectedProperty;
-     private $privateProperty;
--    public $publicProperty;
- }
-```
-
-<br>
-
-## PHPOffice
-
-### AddRemovedDefaultValuesRector
-
-Complete removed default values explicitly
-
-- class: [`Rector\PHPOffice\Rector\StaticCall\AddRemovedDefaultValuesRector`](../rules/PHPOffice/Rector/StaticCall/AddRemovedDefaultValuesRector.php)
-
-```diff
- final class SomeClass
- {
-     public function run(): void
-     {
-         $logger = new \PHPExcel_CalcEngine_Logger;
--        $logger->setWriteDebugLog();
-+        $logger->setWriteDebugLog(false);
-     }
- }
-```
-
-<br>
-
-### CellStaticToCoordinateRector
-
-Methods to manipulate coordinates that used to exists in PHPExcel_Cell to PhpOffice\PhpSpreadsheet\Cell\Coordinate
-
-- class: [`Rector\PHPOffice\Rector\StaticCall\CellStaticToCoordinateRector`](../rules/PHPOffice/Rector/StaticCall/CellStaticToCoordinateRector.php)
-
-```diff
- class SomeClass
- {
-     public function run()
-     {
--        \PHPExcel_Cell::stringFromColumnIndex();
-+        \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex();
-     }
- }
-```
-
-<br>
-
-### ChangeChartRendererRector
-
-Change chart renderer
-
-- class: [`Rector\PHPOffice\Rector\StaticCall\ChangeChartRendererRector`](../rules/PHPOffice/Rector/StaticCall/ChangeChartRendererRector.php)
-
-```diff
- final class SomeClass
- {
-     public function run(): void
-     {
--        \PHPExcel_Settings::setChartRenderer($rendererName, $rendererLibraryPath);
-+        \PHPExcel_Settings::setChartRenderer(\PhpOffice\PhpSpreadsheet\Chart\Renderer\JpGraph::class);
-     }
- }
-```
-
-<br>
-
-### ChangeConditionalGetConditionRector
-
-Change argument `PHPExcel_Style_Conditional->getCondition()` to `getConditions()`
-
-- class: [`Rector\PHPOffice\Rector\MethodCall\ChangeConditionalGetConditionRector`](../rules/PHPOffice/Rector/MethodCall/ChangeConditionalGetConditionRector.php)
-
-```diff
- final class SomeClass
- {
-     public function run(): void
-     {
-         $conditional = new \PHPExcel_Style_Conditional;
--        $someCondition = $conditional->getCondition();
-+        $someCondition = $conditional->getConditions()[0] ?? '';
-     }
- }
-```
-
-<br>
-
-### ChangeConditionalReturnedCellRector
-
-Change conditional call to `getCell()`
-
-- class: [`Rector\PHPOffice\Rector\MethodCall\ChangeConditionalReturnedCellRector`](../rules/PHPOffice/Rector/MethodCall/ChangeConditionalReturnedCellRector.php)
-
-```diff
- final class SomeClass
- {
-     public function run(): void
-     {
-         $worksheet = new \PHPExcel_Worksheet();
--        $cell = $worksheet->setCellValue('A1', 'value', true);
-+        $cell = $worksheet->getCell('A1')->setValue('value');
-     }
- }
-```
-
-<br>
-
-### ChangeConditionalSetConditionRector
-
-Change argument `PHPExcel_Style_Conditional->setCondition()` to `setConditions()`
-
-- class: [`Rector\PHPOffice\Rector\MethodCall\ChangeConditionalSetConditionRector`](../rules/PHPOffice/Rector/MethodCall/ChangeConditionalSetConditionRector.php)
-
-```diff
- final class SomeClass
- {
-     public function run(): void
-     {
-         $conditional = new \PHPExcel_Style_Conditional;
--        $someCondition = $conditional->setCondition(1);
-+        $someCondition = $conditional->setConditions((array) 1);
-     }
- }
-```
-
-<br>
-
-### ChangeDataTypeForValueRector
-
-Change argument `DataType::dataTypeForValue()` to DefaultValueBinder
-
-- class: [`Rector\PHPOffice\Rector\StaticCall\ChangeDataTypeForValueRector`](../rules/PHPOffice/Rector/StaticCall/ChangeDataTypeForValueRector.php)
-
-```diff
- final class SomeClass
- {
-     public function run(): void
-     {
--        $type = \PHPExcel_Cell_DataType::dataTypeForValue('value');
-+        $type = \PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder::dataTypeForValue('value');
-     }
- }
-```
-
-<br>
-
-### ChangeDuplicateStyleArrayToApplyFromArrayRector
-
-Change method call `duplicateStyleArray()` to `getStyle()` + `applyFromArray()`
-
-- class: [`Rector\PHPOffice\Rector\MethodCall\ChangeDuplicateStyleArrayToApplyFromArrayRector`](../rules/PHPOffice/Rector/MethodCall/ChangeDuplicateStyleArrayToApplyFromArrayRector.php)
-
-```diff
- final class SomeClass
- {
-     public function run(): void
-     {
-         $worksheet = new \PHPExcel_Worksheet();
--        $worksheet->duplicateStyleArray($styles, $range, $advanced);
-+        $worksheet->getStyle($range)->applyFromArray($styles, $advanced);
-     }
- }
-```
-
-<br>
-
-### ChangeIOFactoryArgumentRector
-
-Change argument of `PHPExcel_IOFactory::createReader()`, `PHPExcel_IOFactory::createWriter()` and `PHPExcel_IOFactory::identify()`
-
-- class: [`Rector\PHPOffice\Rector\StaticCall\ChangeIOFactoryArgumentRector`](../rules/PHPOffice/Rector/StaticCall/ChangeIOFactoryArgumentRector.php)
-
-```diff
- final class SomeClass
- {
-     public function run(): void
-     {
--        $writer = \PHPExcel_IOFactory::createWriter('CSV');
-+        $writer = \PHPExcel_IOFactory::createWriter('Csv');
-     }
- }
-```
-
-<br>
-
-### ChangePdfWriterRector
-
-Change init of PDF writer
-
-- class: [`Rector\PHPOffice\Rector\StaticCall\ChangePdfWriterRector`](../rules/PHPOffice/Rector/StaticCall/ChangePdfWriterRector.php)
-
-```diff
- final class SomeClass
- {
-     public function run(): void
-     {
--        \PHPExcel_Settings::setPdfRendererName(PHPExcel_Settings::PDF_RENDERER_MPDF);
--        \PHPExcel_Settings::setPdfRenderer($somePath);
--        $writer = \PHPExcel_IOFactory::createWriter($spreadsheet, 'PDF');
-+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Pdf\Mpdf($spreadsheet);
-     }
- }
-```
-
-<br>
-
-### ChangeSearchLocationToRegisterReaderRector
-
-Change argument `addSearchLocation()` to `registerReader()`
-
-- class: [`Rector\PHPOffice\Rector\StaticCall\ChangeSearchLocationToRegisterReaderRector`](../rules/PHPOffice/Rector/StaticCall/ChangeSearchLocationToRegisterReaderRector.php)
-
-```diff
- final class SomeClass
- {
-     public function run(): void
-     {
--        \PHPExcel_IOFactory::addSearchLocation($type, $location, $classname);
-+        \PhpOffice\PhpSpreadsheet\IOFactory::registerReader($type, $classname);
-     }
- }
-```
-
-<br>
-
-### GetDefaultStyleToGetParentRector
-
-Methods to (new `Worksheet())->getDefaultStyle()` to `getParent()->getDefaultStyle()`
-
-- class: [`Rector\PHPOffice\Rector\MethodCall\GetDefaultStyleToGetParentRector`](../rules/PHPOffice/Rector/MethodCall/GetDefaultStyleToGetParentRector.php)
-
-```diff
- class SomeClass
- {
-     public function run()
-     {
-         $worksheet = new \PHPExcel_Worksheet();
--        $worksheet->getDefaultStyle();
-+        $worksheet->getParent()->getDefaultStyle();
-     }
- }
-```
-
-<br>
-
-### IncreaseColumnIndexRector
-
-Column index changed from 0 to 1 - run only ONCE! changes current value without memory
-
-- class: [`Rector\PHPOffice\Rector\MethodCall\IncreaseColumnIndexRector`](../rules/PHPOffice/Rector/MethodCall/IncreaseColumnIndexRector.php)
-
-```diff
- final class SomeClass
- {
-     public function run(): void
-     {
-         $worksheet = new \PHPExcel_Worksheet();
--        $worksheet->setCellValueByColumnAndRow(0, 3, '1150');
-+        $worksheet->setCellValueByColumnAndRow(1, 3, '1150');
-     }
- }
-```
-
-<br>
-
-### RemoveSetTempDirOnExcelWriterRector
-
-Remove `setTempDir()` on PHPExcel_Writer_Excel5
-
-- class: [`Rector\PHPOffice\Rector\MethodCall\RemoveSetTempDirOnExcelWriterRector`](../rules/PHPOffice/Rector/MethodCall/RemoveSetTempDirOnExcelWriterRector.php)
-
-```diff
- final class SomeClass
- {
-     public function run(): void
-     {
-         $writer = new \PHPExcel_Writer_Excel5;
--        $writer->setTempDir();
-     }
- }
-```
-
-<br>
-
-## PHPUnit
-
-### AddDoesNotPerformAssertionToNonAssertingTestRector
-
-Tests without assertion will have `@doesNotPerformAssertion`
-
-- class: [`Rector\PHPUnit\Rector\ClassMethod\AddDoesNotPerformAssertionToNonAssertingTestRector`](../rules/PHPUnit/Rector/ClassMethod/AddDoesNotPerformAssertionToNonAssertingTestRector.php)
-
-```diff
- use PHPUnit\Framework\TestCase;
-
- class SomeClass extends TestCase
- {
-+    /**
-+     * @doesNotPerformAssertions
-+     */
-     public function test()
-     {
-         $nothing = 5;
-     }
- }
-```
-
-<br>
-
-### AddProphecyTraitRector
-
-Add Prophecy trait for method using `$this->prophesize()`
-
-- class: [`Rector\PHPUnit\Rector\Class_\AddProphecyTraitRector`](../rules/PHPUnit/Rector/Class_/AddProphecyTraitRector.php)
-
-```diff
- use PHPUnit\Framework\TestCase;
-+use Prophecy\PhpUnit\ProphecyTrait;
-
- final class ExampleTest extends TestCase
- {
-+    use ProphecyTrait;
-+
-     public function testOne(): void
-     {
-         $prophecy = $this->prophesize(\AnInterface::class);
-     }
- }
-```
-
-<br>
-
-### AddSeeTestAnnotationRector
-
-Add `@see` annotation test of the class for faster jump to test. Make it FQN, so it stays in the annotation, not in the PHP source code.
-
-- class: [`Rector\PHPUnit\Rector\Class_\AddSeeTestAnnotationRector`](../rules/PHPUnit/Rector/Class_/AddSeeTestAnnotationRector.php)
-
-```diff
-+/**
-+ * @see \SomeServiceTest
-+ */
- class SomeService
- {
- }
-
- use PHPUnit\Framework\TestCase;
-
- class SomeServiceTest extends TestCase
- {
- }
-```
-
-<br>
-
-### ArrayArgumentToDataProviderRector
-
-Move array argument from tests into data provider [configurable]
-
-:wrench: **configure it!**
-
-- class: [`Rector\PHPUnit\Rector\Class_\ArrayArgumentToDataProviderRector`](../rules/PHPUnit/Rector/Class_/ArrayArgumentToDataProviderRector.php)
-
-```php
-use Rector\PHPUnit\Rector\Class_\ArrayArgumentToDataProviderRector;
-use Rector\PHPUnit\ValueObject\ArrayArgumentToDataProvider;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use Symplify\SymfonyPhpConfig\ValueObjectInliner;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(ArrayArgumentToDataProviderRector::class)
-        ->call('configure', [[
-            ArrayArgumentToDataProviderRector::ARRAY_ARGUMENTS_TO_DATA_PROVIDERS => ValueObjectInliner::inline([
-                new ArrayArgumentToDataProvider('PHPUnit\Framework\TestCase', 'doTestMultiple', 'doTestSingle', 'number'),
-            ]),
-        ]]);
-};
-```
-
-↓
-
-```diff
- use PHPUnit\Framework\TestCase;
-
- class SomeServiceTest extends TestCase
- {
--    public function test()
-+    /**
-+     * @dataProvider provideData()
-+     */
-+    public function test(int $number)
-     {
--        $this->doTestMultiple([1, 2, 3]);
-+        $this->doTestSingle($number);
-+    }
-+
-+    public function provideData(): \Iterator
-+    {
-+        yield [1];
-+        yield [2];
-+        yield [3];
-     }
- }
-```
-
-<br>
-
-### AssertCompareToSpecificMethodRector
-
-Turns vague php-only method in PHPUnit TestCase to more specific
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\AssertCompareToSpecificMethodRector`](../rules/PHPUnit/Rector/MethodCall/AssertCompareToSpecificMethodRector.php)
-
-```diff
--$this->assertSame(10, count($anything), "message");
-+$this->assertCount(10, $anything, "message");
-```
-
-<br>
-
-```diff
--$this->assertNotEquals(get_class($value), stdClass::class);
-+$this->assertNotInstanceOf(stdClass::class, $value);
-```
-
-<br>
-
-### AssertComparisonToSpecificMethodRector
-
-Turns comparison operations to their method name alternatives in PHPUnit TestCase
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\AssertComparisonToSpecificMethodRector`](../rules/PHPUnit/Rector/MethodCall/AssertComparisonToSpecificMethodRector.php)
-
-```diff
--$this->assertTrue($foo === $bar, "message");
-+$this->assertSame($bar, $foo, "message");
-```
-
-<br>
-
-```diff
--$this->assertFalse($foo >= $bar, "message");
-+$this->assertLessThanOrEqual($bar, $foo, "message");
-```
-
-<br>
-
-### AssertEqualsParameterToSpecificMethodsTypeRector
-
-Change `assertEquals()/assertNotEquals()` method parameters to new specific alternatives
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\AssertEqualsParameterToSpecificMethodsTypeRector`](../rules/PHPUnit/Rector/MethodCall/AssertEqualsParameterToSpecificMethodsTypeRector.php)
-
-```diff
- final class SomeTest extends \PHPUnit\Framework\TestCase
- {
-     public function test()
-     {
-         $value = 'value';
--        $this->assertEquals('string', $value, 'message', 5.0);
-+        $this->assertEqualsWithDelta('string', $value, 5.0, 'message');
-
--        $this->assertEquals('string', $value, 'message', 0.0, 20);
-+        $this->assertEquals('string', $value, 'message', 0.0);
-
--        $this->assertEquals('string', $value, 'message', 0.0, 10, true);
-+        $this->assertEqualsCanonicalizing('string', $value, 'message');
-
--        $this->assertEquals('string', $value, 'message', 0.0, 10, false, true);
-+        $this->assertEqualsIgnoringCase('string', $value, 'message');
-     }
- }
-```
-
-<br>
-
-### AssertEqualsToSameRector
-
-Turns `assertEquals()` into stricter `assertSame()` for scalar values in PHPUnit TestCase
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\AssertEqualsToSameRector`](../rules/PHPUnit/Rector/MethodCall/AssertEqualsToSameRector.php)
-
-```diff
--$this->assertEquals(2, $result, "message");
-+$this->assertSame(2, $result, "message");
-```
-
-<br>
-
-```diff
--$this->assertEquals($aString, $result, "message");
-+$this->assertSame($aString, $result, "message");
-```
-
-<br>
-
-### AssertFalseStrposToContainsRector
-
-Turns `strpos`/`stripos` comparisons to their method name alternatives in PHPUnit TestCase
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\AssertFalseStrposToContainsRector`](../rules/PHPUnit/Rector/MethodCall/AssertFalseStrposToContainsRector.php)
-
-```diff
--$this->assertFalse(strpos($anything, "foo"), "message");
-+$this->assertNotContains("foo", $anything, "message");
-```
-
-<br>
-
-```diff
--$this->assertNotFalse(stripos($anything, "foo"), "message");
-+$this->assertContains("foo", $anything, "message");
-```
-
-<br>
-
-### AssertInstanceOfComparisonRector
-
-Turns instanceof comparisons to their method name alternatives in PHPUnit TestCase
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\AssertInstanceOfComparisonRector`](../rules/PHPUnit/Rector/MethodCall/AssertInstanceOfComparisonRector.php)
-
-```diff
--$this->assertTrue($foo instanceof Foo, "message");
-+$this->assertInstanceOf("Foo", $foo, "message");
-```
-
-<br>
-
-```diff
--$this->assertFalse($foo instanceof Foo, "message");
-+$this->assertNotInstanceOf("Foo", $foo, "message");
-```
-
-<br>
-
-### AssertIssetToSpecificMethodRector
-
-Turns isset comparisons to their method name alternatives in PHPUnit TestCase
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\AssertIssetToSpecificMethodRector`](../rules/PHPUnit/Rector/MethodCall/AssertIssetToSpecificMethodRector.php)
-
-```diff
--$this->assertTrue(isset($anything->foo));
-+$this->assertObjectHasAttribute("foo", $anything);
-```
-
-<br>
-
-```diff
--$this->assertFalse(isset($anything["foo"]), "message");
-+$this->assertArrayNotHasKey("foo", $anything, "message");
-```
-
-<br>
-
-### AssertNotOperatorRector
-
-Turns not-operator comparisons to their method name alternatives in PHPUnit TestCase
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\AssertNotOperatorRector`](../rules/PHPUnit/Rector/MethodCall/AssertNotOperatorRector.php)
-
-```diff
--$this->assertTrue(!$foo, "message");
-+$this->assertFalse($foo, "message");
-```
-
-<br>
-
-```diff
--$this->assertFalse(!$foo, "message");
-+$this->assertTrue($foo, "message");
-```
-
-<br>
-
-### AssertPropertyExistsRector
-
-Turns `property_exists` comparisons to their method name alternatives in PHPUnit TestCase
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\AssertPropertyExistsRector`](../rules/PHPUnit/Rector/MethodCall/AssertPropertyExistsRector.php)
-
-```diff
--$this->assertTrue(property_exists(new Class, "property"), "message");
-+$this->assertClassHasAttribute("property", "Class", "message");
-```
-
-<br>
-
-```diff
--$this->assertFalse(property_exists(new Class, "property"), "message");
-+$this->assertClassNotHasAttribute("property", "Class", "message");
-```
-
-<br>
-
-### AssertRegExpRector
-
-Turns `preg_match` comparisons to their method name alternatives in PHPUnit TestCase
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\AssertRegExpRector`](../rules/PHPUnit/Rector/MethodCall/AssertRegExpRector.php)
-
-```diff
--$this->assertSame(1, preg_match("/^Message for ".*"\.$/", $string), $message);
-+$this->assertRegExp("/^Message for ".*"\.$/", $string, $message);
-```
-
-<br>
-
-```diff
--$this->assertEquals(false, preg_match("/^Message for ".*"\.$/", $string), $message);
-+$this->assertNotRegExp("/^Message for ".*"\.$/", $string, $message);
-```
-
-<br>
-
-### AssertResourceToClosedResourceRector
-
-Turns `assertIsNotResource()` into stricter `assertIsClosedResource()` for resource values in PHPUnit TestCase
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\AssertResourceToClosedResourceRector`](../rules/PHPUnit/Rector/MethodCall/AssertResourceToClosedResourceRector.php)
-
-```diff
--$this->assertIsNotResource($aResource, "message");
-+$this->assertIsClosedResource($aResource, "message");
-```
-
-<br>
-
-### AssertSameBoolNullToSpecificMethodRector
-
-Turns same bool and null comparisons to their method name alternatives in PHPUnit TestCase
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\AssertSameBoolNullToSpecificMethodRector`](../rules/PHPUnit/Rector/MethodCall/AssertSameBoolNullToSpecificMethodRector.php)
-
-```diff
--$this->assertSame(null, $anything);
-+$this->assertNull($anything);
-```
-
-<br>
-
-```diff
--$this->assertNotSame(false, $anything);
-+$this->assertNotFalse($anything);
-```
-
-<br>
-
-### AssertSameTrueFalseToAssertTrueFalseRector
-
-Change `$this->assertSame(true,` ...) to `assertTrue()`
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\AssertSameTrueFalseToAssertTrueFalseRector`](../rules/PHPUnit/Rector/MethodCall/AssertSameTrueFalseToAssertTrueFalseRector.php)
-
-```diff
- use PHPUnit\Framework\TestCase;
-
- final class SomeTest extends TestCase
- {
-     public function test()
-     {
-         $value = (bool) mt_rand(0, 1);
--        $this->assertSame(true, $value);
-+        $this->assertTrue($value);
-     }
- }
-```
-
-<br>
-
-### AssertTrueFalseInternalTypeToSpecificMethodRector
-
-Turns true/false with internal type comparisons to their method name alternatives in PHPUnit TestCase
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\AssertTrueFalseInternalTypeToSpecificMethodRector`](../rules/PHPUnit/Rector/MethodCall/AssertTrueFalseInternalTypeToSpecificMethodRector.php)
-
-```diff
--$this->assertTrue(is_{internal_type}($anything), "message");
-+$this->assertInternalType({internal_type}, $anything, "message");
-```
-
-<br>
-
-```diff
--$this->assertFalse(is_{internal_type}($anything), "message");
-+$this->assertNotInternalType({internal_type}, $anything, "message");
-```
-
-<br>
-
-### AssertTrueFalseToSpecificMethodRector
-
-Turns true/false comparisons to their method name alternatives in PHPUnit TestCase when possible
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\AssertTrueFalseToSpecificMethodRector`](../rules/PHPUnit/Rector/MethodCall/AssertTrueFalseToSpecificMethodRector.php)
-
-```diff
--$this->assertTrue(is_readable($readmeFile), "message");
-+$this->assertIsReadable($readmeFile, "message");
-```
-
-<br>
-
-### ConstructClassMethodToSetUpTestCaseRector
-
-Change `__construct()` method in tests of `PHPUnit\Framework\TestCase` to `setUp()`, to prevent dangerous override
-
-- class: [`Rector\PHPUnit\Rector\Class_\ConstructClassMethodToSetUpTestCaseRector`](../rules/PHPUnit/Rector/Class_/ConstructClassMethodToSetUpTestCaseRector.php)
-
-```diff
- use PHPUnit\Framework\TestCase;
-
- final class SomeTest extends TestCase
- {
-     private $someValue;
-
--    public function __construct(?string $name = null, array $data = [], string $dataName = '')
-+    protected function setUp()
-     {
-+        parent::setUp();
-+
-         $this->someValue = 1000;
--        parent::__construct($name, $data, $dataName);
-     }
- }
-```
-
-<br>
-
-### CreateMockToCreateStubRector
-
-Replaces `createMock()` with `createStub()` when relevant
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\CreateMockToCreateStubRector`](../rules/PHPUnit/Rector/MethodCall/CreateMockToCreateStubRector.php)
-
-```diff
- use PHPUnit\Framework\TestCase
-
- class MyTest extends TestCase
- {
-     public function testItBehavesAsExpected(): void
-     {
--        $stub = $this->createMock(\Exception::class);
-+        $stub = $this->createStub(\Exception::class);
-         $stub->method('getMessage')
-             ->willReturn('a message');
-
-         $mock = $this->createMock(\Exception::class);
-         $mock->expects($this->once())
-             ->method('getMessage')
-             ->willReturn('a message');
-
-         self::assertSame('a message', $stub->getMessage());
-         self::assertSame('a message', $mock->getMessage());
-     }
- }
-```
-
-<br>
-
-### DelegateExceptionArgumentsRector
-
-Takes `setExpectedException()` 2nd and next arguments to own methods in PHPUnit.
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\DelegateExceptionArgumentsRector`](../rules/PHPUnit/Rector/MethodCall/DelegateExceptionArgumentsRector.php)
-
-```diff
--$this->setExpectedException(Exception::class, "Message", "CODE");
-+$this->setExpectedException(Exception::class);
-+$this->expectExceptionMessage('Message');
-+$this->expectExceptionCode('CODE');
-```
-
-<br>
-
-### ExceptionAnnotationRector
-
-Changes ``@expectedException` annotations to `expectException*()` methods
-
-- class: [`Rector\PHPUnit\Rector\ClassMethod\ExceptionAnnotationRector`](../rules/PHPUnit/Rector/ClassMethod/ExceptionAnnotationRector.php)
-
-```diff
--/**
-- * @expectedException Exception
-- * @expectedExceptionMessage Message
-- */
- public function test()
- {
-+    $this->expectException('Exception');
-+    $this->expectExceptionMessage('Message');
-     // tested code
- }
-```
-
-<br>
-
-### ExplicitPhpErrorApiRector
-
-Use explicit API for expecting PHP errors, warnings, and notices
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\ExplicitPhpErrorApiRector`](../rules/PHPUnit/Rector/MethodCall/ExplicitPhpErrorApiRector.php)
-
-```diff
- final class SomeTest extends \PHPUnit\Framework\TestCase
- {
-     public function test()
-     {
--        $this->expectException(\PHPUnit\Framework\TestCase\Deprecated::class);
--        $this->expectException(\PHPUnit\Framework\TestCase\Error::class);
--        $this->expectException(\PHPUnit\Framework\TestCase\Notice::class);
--        $this->expectException(\PHPUnit\Framework\TestCase\Warning::class);
-+        $this->expectDeprecation();
-+        $this->expectError();
-+        $this->expectNotice();
-+        $this->expectWarning();
-     }
- }
-```
-
-<br>
-
-### GetMockBuilderGetMockToCreateMockRector
-
-Remove `getMockBuilder()` to `createMock()`
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\GetMockBuilderGetMockToCreateMockRector`](../rules/PHPUnit/Rector/MethodCall/GetMockBuilderGetMockToCreateMockRector.php)
-
-```diff
- class SomeTest extends \PHPUnit\Framework\TestCase
- {
-     public function test()
-     {
--        $applicationMock = $this->getMockBuilder('SomeClass')
--           ->disableOriginalConstructor()
--           ->getMock();
-+        $applicationMock = $this->createMock('SomeClass');
-     }
- }
-```
-
-<br>
-
-### GetMockRector
-
-Turns getMock*() methods to `createMock()`
-
-- class: [`Rector\PHPUnit\Rector\StaticCall\GetMockRector`](../rules/PHPUnit/Rector/StaticCall/GetMockRector.php)
-
-```diff
--$this->getMock("Class");
-+$this->createMock("Class");
-```
-
-<br>
-
-```diff
--$this->getMockWithoutInvokingTheOriginalConstructor("Class");
-+$this->createMock("Class");
-```
-
-<br>
-
-### RemoveDataProviderTestPrefixRector
-
-Data provider methods cannot start with "test" prefix
-
-- class: [`Rector\PHPUnit\Rector\Class_\RemoveDataProviderTestPrefixRector`](../rules/PHPUnit/Rector/Class_/RemoveDataProviderTestPrefixRector.php)
-
-```diff
- class SomeClass extends PHPUnit\Framework\TestCase
- {
-     /**
--     * @dataProvider testProvideData()
-+     * @dataProvider provideData()
-      */
-     public function test()
-     {
-         $nothing = 5;
-     }
-
--    public function testProvideData()
-+    public function provideData()
-     {
-         return ['123'];
-     }
- }
-```
-
-<br>
-
-### RemoveEmptyTestMethodRector
-
-Remove empty test methods
-
-- class: [`Rector\PHPUnit\Rector\ClassMethod\RemoveEmptyTestMethodRector`](../rules/PHPUnit/Rector/ClassMethod/RemoveEmptyTestMethodRector.php)
-
-```diff
- class SomeTest extends \PHPUnit\Framework\TestCase
- {
--    /**
--     * testGetTranslatedModelField method
--     *
--     * @return void
--     */
--    public function testGetTranslatedModelField()
--    {
--    }
- }
-```
-
-<br>
-
-### RemoveExpectAnyFromMockRector
-
-Remove `expect($this->any())` from mocks as it has no added value
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\RemoveExpectAnyFromMockRector`](../rules/PHPUnit/Rector/MethodCall/RemoveExpectAnyFromMockRector.php)
-
-```diff
- use PHPUnit\Framework\TestCase;
-
- class SomeClass extends TestCase
- {
-     public function test()
-     {
-         $translator = $this->getMock('SomeClass');
--        $translator->expects($this->any())
--            ->method('trans')
-+        $translator->method('trans')
-             ->willReturn('translated max {{ max }}!');
-     }
- }
-```
-
-<br>
-
-### ReplaceAssertArraySubsetWithDmsPolyfillRector
-
-Change `assertArraySubset()` to static call of DMS\PHPUnitExtensions\ArraySubset\Assert
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\ReplaceAssertArraySubsetWithDmsPolyfillRector`](../rules/PHPUnit/Rector/MethodCall/ReplaceAssertArraySubsetWithDmsPolyfillRector.php)
-
-```diff
- use PHPUnit\Framework\TestCase;
-
- class SomeClass extends TestCase
- {
-     public function test()
-     {
--        self::assertArraySubset(['bar' => 0], ['bar' => '0'], true);
-+        \DMS\PHPUnitExtensions\ArraySubset\Assert::assertArraySubset(['bar' => 0], ['bar' => '0'], true);
-
--        $this->assertArraySubset(['bar' => 0], ['bar' => '0'], true);
-+        \DMS\PHPUnitExtensions\ArraySubset\Assert::assertArraySubset(['bar' => 0], ['bar' => '0'], true);
-     }
- }
-```
-
-<br>
-
-### SimplifyForeachInstanceOfRector
-
-Simplify unnecessary foreach check of instances
-
-- class: [`Rector\PHPUnit\Rector\Foreach_\SimplifyForeachInstanceOfRector`](../rules/PHPUnit/Rector/Foreach_/SimplifyForeachInstanceOfRector.php)
-
-```diff
--foreach ($foos as $foo) {
--    $this->assertInstanceOf(SplFileInfo::class, $foo);
--}
-+$this->assertContainsOnlyInstancesOf(\SplFileInfo::class, $foos);
-```
-
-<br>
-
-### SpecificAssertContainsRector
-
-Change `assertContains()/assertNotContains()` method to new string and iterable alternatives
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\SpecificAssertContainsRector`](../rules/PHPUnit/Rector/MethodCall/SpecificAssertContainsRector.php)
-
-```diff
- final class SomeTest extends \PHPUnit\Framework\TestCase
- {
-     public function test()
-     {
--        $this->assertContains('foo', 'foo bar');
--        $this->assertNotContains('foo', 'foo bar');
-+        $this->assertStringContainsString('foo', 'foo bar');
-+        $this->assertStringNotContainsString('foo', 'foo bar');
-     }
- }
-```
-
-<br>
-
-### SpecificAssertContainsWithoutIdentityRector
-
-Change `assertContains()/assertNotContains()` with non-strict comparison to new specific alternatives
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\SpecificAssertContainsWithoutIdentityRector`](../rules/PHPUnit/Rector/MethodCall/SpecificAssertContainsWithoutIdentityRector.php)
-
-```diff
--final class SomeTest extends \PHPUnit\Framework\TestCase
-+final class SomeTest extends TestCase
- {
-     public function test()
-     {
-         $objects = [ new \stdClass(), new \stdClass(), new \stdClass() ];
--        $this->assertContains(new \stdClass(), $objects, 'message', false, false);
--        $this->assertNotContains(new \stdClass(), $objects, 'message', false, false);
-+        $this->assertContainsEquals(new \stdClass(), $objects, 'message');
-+        $this->assertNotContainsEquals(new \stdClass(), $objects, 'message');
-     }
- }
-```
-
-<br>
-
-### SpecificAssertInternalTypeRector
-
-Change `assertInternalType()/assertNotInternalType()` method to new specific alternatives
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\SpecificAssertInternalTypeRector`](../rules/PHPUnit/Rector/MethodCall/SpecificAssertInternalTypeRector.php)
-
-```diff
- final class SomeTest extends \PHPUnit\Framework\TestCase
- {
-     public function test()
-     {
-         $value = 'value';
--        $this->assertInternalType('string', $value);
--        $this->assertNotInternalType('array', $value);
-+        $this->assertIsString($value);
-+        $this->assertIsNotArray($value);
-     }
- }
-```
-
-<br>
-
-### TestListenerToHooksRector
-
-Refactor "*TestListener.php" to particular "*Hook.php" files
-
-- class: [`Rector\PHPUnit\Rector\Class_\TestListenerToHooksRector`](../rules/PHPUnit/Rector/Class_/TestListenerToHooksRector.php)
-
-```diff
- namespace App\Tests;
-
--use PHPUnit\Framework\TestListener;
--
--final class BeforeListHook implements TestListener
-+final class BeforeListHook implements \PHPUnit\Runner\BeforeTestHook, \PHPUnit\Runner\AfterTestHook
- {
--    public function addError(Test $test, \Throwable $t, float $time): void
-+    public function executeBeforeTest(Test $test): void
-     {
--    }
--
--    public function addWarning(Test $test, Warning $e, float $time): void
--    {
--    }
--
--    public function addFailure(Test $test, AssertionFailedError $e, float $time): void
--    {
--    }
--
--    public function addIncompleteTest(Test $test, \Throwable $t, float $time): void
--    {
--    }
--
--    public function addRiskyTest(Test $test, \Throwable $t, float $time): void
--    {
--    }
--
--    public function addSkippedTest(Test $test, \Throwable $t, float $time): void
--    {
--    }
--
--    public function startTestSuite(TestSuite $suite): void
--    {
--    }
--
--    public function endTestSuite(TestSuite $suite): void
--    {
--    }
--
--    public function startTest(Test $test): void
--    {
-         echo 'start test!';
-     }
-
--    public function endTest(Test $test, float $time): void
-+    public function executeAfterTest(Test $test, float $time): void
-     {
-         echo $time;
-     }
- }
-```
-
-<br>
-
-### TryCatchToExpectExceptionRector
-
-Turns try/catch to `expectException()` call
-
-- class: [`Rector\PHPUnit\Rector\ClassMethod\TryCatchToExpectExceptionRector`](../rules/PHPUnit/Rector/ClassMethod/TryCatchToExpectExceptionRector.php)
-
-```diff
--try {
--    $someService->run();
--} catch (Throwable $exception) {
--    $this->assertInstanceOf(RuntimeException::class, $e);
--    $this->assertContains('There was an error executing the following script', $e->getMessage());
--}
-+$this->expectException(RuntimeException::class);
-+$this->expectExceptionMessage('There was an error executing the following script');
-+$someService->run();
-```
-
-<br>
-
-### UseSpecificWillMethodRector
-
-Changes `->will($this->xxx())` to one specific method
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\UseSpecificWillMethodRector`](../rules/PHPUnit/Rector/MethodCall/UseSpecificWillMethodRector.php)
-
-```diff
- class SomeClass extends PHPUnit\Framework\TestCase
- {
-     public function test()
-     {
-         $translator = $this->getMockBuilder('Symfony\Component\Translation\TranslatorInterface')->getMock();
-         $translator->expects($this->any())
-             ->method('trans')
--            ->with($this->equalTo('old max {{ max }}!'))
--            ->will($this->returnValue('translated max {{ max }}!'));
-+            ->with('old max {{ max }}!')
-+            ->willReturnValue('translated max {{ max }}!');
-     }
- }
-```
-
-<br>
-
-### WithConsecutiveArgToArrayRector
-
-Split `withConsecutive()` arg to array
-
-- class: [`Rector\PHPUnit\Rector\MethodCall\WithConsecutiveArgToArrayRector`](../rules/PHPUnit/Rector/MethodCall/WithConsecutiveArgToArrayRector.php)
-
-```diff
- class SomeClass
- {
-     public function run($one, $two)
-     {
-     }
- }
-
- class SomeTestCase extends \PHPUnit\Framework\TestCase
- {
-     public function test()
-     {
-         $someClassMock = $this->createMock(SomeClass::class);
-         $someClassMock
-             ->expects($this->exactly(2))
-             ->method('run')
--            ->withConsecutive(1, 2, 3, 5);
-+            ->withConsecutive([1, 2], [3, 5]);
      }
  }
 ```
@@ -9585,7 +6131,7 @@ Use break instead of continue in switch statements
 
 ### VarToPublicPropertyRector
 
-Remove unused private method
+Change property modifier from `var` to `public`
 
 - class: [`Rector\Php52\Rector\Property\VarToPublicPropertyRector`](../rules/Php52/Rector/Property/VarToPublicPropertyRector.php)
 
@@ -9600,19 +6146,6 @@ Remove unused private method
 <br>
 
 ## Php53
-
-### ClearReturnNewByReferenceRector
-
-Remove reference from "$assign = &new Value;"
-
-- class: [`Rector\Php53\Rector\AssignRef\ClearReturnNewByReferenceRector`](../rules/Php53/Rector/AssignRef/ClearReturnNewByReferenceRector.php)
-
-```diff
--$assign = &new Value;
-+$assign = new Value;
-```
-
-<br>
 
 ### DirNameFileConstantToDirConstantRector
 
@@ -9734,7 +6267,7 @@ Change `__CLASS__` to self::class
 
 ### PregReplaceEModifierRector
 
-The /e modifier is no longer supported, use `preg_replace_callback` instead
+The /e modifier is no longer supported, use preg_replace_callback instead
 
 - class: [`Rector\Php55\Rector\FuncCall\PregReplaceEModifierRector`](../rules/Php55/Rector/FuncCall/PregReplaceEModifierRector.php)
 
@@ -9746,7 +6279,7 @@ The /e modifier is no longer supported, use `preg_replace_callback` instead
 -        $comment = preg_replace('~\b(\w)(\w+)~e', '"$1".strtolower("$2")', $comment);
 +        $comment = preg_replace_callback('~\b(\w)(\w+)~', function ($matches) {
 +              return($matches[1].strtolower($matches[2]));
-+        }, , $comment);
++        }, $comment);
      }
  }
 ```
@@ -9820,7 +6353,7 @@ Adds default value for undefined variable
 
 ### PowToExpRector
 
-Changes pow(val, val2) to ** `(exp)` parameter
+Changes pow(val, val2) to ** (exp) parameter
 
 - class: [`Rector\Php56\Rector\FuncCall\PowToExpRector`](../rules/Php56/Rector/FuncCall/PowToExpRector.php)
 
@@ -9897,7 +6430,7 @@ Changes ereg*() to preg*() calls
 
 ### ExceptionHandlerTypehintRector
 
-Changes property `@var` annotations from annotation to type.
+Change typehint from `Exception` to `Throwable`.
 
 - class: [`Rector\Php70\Rector\FunctionLike\ExceptionHandlerTypehintRector`](../rules/Php70/Rector/FunctionLike/ExceptionHandlerTypehintRector.php)
 
@@ -10006,7 +6539,7 @@ Changes PHP 4 style constructor to __construct.
 
 ### RandomFunctionRector
 
-Changes rand, `srand` and `getrandmax` by new mt_* alternatives.
+Changes rand, srand and getrandmax by new mt_* alternatives.
 
 - class: [`Rector\Php70\Rector\FuncCall\RandomFunctionRector`](../rules/Php70/Rector/FuncCall/RandomFunctionRector.php)
 
@@ -10186,7 +6719,7 @@ Change binary operation between some number + string to PHP 7.1 compatible versi
 -        $value = 5 + '';
 -        $value = 5.0 + 'hi';
 +        $value = 5 + 0;
-+        $value = 5.0 + 0
++        $value = 5.0 + 0;
      }
  }
 ```
@@ -10209,7 +6742,7 @@ Changes `count()` on null to safe ternary check
 
 ### IsIterableRector
 
-Changes `is_array` + Traversable check to `is_iterable`
+Changes is_array + Traversable check to is_iterable
 
 - class: [`Rector\Php71\Rector\BooleanOr\IsIterableRector`](../rules/Php71/Rector/BooleanOr/IsIterableRector.php)
 
@@ -10222,7 +6755,7 @@ Changes `is_array` + Traversable check to `is_iterable`
 
 ### ListToArrayDestructRector
 
-Remove & from new &X
+Change `list()` to array destruct
 
 - class: [`Rector\Php71\Rector\List_\ListToArrayDestructRector`](../rules/Php71/Rector/List_/ListToArrayDestructRector.php)
 
@@ -10251,14 +6784,12 @@ Changes multi catch of same exception to single one | separated.
 
 ```diff
  try {
--    // Some code...
+     // Some code...
 -} catch (ExceptionType1 $exception) {
 -    $sameCode;
 -} catch (ExceptionType2 $exception) {
--    $sameCode;
-+   // Some code...
 +} catch (ExceptionType1 | ExceptionType2 $exception) {
-+   $sameCode;
+     $sameCode;
  }
 ```
 
@@ -10311,7 +6842,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(ReservedObjectRector::class)
         ->call('configure', [[
             ReservedObjectRector::RESERVED_KEYWORDS_TO_REPLACEMENTS => [
-                'ReservedObject' => 'SmartObject', 'Object' => 'AnotherSmartObject',
+                'ReservedObject' => 'SmartObject',
+                'Object' => 'AnotherSmartObject',
 
             ], ]]);
 };
@@ -10537,7 +7069,7 @@ Make use of `array_key_first()` and `array_key_last()`
 
 ### IsCountableRector
 
-Changes `is_array` + Countable check to `is_countable`
+Changes is_array + Countable check to is_countable
 
 - class: [`Rector\Php73\Rector\BooleanOr\IsCountableRector`](../rules/Php73/Rector/BooleanOr/IsCountableRector.php)
 
@@ -10558,7 +7090,7 @@ Adds JSON_THROW_ON_ERROR to `json_encode()` and `json_decode()` to throw JsonExc
 -json_encode($content);
 -json_decode($json);
 +json_encode($content, JSON_THROW_ON_ERROR);
-+json_decode($json, null, null, JSON_THROW_ON_ERROR);
++json_decode($json, null, 512, JSON_THROW_ON_ERROR);
 ```
 
 <br>
@@ -10622,7 +7154,7 @@ Changes heredoc/nowdoc that contains closing word to safe wrapper name
 
 ### SetCookieRector
 
-Convert `setcookie` argument to PHP7.3 option array
+Convert setcookie argument to PHP7.3 option array
 
 - class: [`Rector\Php73\Rector\FuncCall\SetCookieRector`](../rules/Php73/Rector/FuncCall/SetCookieRector.php)
 
@@ -10716,7 +7248,7 @@ Change `array_key_exists()` on property to `property_exists()`
 
 ### ArraySpreadInsteadOfArrayMergeRector
 
-Change `array_merge()` to spread operator, except values with possible string `key` values
+Change `array_merge()` to spread operator, except values with possible string key values
 
 - class: [`Rector\Php74\Rector\FuncCall\ArraySpreadInsteadOfArrayMergeRector`](../rules/Php74/Rector/FuncCall/ArraySpreadInsteadOfArrayMergeRector.php)
 
@@ -10784,6 +7316,23 @@ Change closure to arrow function
 +        return array_filter($meetups, fn(Meetup $meetup) => is_object($meetup));
      }
  }
+```
+
+<br>
+
+### CurlyToSquareBracketArrayStringRector
+
+Change curly based array and string to square bracket
+
+- class: [`Rector\Php74\Rector\ArrayDimFetch\CurlyToSquareBracketArrayStringRector`](../rules/Php74/Rector/ArrayDimFetch/CurlyToSquareBracketArrayStringRector.php)
+
+```diff
+ $string = 'test';
+-echo $string{0};
++echo $string[0];
+ $array = ['test'];
+-echo $array{0};
++echo $array[0];
 ```
 
 <br>
@@ -10963,6 +7512,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(TypedPropertyRector::class)
         ->call('configure', [[
             TypedPropertyRector::CLASS_LIKE_TYPE_ONLY => false,
+            TypedPropertyRector::PRIVATE_PROPERTY_ONLY => false,
         ]]);
 };
 ```
@@ -10975,8 +7525,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 -    /**
 -     * @var int
 -     */
--    private count;
-+    private int count;
+-    private $count;
++    private int $count;
  }
 ```
 
@@ -10988,7 +7538,29 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
 Change annotation to attribute
 
+:wrench: **configure it!**
+
 - class: [`Rector\Php80\Rector\Class_\AnnotationToAttributeRector`](../rules/Php80/Rector/Class_/AnnotationToAttributeRector.php)
+
+```php
+use Rector\Php80\Rector\Class_\AnnotationToAttributeRector;
+use Rector\Php80\ValueObject\AnnotationToAttribute;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symplify\SymfonyPhpConfig\ValueObjectInliner;
+
+return static function (ContainerConfigurator $containerConfigurator): void {
+    $services = $containerConfigurator->services();
+
+    $services->set(AnnotationToAttributeRector::class)
+        ->call('configure', [[
+            AnnotationToAttributeRector::ANNOTATION_TO_ATTRIBUTE => ValueObjectInliner::inline([
+                new AnnotationToAttribute('Symfony\Component\Routing\Annotation\Route'),
+            ]),
+        ]]);
+};
+```
+
+↓
 
 ```diff
  use Symfony\Component\Routing\Annotation\Route;
@@ -11014,30 +7586,21 @@ Change `switch()` to `match()`
 - class: [`Rector\Php80\Rector\Switch_\ChangeSwitchToMatchRector`](../rules/Php80/Rector/Switch_/ChangeSwitchToMatchRector.php)
 
 ```diff
- class SomeClass
- {
-     public function run()
-     {
--        switch ($this->lexer->lookahead['type']) {
--            case Lexer::T_SELECT:
--                $statement = $this->SelectStatement();
--                break;
--
--            case Lexer::T_UPDATE:
--                $statement = $this->UpdateStatement();
--                break;
--
--            default:
--                $statement = $this->syntaxError('SELECT, UPDATE or DELETE');
--                break;
--        }
-+        $statement = match ($this->lexer->lookahead['type']) {
-+            Lexer::T_SELECT => $this->SelectStatement(),
-+            Lexer::T_UPDATE => $this->UpdateStatement(),
-+            default => $this->syntaxError('SELECT, UPDATE or DELETE'),
-+        };
-     }
- }
+-switch ($input) {
+-    case Lexer::T_SELECT:
+-        $statement = 'select';
+-        break;
+-    case Lexer::T_UPDATE:
+-        $statement = 'update';
+-        break;
+-    default:
+-        $statement = 'error';
+-}
++$statement = match ($input) {
++    Lexer::T_SELECT => 'select',
++    Lexer::T_UPDATE => 'update',
++    default => 'error',
++};
 ```
 
 <br>
@@ -11082,6 +7645,46 @@ Change simple property init and assign to constructor promotion
 
 <br>
 
+### DoctrineAnnotationClassToAttributeRector
+
+Refactor Doctrine `@annotation` annotated class to a PHP 8.0 attribute class
+
+:wrench: **configure it!**
+
+- class: [`Rector\Php80\Rector\Class_\DoctrineAnnotationClassToAttributeRector`](../rules/Php80/Rector/Class_/DoctrineAnnotationClassToAttributeRector.php)
+
+```php
+use Rector\Php80\Rector\Class_\DoctrineAnnotationClassToAttributeRector;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+
+return static function (ContainerConfigurator $containerConfigurator): void {
+    $services = $containerConfigurator->services();
+
+    $services->set(DoctrineAnnotationClassToAttributeRector::class)
+        ->call('configure', [[
+            DoctrineAnnotationClassToAttributeRector::REMOVE_ANNOTATIONS => true,
+        ]]);
+};
+```
+
+↓
+
+```diff
+-use Doctrine\Common\Annotations\Annotation\Target;
++use Attribute;
+
+-/**
+- * @Annotation
+- * @Target({"METHOD"})
+- */
++#[Attribute(Attribute::TARGET_METHOD)]
+ class SomeAnnotation
+ {
+ }
+```
+
+<br>
+
 ### FinalPrivateToPrivateVisibilityRector
 
 Changes method visibility from final private to only private
@@ -11119,30 +7722,6 @@ Change ternary type resolve to `get_debug_type()`
 
 <br>
 
-### NullsafeOperatorRector
-
-Change if null check with nullsafe operator ?-> with full short circuiting
-
-- class: [`Rector\Php80\Rector\If_\NullsafeOperatorRector`](../rules/Php80/Rector/If_/NullsafeOperatorRector.php)
-
-```diff
- class SomeClass
- {
-     public function run($someObject)
-     {
--        $someObject2 = $someObject->mayFail1();
--        if ($someObject2 === null) {
--            return null;
--        }
--
--        return $someObject2->mayFail2();
-+        return $someObject->mayFail1()?->mayFail2();
-     }
- }
-```
-
-<br>
-
 ### OptionalParametersAfterRequiredRector
 
 Move required parameters after optional ones
@@ -11155,6 +7734,26 @@ Move required parameters after optional ones
 -    public function run($optional = 1, $required)
 +    public function run($required, $optional = 1)
      {
+     }
+ }
+```
+
+<br>
+
+### Php8ResourceReturnToObjectRector
+
+Change `is_resource()` to instanceof Object
+
+- class: [`Rector\Php80\Rector\FuncCall\Php8ResourceReturnToObjectRector`](../rules/Php80/Rector/FuncCall/Php8ResourceReturnToObjectRector.php)
+
+```diff
+ class SomeClass
+ {
+     public function run()
+     {
+         $ch = curl_init();
+-        is_resource($ch);
++        $ch instanceof \CurlHandle;
      }
  }
 ```
@@ -11232,6 +7831,25 @@ Change helper functions to `str_ends_with()`
      {
 -        $isMatch = substr($haystack, -strlen($needle)) === $needle;
 +        $isMatch = str_ends_with($haystack, $needle);
+
+-        $isNotMatch = substr($haystack, -strlen($needle)) !== $needle;
++        $isNotMatch = !str_ends_with($haystack, $needle);
+     }
+ }
+```
+
+<br>
+
+```diff
+ class SomeClass
+ {
+     public function run()
+     {
+-        $isMatch = substr($haystack, -9) === 'hardcoded;
++        $isMatch = str_ends_with($haystack, 'hardcoded');
+
+-        $isNotMatch = substr($haystack, -9) !== 'hardcoded';
++        $isNotMatch = !str_ends_with($haystack, 'hardcoded');
      }
  }
 ```
@@ -11282,7 +7900,7 @@ Add `Stringable` interface to classes with `__toString()` method
 
 ### TokenGetAllToObjectRector
 
-Complete missing constructor dependency instance by type
+Convert `token_get_all` to `PhpToken::tokenize`
 
 - class: [`Rector\Php80\Rector\FuncCall\TokenGetAllToObjectRector`](../rules/Php80/Rector/FuncCall/TokenGetAllToObjectRector.php)
 
@@ -11300,7 +7918,7 @@ Complete missing constructor dependency instance by type
 -               $name = null;
 -               $text = $token;
 -            }
-+        $tokens = \PhpToken::getAll($code);
++        $tokens = \PhpToken::tokenize($code);
 +        foreach ($tokens as $phpToken) {
 +           $name = $phpToken->getTokenName();
 +           $text = $phpToken->text;
@@ -11328,6 +7946,127 @@ Change docs types to union types, where possible (properties are covered by Type
 +    public function go(array|int $number): bool|float
      {
      }
+ }
+```
+
+<br>
+
+## Php81
+
+### FinalizePublicClassConstantRector
+
+Add final to constants that
+
+- class: [`Rector\Php81\Rector\ClassConst\FinalizePublicClassConstantRector`](../rules/Php81/Rector/ClassConst/FinalizePublicClassConstantRector.php)
+
+```diff
+ class SomeClass
+ {
+-    public const NAME = 'value';
++    public final const NAME = 'value';
+ }
+```
+
+<br>
+
+### MyCLabsClassToEnumRector
+
+Refactor MyCLabs enum class to native Enum
+
+- class: [`Rector\Php81\Rector\Class_\MyCLabsClassToEnumRector`](../rules/Php81/Rector/Class_/MyCLabsClassToEnumRector.php)
+
+```diff
+-use MyCLabs\Enum\Enum;
+-
+-final class Action extends Enum
++enum Action
+ {
+-    private const VIEW = 'view';
+-    private const EDIT = 'edit';
++    case VIEW = 'view';
++    case EDIT = 'edit';
+ }
+```
+
+<br>
+
+### MyCLabsMethodCallToEnumConstRector
+
+Refactor MyCLabs enum fetch to Enum const
+
+- class: [`Rector\Php81\Rector\MethodCall\MyCLabsMethodCallToEnumConstRector`](../rules/Php81/Rector/MethodCall/MyCLabsMethodCallToEnumConstRector.php)
+
+```diff
+-$name = SomeEnum::VALUE()->getKey();
++$name = SomeEnum::VALUE;
+```
+
+<br>
+
+### Php81ResourceReturnToObjectRector
+
+Change `is_resource()` to instanceof Object
+
+- class: [`Rector\Php81\Rector\FuncCall\Php81ResourceReturnToObjectRector`](../rules/Php81/Rector/FuncCall/Php81ResourceReturnToObjectRector.php)
+
+```diff
+ class SomeClass
+ {
+     public function run()
+     {
+         $f = finfo_open();
+-        is_resource($f);
++        $f instanceof \finfo;
+     }
+ }
+```
+
+<br>
+
+### ReadOnlyPropertyRector
+
+Decorate read-only property with `readonly` attribute
+
+- class: [`Rector\Php81\Rector\Property\ReadOnlyPropertyRector`](../rules/Php81/Rector/Property/ReadOnlyPropertyRector.php)
+
+```diff
+ class SomeClass
+ {
+     public function __construct(
+-        private string $name
++        private readonly string $name
+     ) {
+     }
+
+     public function getName()
+     {
+         return $this->name;
+     }
+ }
+```
+
+<br>
+
+### SpatieEnumClassToEnumRector
+
+Refactor Spatie enum class to native Enum
+
+- class: [`Rector\Php81\Rector\Class_\SpatieEnumClassToEnumRector`](../rules/Php81/Rector/Class_/SpatieEnumClassToEnumRector.php)
+
+```diff
+-use \Spatie\Enum\Enum;
+-
+-/**
+- * @method static self draft()
+- * @method static self published()
+- * @method static self archived()
+- */
+-class StatusEnum extends Enum
++enum StatusEnum
+ {
++    case draft = 'draft';
++    case published = 'published';
++    case archived = 'archived';
  }
 ```
 
@@ -11543,7 +8282,7 @@ Migrate PhpSpec behavior to PHPUnit test
 
 Rename "*Spec.php" file to "*Test.php" file
 
-- class: [`Rector\PhpSpecToPHPUnit\Rector\FileNode\RenameSpecFileToTestFileRector`](../rules/PhpSpecToPHPUnit/Rector/FileNode/RenameSpecFileToTestFileRector.php)
+- class: [`Rector\PhpSpecToPHPUnit\Rector\Class_\RenameSpecFileToTestFileRector`](../rules/PhpSpecToPHPUnit/Rector/Class_/RenameSpecFileToTestFileRector.php)
 
 ```diff
 -// tests/SomeSpec.php
@@ -11827,51 +8566,6 @@ Finalize every class that has no children
 
 <br>
 
-### MakeOnlyUsedByChildrenProtectedRector
-
-Make public class method protected, if only used by its children
-
-- class: [`Rector\Privatization\Rector\ClassMethod\MakeOnlyUsedByChildrenProtectedRector`](../rules/Privatization/Rector/ClassMethod/MakeOnlyUsedByChildrenProtectedRector.php)
-
-```diff
- abstract class AbstractSomeClass
- {
--    public function run()
-+    protected function run()
-     {
-     }
- }
-
- class ChildClass extends AbstractSomeClass
- {
-     public function go()
-     {
-         $this->run();
-     }
- }
-```
-
-<br>
-
-### MakeUnusedClassesWithChildrenAbstractRector
-
-Classes that have no children nor are used, should have abstract
-
-- class: [`Rector\Privatization\Rector\Class_\MakeUnusedClassesWithChildrenAbstractRector`](../rules/Privatization/Rector/Class_/MakeUnusedClassesWithChildrenAbstractRector.php)
-
-```diff
- class SomeClass extends PossibleAbstractClass
- {
- }
-
--class PossibleAbstractClass
-+abstract class PossibleAbstractClass
- {
- }
-```
-
-<br>
-
 ### PrivatizeFinalClassMethodRector
 
 Change protected class method to private if possible
@@ -11906,27 +8600,6 @@ Change property to private if possible
 
 <br>
 
-### PrivatizeLocalClassConstantRector
-
-Finalize every class constant that is used only locally
-
-- class: [`Rector\Privatization\Rector\ClassConst\PrivatizeLocalClassConstantRector`](../rules/Privatization/Rector/ClassConst/PrivatizeLocalClassConstantRector.php)
-
-```diff
- class ClassWithConstantUsedOnlyHere
- {
--    const LOCAL_ONLY = true;
-+    private const LOCAL_ONLY = true;
-
-     public function isLocalOnly()
-     {
-         return self::LOCAL_ONLY;
-     }
- }
-```
-
-<br>
-
 ### PrivatizeLocalGetterToPropertyRector
 
 Privatize getter of local property to property
@@ -11947,53 +8620,6 @@ Privatize getter of local property to property
      private function getSome()
      {
          return $this->some;
-     }
- }
-```
-
-<br>
-
-### PrivatizeLocalOnlyMethodRector
-
-Privatize local-only use methods
-
-- class: [`Rector\Privatization\Rector\ClassMethod\PrivatizeLocalOnlyMethodRector`](../rules/Privatization/Rector/ClassMethod/PrivatizeLocalOnlyMethodRector.php)
-
-```diff
- class SomeClass
- {
-     /**
-      * @api
-      */
-     public function run()
-     {
-         return $this->useMe();
-     }
-
--    public function useMe()
-+    private function useMe()
-     {
-     }
- }
-```
-
-<br>
-
-### PrivatizeLocalPropertyToPrivatePropertyRector
-
-Privatize local-only property to private property
-
-- class: [`Rector\Privatization\Rector\Property\PrivatizeLocalPropertyToPrivatePropertyRector`](../rules/Privatization/Rector/Property/PrivatizeLocalPropertyToPrivatePropertyRector.php)
-
-```diff
- class SomeClass
- {
--    public $value;
-+    private $value;
-
-     public function run()
-     {
-         return $this->value;
      }
  }
 ```
@@ -12046,7 +8672,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(ReplaceStringWithClassConstantRector::class)
         ->call('configure', [[
             ReplaceStringWithClassConstantRector::REPLACE_STRING_WITH_CLASS_CONSTANT => ValueObjectInliner::inline([
-                new ReplaceStringWithClassConstant('SomeClass', 'call', 'Placeholder', 0),
+                new ReplaceStringWithClassConstant('SomeClass', 'call', 0, 'Placeholder', false),
             ]),
         ]]);
 };
@@ -12089,8 +8715,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(ArgumentRemoverRector::class)
         ->call('configure', [[
             ArgumentRemoverRector::REMOVED_ARGUMENTS => ValueObjectInliner::inline([
-                new ArgumentRemover('ExampleClass', 'someMethod', 0, 'true'),
-            ]),
+                new ArgumentRemover('ExampleClass', 'someMethod', 0, [true]), ]
+            ),
         ]]);
 };
 ```
@@ -12100,7 +8726,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 ```diff
  $someObject = new SomeClass;
 -$someObject->someMethod(true);
-+$someObject->someMethod();'
++$someObject->someMethod();
 ```
 
 <br>
@@ -12142,7 +8768,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
 ### RemoveFuncCallRector
 
-Remove `ini_get` by configuration
+Remove ini_get by configuration
 
 :wrench: **configure it!**
 
@@ -12241,24 +8867,24 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
 <br>
 
-### RemoveTraitRector
+### RemoveTraitUseRector
 
 Remove specific traits from code
 
 :wrench: **configure it!**
 
-- class: [`Rector\Removing\Rector\Class_\RemoveTraitRector`](../rules/Removing/Rector/Class_/RemoveTraitRector.php)
+- class: [`Rector\Removing\Rector\Class_\RemoveTraitUseRector`](../rules/Removing/Rector/Class_/RemoveTraitUseRector.php)
 
 ```php
-use Rector\Removing\Rector\Class_\RemoveTraitRector;
+use Rector\Removing\Rector\Class_\RemoveTraitUseRector;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
 
-    $services->set(RemoveTraitRector::class)
+    $services->set(RemoveTraitUseRector::class)
         ->call('configure', [[
-            RemoveTraitRector::TRAITS_TO_REMOVE => ['TraitNameToRemove'],
+            RemoveTraitUseRector::TRAITS_TO_REMOVE => ['TraitNameToRemove'],
         ]]);
 };
 ```
@@ -12352,7 +8978,7 @@ Change defined static service to dynamic one
      public function run()
      {
 -        SomeStaticMethod::someStatic();
-+        $this->someStaticMethod::someStatic();
++        $this->someStaticMethod->someStatic();
      }
  }
 ```
@@ -12371,7 +8997,7 @@ Change defined static service to dynamic one
      public function run()
      {
 -        SomeStaticMethod::$someStatic;
-+        $this->someStaticMethod::$someStatic;
++        $this->someStaticMethod->someStatic;
      }
  }
 ```
@@ -12396,237 +9022,6 @@ Change static method and local-only calls to non-static
 -    private static function someStatic()
 +    private function someStatic()
      {
-     }
- }
-```
-
-<br>
-
-### NewUniqueObjectToEntityFactoryRector
-
-Convert new X to new factories
-
-:wrench: **configure it!**
-
-- class: [`Rector\RemovingStatic\Rector\Class_\NewUniqueObjectToEntityFactoryRector`](../rules/RemovingStatic/Rector/Class_/NewUniqueObjectToEntityFactoryRector.php)
-
-```php
-use Rector\RemovingStatic\Rector\Class_\NewUniqueObjectToEntityFactoryRector;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(NewUniqueObjectToEntityFactoryRector::class)
-        ->call('configure', [[
-            NewUniqueObjectToEntityFactoryRector::TYPES_TO_SERVICES => ['ClassName'],
-        ]]);
-};
-```
-
-↓
-
-```diff
--<?php
--
- class SomeClass
- {
-+    public function __construct(AnotherClassFactory $anotherClassFactory)
-+    {
-+        $this->anotherClassFactory = $anotherClassFactory;
-+    }
-+
-     public function run()
-     {
--        return new AnotherClass;
-+        return $this->anotherClassFactory->create();
-     }
- }
-
- class AnotherClass
- {
-     public function someFun()
-     {
-         return StaticClass::staticMethod();
-     }
- }
-```
-
-<br>
-
-### PHPUnitStaticToKernelTestCaseGetRector
-
-Convert static calls in PHPUnit test cases, to `get()` from the container of KernelTestCase
-
-:wrench: **configure it!**
-
-- class: [`Rector\RemovingStatic\Rector\Class_\PHPUnitStaticToKernelTestCaseGetRector`](../rules/RemovingStatic/Rector/Class_/PHPUnitStaticToKernelTestCaseGetRector.php)
-
-```php
-use Rector\RemovingStatic\Rector\Class_\PHPUnitStaticToKernelTestCaseGetRector;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(PHPUnitStaticToKernelTestCaseGetRector::class)
-        ->call('configure', [[
-            PHPUnitStaticToKernelTestCaseGetRector::STATIC_CLASS_TYPES => ['EntityFactory'],
-        ]]);
-};
-```
-
-↓
-
-```diff
--<?php
-+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-
--use PHPUnit\Framework\TestCase;
-+final class SomeTestCase extends KernelTestCase
-+{
-+    /**
-+     * @var EntityFactory
-+     */
-+    private $entityFactory;
-
--final class SomeTestCase extends TestCase
--{
-+    protected function setUp(): void
-+    {
-+        parent::setUp();
-+        $this->entityFactory = $this->getService(EntityFactory::class);
-+    }
-+
-     public function test()
-     {
--        $product = EntityFactory::create('product');
-+        $product = $this->entityFactory->create('product');
-     }
- }
-```
-
-<br>
-
-### PassFactoryToUniqueObjectRector
-
-Convert new `X/Static::call()` to factories in entities, pass them via constructor to each other
-
-:wrench: **configure it!**
-
-- class: [`Rector\RemovingStatic\Rector\Class_\PassFactoryToUniqueObjectRector`](../rules/RemovingStatic/Rector/Class_/PassFactoryToUniqueObjectRector.php)
-
-```php
-use Rector\RemovingStatic\Rector\Class_\PassFactoryToUniqueObjectRector;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(PassFactoryToUniqueObjectRector::class)
-        ->call('configure', [[
-            PassFactoryToUniqueObjectRector::TYPES_TO_SERVICES => ['StaticClass'],
-        ]]);
-};
-```
-
-↓
-
-```diff
--<?php
--
- class SomeClass
- {
-+    public function __construct(AnotherClassFactory $anotherClassFactory)
-+    {
-+        $this->anotherClassFactory = $anotherClassFactory;
-+    }
-+
-     public function run()
-     {
--        return new AnotherClass;
-+        return $this->anotherClassFactory->create();
-     }
- }
-
- class AnotherClass
- {
-+    public function __construct(StaticClass $staticClass)
-+    {
-+        $this->staticClass = $staticClass;
-+    }
-+
-     public function someFun()
-     {
--        return StaticClass::staticMethod();
-+        return $this->staticClass->staticMethod();
-+    }
-+}
-+
-+final class AnotherClassFactory
-+{
-+    /**
-+     * @var StaticClass
-+     */
-+    private $staticClass;
-+
-+    public function __construct(StaticClass $staticClass)
-+    {
-+        $this->staticClass = $staticClass;
-+    }
-+
-+    public function create(): AnotherClass
-+    {
-+        return new AnotherClass($this->staticClass);
-     }
- }
-```
-
-<br>
-
-### StaticTypeToSetterInjectionRector
-
-Changes types to setter injection
-
-:wrench: **configure it!**
-
-- class: [`Rector\RemovingStatic\Rector\Class_\StaticTypeToSetterInjectionRector`](../rules/RemovingStatic/Rector/Class_/StaticTypeToSetterInjectionRector.php)
-
-```php
-use Rector\RemovingStatic\Rector\Class_\StaticTypeToSetterInjectionRector;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(StaticTypeToSetterInjectionRector::class)
-        ->call('configure', [[
-            StaticTypeToSetterInjectionRector::STATIC_TYPES => ['SomeStaticClass'],
-        ]]);
-};
-```
-
-↓
-
-```diff
- <?php
-
- final class CheckoutEntityFactory
- {
-+    /**
-+     * @var SomeStaticClass
-+     */
-+    private $someStaticClass;
-+
-+    public function setSomeStaticClass(SomeStaticClass $someStaticClass)
-+    {
-+        $this->someStaticClass = $someStaticClass;
-+    }
-+
-     public function run()
-     {
--        return SomeStaticClass::go();
-+        return $this->someStaticClass->go();
      }
  }
 ```
@@ -12727,7 +9122,6 @@ Replaces defined class constants in their calls.
 ```php
 use Rector\Renaming\Rector\ClassConstFetch\RenameClassConstFetchRector;
 use Rector\Renaming\ValueObject\RenameClassAndConstFetch;
-use Rector\Renaming\ValueObject\RenameClassConstFetch;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symplify\SymfonyPhpConfig\ValueObjectInliner;
 
@@ -12737,8 +9131,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(RenameClassConstFetchRector::class)
         ->call('configure', [[
             RenameClassConstFetchRector::CLASS_CONSTANT_RENAME => ValueObjectInliner::inline([
-                new RenameClassConstFetch('SomeClass', 'OLD_CONSTANT', 'NEW_CONSTANT'),
-                new RenameClassAndConstFetch('SomeClass', 'OTHER_OLD_CONSTANT', 'NEW_CONSTANT', 'DifferentClass'),
+                new RenameClassAndConstFetch('SomeClass', 'OTHER_OLD_CONSTANT', 'DifferentClass', 'NEW_CONSTANT'),
             ]),
         ]]);
 };
@@ -12818,7 +9211,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(RenameConstantRector::class)
         ->call('configure', [[
             RenameConstantRector::OLD_TO_NEW_CONSTANTS => [
-                'MYSQL_ASSOC' => 'MYSQLI_ASSOC', 'OLD_CONSTANT' => 'NEW_CONSTANT',
+                'MYSQL_ASSOC' => 'MYSQLI_ASSOC',
+                'OLD_CONSTANT' => 'NEW_CONSTANT',
 
             ], ]]);
 };
@@ -13121,99 +9515,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
 <br>
 
-### CompleteMissingDependencyInNewRector
-
-Complete missing constructor dependency instance by type
-
-:wrench: **configure it!**
-
-- class: [`Rector\Restoration\Rector\New_\CompleteMissingDependencyInNewRector`](../rules/Restoration/Rector/New_/CompleteMissingDependencyInNewRector.php)
-
-```php
-use Rector\Restoration\Rector\New_\CompleteMissingDependencyInNewRector;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(CompleteMissingDependencyInNewRector::class)
-        ->call('configure', [[
-            CompleteMissingDependencyInNewRector::CLASS_TO_INSTANTIATE_BY_TYPE => [
-                'RandomDependency' => 'RandomDependency',
-
-            ], ]]);
-};
-```
-
-↓
-
-```diff
- final class SomeClass
- {
-     public function run()
-     {
--        $valueObject = new RandomValueObject();
-+        $valueObject = new RandomValueObject(new RandomDependency());
-     }
- }
-
- class RandomValueObject
- {
-     public function __construct(RandomDependency $randomDependency)
-     {
-     }
- }
-```
-
-<br>
-
-### InferParamFromClassMethodReturnRector
-
-Change `@param` doc based on another method return type
-
-:wrench: **configure it!**
-
-- class: [`Rector\Restoration\Rector\ClassMethod\InferParamFromClassMethodReturnRector`](../rules/Restoration/Rector/ClassMethod/InferParamFromClassMethodReturnRector.php)
-
-```php
-use Rector\Restoration\Rector\ClassMethod\InferParamFromClassMethodReturnRector;
-use Rector\Restoration\ValueObject\InferParamFromClassMethodReturn;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use Symplify\SymfonyPhpConfig\ValueObjectInliner;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(InferParamFromClassMethodReturnRector::class)
-        ->call('configure', [[
-            InferParamFromClassMethodReturnRector::INFER_PARAMS_FROM_CLASS_METHOD_RETURNS => ValueObjectInliner::inline([
-                new InferParamFromClassMethodReturn('SomeClass', 'process', 'getNodeTypes'),
-            ]),
-        ]]);
-};
-```
-
-↓
-
-```diff
- class SomeClass
- {
-     public function getNodeTypes(): array
-     {
-         return [String_::class];
-     }
-
-+    /**
-+     * @param String_ $node
-+     */
-     public function process(Node $node)
-     {
-     }
- }
-```
-
-<br>
-
 ### MakeTypedPropertyNullableIfCheckedRector
 
 Make typed property nullable if checked
@@ -13276,23 +9577,6 @@ Remove final from Doctrine entities
 
 <br>
 
-### RestoreFullyQualifiedNameRector
-
-Restore accidentally shortened class names to its fully qualified form.
-
-- class: [`Rector\Restoration\Rector\Use_\RestoreFullyQualifiedNameRector`](../rules/Restoration/Rector/Use_/RestoreFullyQualifiedNameRector.php)
-
-```diff
--use ShortClassOnly;
-+use App\Whatever\ShortClassOnly;
-
- class AnotherClass
- {
- }
-```
-
-<br>
-
 ### UpdateFileNameByClassNameFileSystemRector
 
 Rename file to respect class name
@@ -13309,69 +9593,26 @@ Rename file to respect class name
 
 <br>
 
-## Symfony
+## Strict
 
-### ActionSuffixRemoverRector
+### BooleanInBooleanNotRuleFixerRector
 
-Removes Action suffixes from methods in Symfony Controllers
-
-- class: [`Rector\Symfony\Rector\ClassMethod\ActionSuffixRemoverRector`](../rules/Symfony/Rector/ClassMethod/ActionSuffixRemoverRector.php)
-
-```diff
- class SomeController
- {
--    public function indexAction()
-+    public function index()
-     {
-     }
- }
-```
-
-<br>
-
-### AddMessageToEqualsResponseCodeRector
-
-Add response content to response code assert, so it is easier to debug
-
-- class: [`Rector\Symfony\Rector\StaticCall\AddMessageToEqualsResponseCodeRector`](../rules/Symfony/Rector/StaticCall/AddMessageToEqualsResponseCodeRector.php)
-
-```diff
- use PHPUnit\Framework\TestCase;
- use Symfony\Component\HttpFoundation\Response;
-
- final class SomeClassTest extends TestCase
- {
-     public function test(Response $response)
-     {
-         $this->assertEquals(
-             Response::HTTP_NO_CONTENT,
-             $response->getStatusCode()
-+            $response->getContent()
-         );
-     }
- }
-```
-
-<br>
-
-### ChangeFileLoaderInExtensionAndKernelRector
-
-Change XML loader to YAML in Bundle Extension
+Fixer for PHPStan reports by strict type rule - "PHPStan\Rules\BooleansInConditions\BooleanInBooleanNotRule"
 
 :wrench: **configure it!**
 
-- class: [`Rector\Symfony\Rector\Class_\ChangeFileLoaderInExtensionAndKernelRector`](../rules/Symfony/Rector/Class_/ChangeFileLoaderInExtensionAndKernelRector.php)
+- class: [`Rector\Strict\Rector\BooleanNot\BooleanInBooleanNotRuleFixerRector`](../rules/Strict/Rector/BooleanNot/BooleanInBooleanNotRuleFixerRector.php)
 
 ```php
-use Rector\Symfony\Rector\Class_\ChangeFileLoaderInExtensionAndKernelRector;
+use Rector\Strict\Rector\BooleanNot\BooleanInBooleanNotRuleFixerRector;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
 
-    $services->set(ChangeFileLoaderInExtensionAndKernelRector::class)
+    $services->set(BooleanInBooleanNotRuleFixerRector::class)
         ->call('configure', [[
-            ChangeFileLoaderInExtensionAndKernelRector::FROM => 'xml', ChangeFileLoaderInExtensionAndKernelRector::TO => 'yaml',
+            BooleanInBooleanNotRuleFixerRector::TREAT_AS_NON_EMPTY => true,
         ]]);
 };
 ```
@@ -13379,141 +9620,41 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 ↓
 
 ```diff
- use Symfony\Component\Config\FileLocator;
- use Symfony\Component\DependencyInjection\ContainerBuilder;
--use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
-+use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
- use Symfony\Component\HttpKernel\DependencyInjection\Extension;
-
- final class SomeExtension extends Extension
- {
-     public function load(array $configs, ContainerBuilder $container)
-     {
--        $loader = new XmlFileLoader($container, new FileLocator());
--        $loader->load(__DIR__ . '/../Resources/config/controller.xml');
--        $loader->load(__DIR__ . '/../Resources/config/events.xml');
-+        $loader = new YamlFileLoader($container, new FileLocator());
-+        $loader->load(__DIR__ . '/../Resources/config/controller.yaml');
-+        $loader->load(__DIR__ . '/../Resources/config/events.yaml');
-     }
- }
-```
-
-<br>
-
-### EventListenerToEventSubscriberRector
-
-Change Symfony Event listener class to Event Subscriber based on configuration in service.yaml file
-
-- class: [`Rector\Symfony\Rector\Class_\EventListenerToEventSubscriberRector`](../rules/Symfony/Rector/Class_/EventListenerToEventSubscriberRector.php)
-
-```diff
--class SomeListener
-+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-+
-+class SomeEventSubscriber implements EventSubscriberInterface
- {
-+     /**
-+      * @return string[]
-+      */
-+     public static function getSubscribedEvents(): array
-+     {
-+         return ['some_event' => 'methodToBeCalled'];
-+     }
-+
-      public function methodToBeCalled()
-      {
-      }
--}
--
--// in config.yaml
--services:
--    SomeListener:
--        tags:
--            - { name: kernel.event_listener, event: 'some_event', method: 'methodToBeCalled' }
-+}
-```
-
-<br>
-
-### ExtractAttributeRouteNameConstantsRector
-
-`Extract` #[Route] attribute name argument from string to constant
-
-- class: [`Rector\Symfony\Rector\Attribute\ExtractAttributeRouteNameConstantsRector`](../rules/Symfony/Rector/Attribute/ExtractAttributeRouteNameConstantsRector.php)
-
-```diff
- use Symfony\Component\Routing\Annotation\Route;
-
  class SomeClass
  {
--    #[Route(path: "path", name: "/name")]
-+    #[Route(path: "path", name: RouteName::NAME)]
-     public function run()
+-    public function run(string|null $name)
++    public function run(string $name)
      {
-     }
- }
-```
+-        if (! $name) {
++        if ($name === null) {
+             return 'no name';
+         }
 
-Extra file:
-
-```php
-final class RouteName
-{
-    /**
-     * @var string
-     */
-    public NAME = 'name';
-}
-```
-
-<br>
-
-### GetParameterToConstructorInjectionRector
-
-Turns fetching of parameters via `getParameter()` in ContainerAware to constructor injection in Command and Controller in Symfony
-
-- class: [`Rector\Symfony\Rector\MethodCall\GetParameterToConstructorInjectionRector`](../rules/Symfony/Rector/MethodCall/GetParameterToConstructorInjectionRector.php)
-
-```diff
--class MyCommand extends ContainerAwareCommand
-+class MyCommand extends Command
- {
-+    private $someParameter;
-+
-+    public function __construct($someParameter)
-+    {
-+        $this->someParameter = $someParameter;
-+    }
-+
-     public function someMethod()
-     {
--        $this->getParameter('someParameter');
-+        $this->someParameter;
+         return 'name';
      }
  }
 ```
 
 <br>
 
-### GetToConstructorInjectionRector
+### BooleanInIfConditionRuleFixerRector
 
-Turns fetching of dependencies via `$this->get()` to constructor injection in Command and Controller in Symfony
+Fixer for PHPStan reports by strict type rule - "PHPStan\Rules\BooleansInConditions\BooleanInIfConditionRule"
 
 :wrench: **configure it!**
 
-- class: [`Rector\Symfony\Rector\MethodCall\GetToConstructorInjectionRector`](../rules/Symfony/Rector/MethodCall/GetToConstructorInjectionRector.php)
+- class: [`Rector\Strict\Rector\If_\BooleanInIfConditionRuleFixerRector`](../rules/Strict/Rector/If_/BooleanInIfConditionRuleFixerRector.php)
 
 ```php
-use Rector\Symfony\Rector\MethodCall\GetToConstructorInjectionRector;
+use Rector\Strict\Rector\If_\BooleanInIfConditionRuleFixerRector;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
 
-    $services->set(GetToConstructorInjectionRector::class)
+    $services->set(BooleanInIfConditionRuleFixerRector::class)
         ->call('configure', [[
-            GetToConstructorInjectionRector::GET_METHOD_AWARE_TYPES => ['SymfonyControllerClassName', 'GetTraitClassName'],
+            BooleanInIfConditionRuleFixerRector::TREAT_AS_NON_EMPTY => false,
         ]]);
 };
 ```
@@ -13521,559 +9662,40 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 ↓
 
 ```diff
--class MyCommand extends ContainerAwareCommand
-+class MyCommand extends Command
+ final class NegatedString
  {
-+    public function __construct(SomeService $someService)
-+    {
-+        $this->someService = $someService;
-+    }
-+
-     public function someMethod()
+     public function run(string $name)
      {
--        // ...
--        $this->get('some_service');
-+        $this->someService;
+-        if ($name) {
++        if ($name !== '') {
+             return 'name';
+         }
+
+         return 'no name';
      }
  }
 ```
 
 <br>
 
-### MakeCommandLazyRector
+### BooleanInTernaryOperatorRuleFixerRector
 
-Make Symfony commands lazy
-
-- class: [`Rector\Symfony\Rector\Class_\MakeCommandLazyRector`](../rules/Symfony/Rector/Class_/MakeCommandLazyRector.php)
-
-```diff
- use Symfony\Component\Console\Command\Command
-
- class SunshineCommand extends Command
- {
-+    protected static $defaultName = 'sunshine';
-     public function configure()
-     {
--        $this->setName('sunshine');
-     }
- }
-```
-
-<br>
-
-### RemoveServiceFromSensioRouteRector
-
-Remove service from Sensio `@Route`
-
-- class: [`Rector\Symfony\Rector\ClassMethod\RemoveServiceFromSensioRouteRector`](../rules/Symfony/Rector/ClassMethod/RemoveServiceFromSensioRouteRector.php)
-
-```diff
- use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
-
- final class SomeClass
- {
-     /**
--     * @Route(service="some_service")
-+     * @Route()
-      */
-     public function run()
-     {
-     }
- }
-```
-
-<br>
-
-### ReplaceSensioRouteAnnotationWithSymfonyRector
-
-Replace Sensio `@Route` annotation with Symfony one
-
-- class: [`Rector\Symfony\Rector\ClassMethod\ReplaceSensioRouteAnnotationWithSymfonyRector`](../rules/Symfony/Rector/ClassMethod/ReplaceSensioRouteAnnotationWithSymfonyRector.php)
-
-```diff
--use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
-+use Symfony\Component\Routing\Annotation\Route;
-
- final class SomeClass
- {
-     /**
-      * @Route()
-      */
-     public function run()
-     {
-     }
- }
-```
-
-<br>
-
-### ResponseStatusCodeRector
-
-Turns status code numbers to constants
-
-- class: [`Rector\Symfony\Rector\BinaryOp\ResponseStatusCodeRector`](../rules/Symfony/Rector/BinaryOp/ResponseStatusCodeRector.php)
-
-```diff
- class SomeController
- {
-     public function index()
-     {
-         $response = new \Symfony\Component\HttpFoundation\Response();
--        $response->setStatusCode(200);
-+        $response->setStatusCode(\Symfony\Component\HttpFoundation\Response::HTTP_OK);
-
--        if ($response->getStatusCode() === 200) {}
-+        if ($response->getStatusCode() === \Symfony\Component\HttpFoundation\Response::HTTP_OK) {}
-     }
- }
-```
-
-<br>
-
-### SimpleFunctionAndFilterRector
-
-Changes Twig_Function_Method to Twig_SimpleFunction calls in Twig_Extension.
-
-- class: [`Rector\Symfony\Rector\Return_\SimpleFunctionAndFilterRector`](../rules/Symfony/Rector/Return_/SimpleFunctionAndFilterRector.php)
-
-```diff
- class SomeExtension extends Twig_Extension
- {
-     public function getFunctions()
-     {
-         return [
--            'is_mobile' => new Twig_Function_Method($this, 'isMobile'),
-+             new Twig_SimpleFunction('is_mobile', [$this, 'isMobile']),
-         ];
-     }
-
-     public function getFilters()
-     {
-         return [
--            'is_mobile' => new Twig_Filter_Method($this, 'isMobile'),
-+             new Twig_SimpleFilter('is_mobile', [$this, 'isMobile']),
-         ];
-     }
- }
-```
-
-<br>
-
-### TemplateAnnotationToThisRenderRector
-
-Turns `@Template` annotation to explicit method call in Controller of FrameworkExtraBundle in Symfony
-
-- class: [`Rector\Symfony\Rector\ClassMethod\TemplateAnnotationToThisRenderRector`](../rules/Symfony/Rector/ClassMethod/TemplateAnnotationToThisRenderRector.php)
-
-```diff
--/**
-- * @Template()
-- */
- public function indexAction()
- {
-+    return $this->render('index.html.twig');
- }
-```
-
-<br>
-
-## Symfony2
-
-### AddFlashRector
-
-Turns long flash adding to short helper method in Controller in Symfony
-
-- class: [`Rector\Symfony2\Rector\MethodCall\AddFlashRector`](../rules/Symfony2/Rector/MethodCall/AddFlashRector.php)
-
-```diff
- class SomeController extends Controller
- {
-     public function some(Request $request)
-     {
--        $request->getSession()->getFlashBag()->add("success", "something");
-+        $this->addFlash("success", "something");
-     }
- }
-```
-
-<br>
-
-### ParseFileRector
-
-session > use_strict_mode is true by default and can be removed
-
-- class: [`Rector\Symfony2\Rector\StaticCall\ParseFileRector`](../rules/Symfony2/Rector/StaticCall/ParseFileRector.php)
-
-```diff
--session > use_strict_mode: true
-+session:
-```
-
-<br>
-
-### RedirectToRouteRector
-
-Turns redirect to route to short helper method in Controller in Symfony
-
-- class: [`Rector\Symfony2\Rector\MethodCall\RedirectToRouteRector`](../rules/Symfony2/Rector/MethodCall/RedirectToRouteRector.php)
-
-```diff
--$this->redirect($this->generateUrl("homepage"));
-+$this->redirectToRoute("homepage");
-```
-
-<br>
-
-## Symfony3
-
-### CascadeValidationFormBuilderRector
-
-Change "cascade_validation" option to specific node attribute
-
-- class: [`Rector\Symfony3\Rector\MethodCall\CascadeValidationFormBuilderRector`](../rules/Symfony3/Rector/MethodCall/CascadeValidationFormBuilderRector.php)
-
-```diff
- class SomeController
- {
-     public function someMethod()
-     {
--        $form = $this->createFormBuilder($article, ['cascade_validation' => true])
--            ->add('author', new AuthorType())
-+        $form = $this->createFormBuilder($article)
-+            ->add('author', new AuthorType(), [
-+                'constraints' => new \Symfony\Component\Validator\Constraints\Valid(),
-+            ])
-             ->getForm();
-     }
-
-     protected function createFormBuilder()
-     {
-         return new FormBuilder();
-     }
- }
-```
-
-<br>
-
-### ChangeCollectionTypeOptionNameFromTypeToEntryTypeRector
-
-Rename `type` option to `entry_type` in CollectionType
-
-- class: [`Rector\Symfony3\Rector\MethodCall\ChangeCollectionTypeOptionNameFromTypeToEntryTypeRector`](../rules/Symfony3/Rector/MethodCall/ChangeCollectionTypeOptionNameFromTypeToEntryTypeRector.php)
-
-```diff
- use Symfony\Component\Form\AbstractType;
- use Symfony\Component\Form\FormBuilderInterface;
- use Symfony\Component\Form\Extension\Core\Type\CollectionType;
- use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-
- class TaskType extends AbstractType
- {
-     public function buildForm(FormBuilderInterface $builder, array $options)
-     {
-         $builder->add('tags', CollectionType::class, [
--            'type' => ChoiceType::class,
--            'options' => [1, 2, 3],
-+            'entry_type' => ChoiceType::class,
-+            'entry_options' => [1, 2, 3],
-         ]);
-     }
- }
-```
-
-<br>
-
-### ChangeStringCollectionOptionToConstantRector
-
-Change type in CollectionType from alias string to class reference
-
-- class: [`Rector\Symfony3\Rector\MethodCall\ChangeStringCollectionOptionToConstantRector`](../rules/Symfony3/Rector/MethodCall/ChangeStringCollectionOptionToConstantRector.php)
-
-```diff
- use Symfony\Component\Form\AbstractType;
- use Symfony\Component\Form\FormBuilderInterface;
- use Symfony\Component\Form\Extension\Core\Type\CollectionType;
-
- class TaskType extends AbstractType
- {
-     public function buildForm(FormBuilderInterface $builder, array $options)
-     {
-         $builder->add('tags', CollectionType::class, [
--            'type' => 'choice',
-+            'type' => \Symfony\Component\Form\Extension\Core\Type\ChoiceType::class,
-         ]);
-
-         $builder->add('tags', 'collection', [
--            'type' => 'choice',
-+            'type' => \Symfony\Component\Form\Extension\Core\Type\ChoiceType::class,
-         ]);
-     }
- }
-```
-
-<br>
-
-### ConsoleExceptionToErrorEventConstantRector
-
-Turns old event name with EXCEPTION to ERROR constant in Console in Symfony
-
-- class: [`Rector\Symfony3\Rector\ClassConstFetch\ConsoleExceptionToErrorEventConstantRector`](../rules/Symfony3/Rector/ClassConstFetch/ConsoleExceptionToErrorEventConstantRector.php)
-
-```diff
--"console.exception"
-+Symfony\Component\Console\ConsoleEvents::ERROR
-```
-
-<br>
-
-```diff
--Symfony\Component\Console\ConsoleEvents::EXCEPTION
-+Symfony\Component\Console\ConsoleEvents::ERROR
-```
-
-<br>
-
-### FormTypeGetParentRector
-
-Turns string Form Type references to their `CONSTANT` alternatives in `getParent()` and `getExtendedType()` methods in Form in Symfony
-
-- class: [`Rector\Symfony3\Rector\ClassMethod\FormTypeGetParentRector`](../rules/Symfony3/Rector/ClassMethod/FormTypeGetParentRector.php)
-
-```diff
- use Symfony\Component\Form\AbstractType;
-
- class SomeType extends AbstractType
- {
-     public function getParent()
-     {
--        return 'collection';
-+        return \Symfony\Component\Form\Extension\Core\Type\CollectionType::class;
-     }
- }
-```
-
-<br>
-
-```diff
- use Symfony\Component\Form\AbstractTypeExtension;
-
- class SomeExtension extends AbstractTypeExtension
- {
-     public function getExtendedType()
-     {
--        return 'collection';
-+        return \Symfony\Component\Form\Extension\Core\Type\CollectionType::class;
-     }
- }
-```
-
-<br>
-
-### FormTypeInstanceToClassConstRector
-
-Changes createForm(new FormType), add(new FormType) to ones with "FormType::class"
-
-- class: [`Rector\Symfony3\Rector\MethodCall\FormTypeInstanceToClassConstRector`](../rules/Symfony3/Rector/MethodCall/FormTypeInstanceToClassConstRector.php)
-
-```diff
- class SomeController
- {
-     public function action()
-     {
--        $form = $this->createForm(new TeamType, $entity);
-+        $form = $this->createForm(TeamType::class, $entity);
-     }
- }
-```
-
-<br>
-
-### GetRequestRector
-
-Turns fetching of dependencies via `$this->get()` to constructor injection in Command and Controller in Symfony
-
-- class: [`Rector\Symfony3\Rector\ClassMethod\GetRequestRector`](../rules/Symfony3/Rector/ClassMethod/GetRequestRector.php)
-
-```diff
-+use Symfony\Component\HttpFoundation\Request;
-+
- class SomeController
- {
--    public function someAction()
-+    public function someAction(Request $request)
-     {
--        $this->getRequest()->...();
-+        $request->...();
-     }
- }
-```
-
-<br>
-
-### MergeMethodAnnotationToRouteAnnotationRector
-
-Merge removed `@Method` annotation to `@Route` one
-
-- class: [`Rector\Symfony3\Rector\ClassMethod\MergeMethodAnnotationToRouteAnnotationRector`](../rules/Symfony3/Rector/ClassMethod/MergeMethodAnnotationToRouteAnnotationRector.php)
-
-```diff
--use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
- use Symfony\Component\Routing\Annotation\Route;
-
- class DefaultController extends Controller
- {
-     /**
--     * @Route("/show/{id}")
--     * @Method({"GET", "HEAD"})
-+     * @Route("/show/{id}", methods={"GET","HEAD"})
-      */
-     public function show($id)
-     {
-     }
- }
-```
-
-<br>
-
-### OptionNameRector
-
-Turns old option names to new ones in FormTypes in Form in Symfony
-
-- class: [`Rector\Symfony3\Rector\MethodCall\OptionNameRector`](../rules/Symfony3/Rector/MethodCall/OptionNameRector.php)
-
-```diff
- $builder = new FormBuilder;
--$builder->add("...", ["precision" => "...", "virtual" => "..."];
-+$builder->add("...", ["scale" => "...", "inherit_data" => "..."];
-```
-
-<br>
-
-### ReadOnlyOptionToAttributeRector
-
-Change "read_only" option in form to attribute
-
-- class: [`Rector\Symfony3\Rector\MethodCall\ReadOnlyOptionToAttributeRector`](../rules/Symfony3/Rector/MethodCall/ReadOnlyOptionToAttributeRector.php)
-
-```diff
- use Symfony\Component\Form\FormBuilderInterface;
-
- function buildForm(FormBuilderInterface $builder, array $options)
- {
--    $builder->add('cuid', TextType::class, ['read_only' => true]);
-+    $builder->add('cuid', TextType::class, ['attr' => ['read_only' => true]]);
- }
-```
-
-<br>
-
-### RemoveDefaultGetBlockPrefixRector
-
-Rename `getBlockPrefix()` if it returns the default value - class to underscore, e.g. UserFormType = user_form
-
-- class: [`Rector\Symfony3\Rector\ClassMethod\RemoveDefaultGetBlockPrefixRector`](../rules/Symfony3/Rector/ClassMethod/RemoveDefaultGetBlockPrefixRector.php)
-
-```diff
- use Symfony\Component\Form\AbstractType;
-
- class TaskType extends AbstractType
- {
--    public function getBlockPrefix()
--    {
--        return 'task';
--    }
- }
-```
-
-<br>
-
-### StringFormTypeToClassRector
-
-Turns string Form Type references to their `CONSTANT` alternatives in FormTypes in Form in Symfony. To enable custom types, add `link` to your container XML `dump` in "$parameters->set(Option::SYMFONY_CONTAINER_XML_PATH_PARAMETER, ...);"
-
-- class: [`Rector\Symfony3\Rector\MethodCall\StringFormTypeToClassRector`](../rules/Symfony3/Rector/MethodCall/StringFormTypeToClassRector.php)
-
-```diff
- $formBuilder = new Symfony\Component\Form\FormBuilder;
--$formBuilder->add('name', 'form.type.text');
-+$formBuilder->add('name', \Symfony\Component\Form\Extension\Core\Type\TextType::class);
-```
-
-<br>
-
-## Symfony4
-
-### ConsoleExecuteReturnIntRector
-
-Returns int from Command::execute command
-
-- class: [`Rector\Symfony4\Rector\ClassMethod\ConsoleExecuteReturnIntRector`](../rules/Symfony4/Rector/ClassMethod/ConsoleExecuteReturnIntRector.php)
-
-```diff
- class SomeCommand extends Command
- {
--    public function execute(InputInterface $input, OutputInterface $output)
-+    public function execute(InputInterface $input, OutputInterface $output): int
-     {
--        return null;
-+        return 0;
-     }
- }
-```
-
-<br>
-
-### ConstraintUrlOptionRector
-
-Turns true value to `Url::CHECK_DNS_TYPE_ANY` in Validator in Symfony.
-
-- class: [`Rector\Symfony4\Rector\ConstFetch\ConstraintUrlOptionRector`](../rules/Symfony4/Rector/ConstFetch/ConstraintUrlOptionRector.php)
-
-```diff
--$constraint = new Url(["checkDNS" => true]);
-+$constraint = new Url(["checkDNS" => Url::CHECK_DNS_TYPE_ANY]);
-```
-
-<br>
-
-### ContainerBuilderCompileEnvArgumentRector
-
-Turns old default value to parameter in `ContainerBuilder->build()` method in DI in Symfony
-
-- class: [`Rector\Symfony4\Rector\MethodCall\ContainerBuilderCompileEnvArgumentRector`](../rules/Symfony4/Rector/MethodCall/ContainerBuilderCompileEnvArgumentRector.php)
-
-```diff
- use Symfony\Component\DependencyInjection\ContainerBuilder;
-
- $containerBuilder = new ContainerBuilder();
--$containerBuilder->compile();
-+$containerBuilder->compile(true);
-```
-
-<br>
-
-### ContainerGetToConstructorInjectionRector
-
-Turns fetching of dependencies via `$container->get()` in ContainerAware to constructor injection in Command and Controller in Symfony
+Fixer for PHPStan reports by strict type rule - "PHPStan\Rules\BooleansInConditions\BooleanInTernaryOperatorRule"
 
 :wrench: **configure it!**
 
-- class: [`Rector\Symfony4\Rector\MethodCall\ContainerGetToConstructorInjectionRector`](../rules/Symfony4/Rector/MethodCall/ContainerGetToConstructorInjectionRector.php)
+- class: [`Rector\Strict\Rector\Ternary\BooleanInTernaryOperatorRuleFixerRector`](../rules/Strict/Rector/Ternary/BooleanInTernaryOperatorRuleFixerRector.php)
 
 ```php
-use Rector\Symfony4\Rector\MethodCall\ContainerGetToConstructorInjectionRector;
+use Rector\Strict\Rector\Ternary\BooleanInTernaryOperatorRuleFixerRector;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
 
-    $services->set(ContainerGetToConstructorInjectionRector::class)
+    $services->set(BooleanInTernaryOperatorRuleFixerRector::class)
         ->call('configure', [[
-            ContainerGetToConstructorInjectionRector::CONTAINER_AWARE_PARENT_TYPES => [
-                'ContainerAwareParentClassName',
-                'ContainerAwareParentCommandClassName',
-                'ThisClassCallsMethodInConstructorClassName',
-            ],
+            BooleanInTernaryOperatorRuleFixerRector::TREAT_AS_NON_EMPTY => false,
         ]]);
 };
 ```
@@ -14081,450 +9703,86 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 ↓
 
 ```diff
--final class SomeCommand extends ContainerAwareCommand
-+final class SomeCommand extends Command
+ final class ArrayCompare
  {
-+    public function __construct(SomeService $someService)
-+    {
-+        $this->someService = $someService;
-+    }
-+
-     public function someMethod()
+     public function run(array $data)
      {
-         // ...
--        $this->getContainer()->get('some_service');
--        $this->container->get('some_service');
-+        $this->someService;
-+        $this->someService;
+-        return $data ? 1 : 2;
++        return $data !== [] ? 1 : 2;
      }
  }
 ```
 
 <br>
 
-### FormIsValidRector
+### DisallowedEmptyRuleFixerRector
 
-Adds `$form->isSubmitted()` validation to all `$form->isValid()` calls in Form in Symfony
+Fixer for PHPStan reports by strict type rule - "PHPStan\Rules\DisallowedConstructs\DisallowedEmptyRule"
 
-- class: [`Rector\Symfony4\Rector\MethodCall\FormIsValidRector`](../rules/Symfony4/Rector/MethodCall/FormIsValidRector.php)
+:wrench: **configure it!**
 
-```diff
--if ($form->isValid()) {
-+if ($form->isSubmitted() && $form->isValid()) {
- }
+- class: [`Rector\Strict\Rector\Empty_\DisallowedEmptyRuleFixerRector`](../rules/Strict/Rector/Empty_/DisallowedEmptyRuleFixerRector.php)
+
+```php
+use Rector\Strict\Rector\Empty_\DisallowedEmptyRuleFixerRector;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+
+return static function (ContainerConfigurator $containerConfigurator): void {
+    $services = $containerConfigurator->services();
+
+    $services->set(DisallowedEmptyRuleFixerRector::class)
+        ->call('configure', [[
+            DisallowedEmptyRuleFixerRector::TREAT_AS_NON_EMPTY => false,
+        ]]);
+};
 ```
 
-<br>
-
-### MakeDispatchFirstArgumentEventRector
-
-Make event object a first argument of `dispatch()` method, event name as second
-
-- class: [`Rector\Symfony4\Rector\MethodCall\MakeDispatchFirstArgumentEventRector`](../rules/Symfony4/Rector/MethodCall/MakeDispatchFirstArgumentEventRector.php)
+↓
 
 ```diff
- use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
-
- class SomeClass
+ final class SomeEmptyArray
  {
-     public function run(EventDispatcherInterface $eventDispatcher)
+     public function run(array $items)
      {
--        $eventDispatcher->dispatch('event_name', new Event());
-+        $eventDispatcher->dispatch(new Event(), 'event_name');
-     }
- }
-```
-
-<br>
-
-### ProcessBuilderGetProcessRector
-
-Removes `$processBuilder->getProcess()` calls to `$processBuilder` in Process in Symfony, because ProcessBuilder was removed. This is part of multi-step Rector and has very narrow focus.
-
-- class: [`Rector\Symfony4\Rector\MethodCall\ProcessBuilderGetProcessRector`](../rules/Symfony4/Rector/MethodCall/ProcessBuilderGetProcessRector.php)
-
-```diff
- $processBuilder = new Symfony\Component\Process\ProcessBuilder;
--$process = $processBuilder->getProcess();
--$commamdLine = $processBuilder->getProcess()->getCommandLine();
-+$process = $processBuilder;
-+$commamdLine = $processBuilder->getCommandLine();
-```
-
-<br>
-
-### ProcessBuilderInstanceRector
-
-Turns `ProcessBuilder::instance()` to new ProcessBuilder in Process in Symfony. Part of multi-step Rector.
-
-- class: [`Rector\Symfony4\Rector\StaticCall\ProcessBuilderInstanceRector`](../rules/Symfony4/Rector/StaticCall/ProcessBuilderInstanceRector.php)
-
-```diff
--$processBuilder = Symfony\Component\Process\ProcessBuilder::instance($args);
-+$processBuilder = new Symfony\Component\Process\ProcessBuilder($args);
-```
-
-<br>
-
-### RootNodeTreeBuilderRector
-
-Changes  Process string argument to an array
-
-- class: [`Rector\Symfony4\Rector\New_\RootNodeTreeBuilderRector`](../rules/Symfony4/Rector/New_/RootNodeTreeBuilderRector.php)
-
-```diff
- use Symfony\Component\Config\Definition\Builder\TreeBuilder;
-
--$treeBuilder = new TreeBuilder();
--$rootNode = $treeBuilder->root('acme_root');
-+$treeBuilder = new TreeBuilder('acme_root');
-+$rootNode = $treeBuilder->getRootNode();
- $rootNode->someCall();
-```
-
-<br>
-
-### SimplifyWebTestCaseAssertionsRector
-
-Simplify use of assertions in WebTestCase
-
-- class: [`Rector\Symfony4\Rector\MethodCall\SimplifyWebTestCaseAssertionsRector`](../rules/Symfony4/Rector/MethodCall/SimplifyWebTestCaseAssertionsRector.php)
-
-```diff
- use PHPUnit\Framework\TestCase;
-
- class SomeClass extends TestCase
- {
-     public function test()
-     {
--        $this->assertSame(200, $client->getResponse()->getStatusCode());
-+         $this->assertResponseIsSuccessful();
-     }
-
-     public function testUrl()
-     {
--        $this->assertSame(301, $client->getResponse()->getStatusCode());
--        $this->assertSame('https://example.com', $client->getResponse()->headers->get('Location'));
-+        $this->assertResponseRedirects('https://example.com', 301);
-     }
-
-     public function testContains()
-     {
--        $this->assertContains('Hello World', $crawler->filter('h1')->text());
-+        $this->assertSelectorTextContains('h1', 'Hello World');
+-        return empty($items);
++        return $items === [];
      }
  }
 ```
 
 <br>
 
-### StringToArrayArgumentProcessRector
+### DisallowedShortTernaryRuleFixerRector
 
-Changes Process string argument to an array
+Fixer for PHPStan reports by strict type rule - "PHPStan\Rules\DisallowedConstructs\DisallowedShortTernaryRule"
 
-- class: [`Rector\Symfony4\Rector\New_\StringToArrayArgumentProcessRector`](../rules/Symfony4/Rector/New_/StringToArrayArgumentProcessRector.php)
+:wrench: **configure it!**
 
-```diff
- use Symfony\Component\Process\Process;
--$process = new Process('ls -l');
-+$process = new Process(['ls', '-l']);
+- class: [`Rector\Strict\Rector\Ternary\DisallowedShortTernaryRuleFixerRector`](../rules/Strict/Rector/Ternary/DisallowedShortTernaryRuleFixerRector.php)
+
+```php
+use Rector\Strict\Rector\Ternary\DisallowedShortTernaryRuleFixerRector;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+
+return static function (ContainerConfigurator $containerConfigurator): void {
+    $services = $containerConfigurator->services();
+
+    $services->set(DisallowedShortTernaryRuleFixerRector::class)
+        ->call('configure', [[
+            DisallowedShortTernaryRuleFixerRector::TREAT_AS_NON_EMPTY => false,
+        ]]);
+};
 ```
 
-<br>
-
-### VarDumperTestTraitMethodArgsRector
-
-Adds a new `$filter` argument in `VarDumperTestTrait->assertDumpEquals()` and `VarDumperTestTrait->assertDumpMatchesFormat()` in Validator in Symfony.
-
-- class: [`Rector\Symfony4\Rector\MethodCall\VarDumperTestTraitMethodArgsRector`](../rules/Symfony4/Rector/MethodCall/VarDumperTestTraitMethodArgsRector.php)
+↓
 
 ```diff
--$varDumperTestTrait->assertDumpEquals($dump, $data, $message = "");
-+$varDumperTestTrait->assertDumpEquals($dump, $data, $filter = 0, $message = "");
-```
-
-<br>
-
-```diff
--$varDumperTestTrait->assertDumpMatchesFormat($dump, $data, $message = "");
-+$varDumperTestTrait->assertDumpMatchesFormat($dump, $data, $filter = 0, $message = "");
-```
-
-<br>
-
-## Symfony5
-
-### BinaryFileResponseCreateToNewInstanceRector
-
-Change deprecated `BinaryFileResponse::create()` to use `__construct()` instead
-
-- class: [`Rector\Symfony5\Rector\StaticCall\BinaryFileResponseCreateToNewInstanceRector`](../rules/Symfony5/Rector/StaticCall/BinaryFileResponseCreateToNewInstanceRector.php)
-
-```diff
- use Symfony\Component\HttpFoundation;
-
- class SomeClass
+ final class ShortTernaryArray
  {
-     public function run()
+     public function run(array $array)
      {
--        $binaryFile = BinaryFileResponse::create();
-+        $binaryFile = new BinaryFileResponse(null);
-     }
- }
-```
-
-<br>
-
-### DefinitionAliasSetPrivateToSetPublicRector
-
-Migrates from deprecated `Definition/Alias->setPrivate()` to `Definition/Alias->setPublic()`
-
-- class: [`Rector\Symfony5\Rector\MethodCall\DefinitionAliasSetPrivateToSetPublicRector`](../rules/Symfony5/Rector/MethodCall/DefinitionAliasSetPrivateToSetPublicRector.php)
-
-```diff
- use Symfony\Component\DependencyInjection\Alias;
- use Symfony\Component\DependencyInjection\Definition;
-
- class SomeClass
- {
-     public function run()
-     {
-         $definition = new Definition('Example\Foo');
--        $definition->setPrivate(false);
-+        $definition->setPublic(true);
-
-         $alias = new Alias('Example\Foo');
--        $alias->setPrivate(false);
-+        $alias->setPublic(true);
-     }
- }
-```
-
-<br>
-
-### FormBuilderSetDataMapperRector
-
-Migrates from deprecated Form Builder->setDataMapper(new `PropertyPathMapper())` to Builder->setDataMapper(new DataMapper(new `PropertyPathAccessor()))`
-
-- class: [`Rector\Symfony5\Rector\MethodCall\FormBuilderSetDataMapperRector`](../rules/Symfony5/Rector/MethodCall/FormBuilderSetDataMapperRector.php)
-
-```diff
- use Symfony\Component\Form\Extension\Core\DataMapper\PropertyPathMapper;
- use Symfony\Component\Form\FormConfigBuilderInterface;
-+use Symfony\Component\Form\Extension\Core\DataMapper\DataMapper;
-+use Symfony\Component\Form\Extension\Core\DataAccessor\PropertyPathAccessor;
-
- class SomeClass
- {
-     public function run(FormConfigBuilderInterface $builder)
-     {
--        $builder->setDataMapper(new PropertyPathMapper());
-+        $builder->setDataMapper(new DataMapper(new PropertyPathAccessor()));
-     }
- }
-```
-
-<br>
-
-### LogoutHandlerToLogoutEventSubscriberRector
-
-Change logout handler to an event listener that listens to LogoutEvent
-
-- class: [`Rector\Symfony5\Rector\Class_\LogoutHandlerToLogoutEventSubscriberRector`](../rules/Symfony5/Rector/Class_/LogoutHandlerToLogoutEventSubscriberRector.php)
-
-```diff
--use Symfony\Component\Security\Http\Logout\LogoutHandlerInterface;
--use Symfony\Component\HttpFoundation\Request;
--use Symfony\Component\HttpFoundation\Response;
--use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
-+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-+use Symfony\Component\Security\Http\Event\LogoutEvent;
-
--final class SomeLogoutHandler implements LogoutHandlerInterface
-+final class SomeLogoutHandler implements EventSubscriberInterface
- {
--    public function logout(Request $request, Response $response, TokenInterface $token)
-+    public function onLogout(LogoutEvent $logoutEvent): void
-     {
-+        $request = $logoutEvent->getRequest();
-+        $response = $logoutEvent->getResponse();
-+        $token = $logoutEvent->getToken();
-+    }
-+
-+    /**
-+     * @return array<string, string[]>
-+     */
-+    public static function getSubscribedEvents(): array
-+    {
-+        return [
-+            LogoutEvent::class => ['onLogout'],
-+        ];
-     }
- }
-```
-
-<br>
-
-### LogoutSuccessHandlerToLogoutEventSubscriberRector
-
-Change logout success handler to an event listener that listens to LogoutEvent
-
-- class: [`Rector\Symfony5\Rector\Class_\LogoutSuccessHandlerToLogoutEventSubscriberRector`](../rules/Symfony5/Rector/Class_/LogoutSuccessHandlerToLogoutEventSubscriberRector.php)
-
-```diff
--use Symfony\Component\Security\Http\Logout\LogoutSuccessHandlerInterface;
--use Symfony\Component\HttpFoundation\Request;
--use Symfony\Component\HttpFoundation\Response;
--use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
-+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-+use Symfony\Component\Security\Http\Event\LogoutEvent;
-
--final class SomeLogoutHandler implements LogoutSuccessHandlerInterface
-+final class SomeLogoutHandler implements EventSubscriberInterface
- {
-     /**
-       * @var HttpUtils
-       */
-     private $httpUtils;
-
--    public function __construct(HttpUtils $httpUtils)
-+    public function onLogout(LogoutEvent $logoutEvent): void
-     {
--        $this->httpUtils = $httpUtils;
-+        if ($logoutEvent->getResponse() !== null) {
-+            return;
-+        }
-+
-+        $response = $this->httpUtils->createRedirectResponse($logoutEvent->getRequest(), 'some_url');
-+        $logoutEvent->setResponse($response);
-     }
-
--    public function onLogoutSuccess(Request $request)
-+    /**
-+     * @return array<string, mixed>
-+     */
-+    public static function getSubscribedEvents(): array
-     {
--        $response = $this->httpUtils->createRedirectResponse($request, 'some_url');
--        return $response;
-+        return [
-+            LogoutEvent::class => [['onLogout', 64]],
-+        ];
-     }
- }
-```
-
-<br>
-
-### PropertyAccessorCreationBooleanToFlagsRector
-
-Changes first argument of `PropertyAccessor::__construct()` to flags from boolean
-
-- class: [`Rector\Symfony5\Rector\New_\PropertyAccessorCreationBooleanToFlagsRector`](../rules/Symfony5/Rector/New_/PropertyAccessorCreationBooleanToFlagsRector.php)
-
-```diff
- class SomeClass
- {
-     public function run()
-     {
--        $propertyAccessor = new PropertyAccessor(true);
-+        $propertyAccessor = new PropertyAccessor(PropertyAccessor::MAGIC_CALL | PropertyAccessor::MAGIC_GET | PropertyAccessor::MAGIC_SET);
-     }
- }
-```
-
-<br>
-
-### PropertyPathMapperToDataMapperRector
-
-Migrate from PropertyPathMapper to DataMapper and PropertyPathAccessor
-
-- class: [`Rector\Symfony5\Rector\New_\PropertyPathMapperToDataMapperRector`](../rules/Symfony5/Rector/New_/PropertyPathMapperToDataMapperRector.php)
-
-```diff
- use Symfony\Component\Form\Extension\Core\DataMapper\PropertyPathMapper;
-
- class SomeClass
- {
-     public function run()
-     {
--        return new PropertyPathMapper();
-+        return new \Symfony\Component\Form\Extension\Core\DataMapper\DataMapper(new \Symfony\Component\Form\Extension\Core\DataAccessor\PropertyPathAccessor());
-     }
- }
-```
-
-<br>
-
-### ReflectionExtractorEnableMagicCallExtractorRector
-
-Migrates from deprecated enable_magic_call_extraction context option in ReflectionExtractor
-
-- class: [`Rector\Symfony5\Rector\MethodCall\ReflectionExtractorEnableMagicCallExtractorRector`](../rules/Symfony5/Rector/MethodCall/ReflectionExtractorEnableMagicCallExtractorRector.php)
-
-```diff
- use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
-
- class SomeClass
- {
-     public function run()
-     {
-         $reflectionExtractor = new ReflectionExtractor();
-         $readInfo = $reflectionExtractor->getReadInfo(Dummy::class, 'bar', [
--            'enable_magic_call_extraction' => true,
-+            'enable_magic_methods_extraction' => ReflectionExtractor::MAGIC_CALL | ReflectionExtractor::MAGIC_GET | ReflectionExtractor::MAGIC_SET,
-         ]);
-     }
- }
-```
-
-<br>
-
-### RouteCollectionBuilderToRoutingConfiguratorRector
-
-Change RouteCollectionBuilder to RoutingConfiguratorRector
-
-- class: [`Rector\Symfony5\Rector\ClassMethod\RouteCollectionBuilderToRoutingConfiguratorRector`](../rules/Symfony5/Rector/ClassMethod/RouteCollectionBuilderToRoutingConfiguratorRector.php)
-
-```diff
- use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
- use Symfony\Component\HttpKernel\Kernel;
--use Symfony\Component\Routing\RouteCollectionBuilder;
-+use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
-
- final class ConcreteMicroKernel extends Kernel
- {
-     use MicroKernelTrait;
-
--    protected function configureRoutes(RouteCollectionBuilder $routes)
-+    protected function configureRouting(RoutingConfigurator $routes): void
-     {
--        $routes->add('/admin', 'App\Controller\AdminController::dashboard', 'admin_dashboard');
--    }
--}
-+        $routes->add('admin_dashboard', '/admin')
-+            ->controller('App\Controller\AdminController::dashboard')
-+    }}
-```
-
-<br>
-
-### ValidatorBuilderEnableAnnotationMappingRector
-
-Migrates from deprecated ValidatorBuilder->enableAnnotationMapping($reader) to ValidatorBuilder->enableAnnotationMapping(true)->setDoctrineAnnotationReader($reader)
-
-- class: [`Rector\Symfony5\Rector\MethodCall\ValidatorBuilderEnableAnnotationMappingRector`](../rules/Symfony5/Rector/MethodCall/ValidatorBuilderEnableAnnotationMappingRector.php)
-
-```diff
- use Doctrine\Common\Annotations\Reader;
- use Symfony\Component\Validator\ValidatorBuilder;
-
- class SomeClass
- {
-     public function run(ValidatorBuilder $builder, Reader $reader)
-     {
--        $builder->enableAnnotationMapping($reader);
-+        $builder->enableAnnotationMapping(true)->setDoctrineAnnotationReader($reader);
+-        return $array ?: 2;
++        return $array !== [] ? $array : 2;
      }
  }
 ```
@@ -14532,6 +9790,42 @@ Migrates from deprecated ValidatorBuilder->enableAnnotationMapping($reader) to V
 <br>
 
 ## Transform
+
+### AddInterfaceByParentRector
+
+Add interface by parent
+
+:wrench: **configure it!**
+
+- class: [`Rector\Transform\Rector\Class_\AddInterfaceByParentRector`](../rules/Transform/Rector/Class_/AddInterfaceByParentRector.php)
+
+```php
+use Rector\Transform\Rector\Class_\AddInterfaceByParentRector;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+
+return static function (ContainerConfigurator $containerConfigurator): void {
+    $services = $containerConfigurator->services();
+
+    $services->set(AddInterfaceByParentRector::class)
+        ->call('configure', [[
+            AddInterfaceByParentRector::INTERFACE_BY_PARENT => [
+                'SomeParent' => 'SomeInterface',
+
+            ], ]]);
+};
+```
+
+↓
+
+```diff
+-class SomeClass extends SomeParent
++class SomeClass extends SomeParent implements SomeInterface
+ {
+
+ }
+```
+
+<br>
 
 ### AddInterfaceByTraitRector
 
@@ -14589,7 +9883,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(ArgumentFuncCallToMethodCallRector::class)
         ->call('configure', [[
             ArgumentFuncCallToMethodCallRector::FUNCTIONS_TO_METHOD_CALLS => ValueObjectInliner::inline([
-                new ArgumentFuncCallToMethodCall('view', 'Illuminate\Contracts\View\Factory', null, 'make'),
+                new ArgumentFuncCallToMethodCall('view', 'Illuminate\Contracts\View\Factory', 'make'),
             ]),
         ]]);
 };
@@ -14617,6 +9911,50 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 +        $template = $this->viewFactory->make('template.blade');
 +        $viewFactory = $this->viewFactory;
      }
+ }
+```
+
+<br>
+
+### AttributeKeyToClassConstFetchRector
+
+Replace key value on specific attribute to class constant
+
+:wrench: **configure it!**
+
+- class: [`Rector\Transform\Rector\Attribute\AttributeKeyToClassConstFetchRector`](../rules/Transform/Rector/Attribute/AttributeKeyToClassConstFetchRector.php)
+
+```php
+use Rector\Transform\Rector\Attribute\AttributeKeyToClassConstFetchRector;
+use Rector\Transform\ValueObject\AttributeKeyToClassConstFetch;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symplify\SymfonyPhpConfig\ValueObjectInliner;
+
+return static function (ContainerConfigurator $containerConfigurator): void {
+    $services = $containerConfigurator->services();
+
+    $services->set(AttributeKeyToClassConstFetchRector::class)
+        ->call('configure', [[
+            AttributeKeyToClassConstFetchRector::ATTRIBUTE_KEYS_TO_CLASS_CONST_FETCHES => ValueObjectInliner::inline([
+                new AttributeKeyToClassConstFetch('Doctrine\ORM\Mapping\Column', 'type', 'Doctrine\DBAL\Types\Types', [
+                    'STRING',
+                ]), ]
+            ),
+        ]]);
+};
+```
+
+↓
+
+```diff
+ use Doctrine\ORM\Mapping\Column;
++use Doctrine\DBAL\Types\Types;
+
+ class SomeClass
+ {
+-    #[Column(type: "string")]
++    #[Column(type: Types::STRING)]
+     public $name;
  }
 ```
 
@@ -14716,7 +10054,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(ClassConstFetchToValueRector::class)
         ->call('configure', [[
             ClassConstFetchToValueRector::CLASS_CONST_FETCHES_TO_VALUES => ValueObjectInliner::inline([
-                new ClassConstFetchToValue('Nette\Configurator', 'DEVELOPMENT', 'development'),
                 new ClassConstFetchToValue('Nette\Configurator', 'PRODUCTION', 'production'),
             ]),
         ]]);
@@ -14728,30 +10065,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 ```diff
 -$value === Nette\Configurator::DEVELOPMENT
 +$value === "development"
-```
-
-<br>
-
-### CommunityTestCaseRector
-
-Change Rector test case to Community version
-
-- class: [`Rector\Transform\Rector\Class_\CommunityTestCaseRector`](../rules/Transform/Rector/Class_/CommunityTestCaseRector.php)
-
-```diff
--use Rector\Testing\PHPUnit\AbstractRectorTestCase;
-+use Rector\Testing\PHPUnit\AbstractCommunityRectorTestCase;
-
--final class SomeClassTest extends AbstractRectorTestCase
-+final class SomeClassTest extends AbstractCommunityRectorTestCase
- {
--    public function getRectorClass(): string
-+    public function provideConfigFilePath(): string
-     {
--        return SomeRector::class;
-+        return __DIR__ . '/config/configured_rule.php';
-     }
- }
 ```
 
 <br>
@@ -14776,7 +10089,11 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(DimFetchAssignToMethodCallRector::class)
         ->call('configure', [[
             DimFetchAssignToMethodCallRector::DIM_FETCH_ASSIGN_TO_METHOD_CALL => ValueObjectInliner::inline([
-                new DimFetchAssignToMethodCall('Nette\Application\Routers\RouteList', 'Nette\Application\Routers\Route', 'addRoute'),
+                new DimFetchAssignToMethodCall(
+                    'Nette\Application\Routers\RouteList',
+                    'Nette\Application\Routers\Route',
+                    'addRoute'
+                ),
             ]),
         ]]);
 };
@@ -14965,27 +10282,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
 <br>
 
-### FunctionToStaticMethodRector
-
-Change functions to static calls, so composer can autoload them
-
-- class: [`Rector\Transform\Rector\FileWithoutNamespace\FunctionToStaticMethodRector`](../rules/Transform/Rector/FileWithoutNamespace/FunctionToStaticMethodRector.php)
-
-```diff
--function some_function()
-+class SomeUtilsClass
- {
-+    public static function someFunction()
-+    {
-+    }
- }
-
--some_function('lol');
-+SomeUtilsClass::someFunction('lol');
-```
-
-<br>
-
 ### GetAndSetToMethodCallRector
 
 Turns defined `__get`/`__set` to specific method calls.
@@ -14996,18 +10292,19 @@ Turns defined `__get`/`__set` to specific method calls.
 
 ```php
 use Rector\Transform\Rector\Assign\GetAndSetToMethodCallRector;
+use Rector\Transform\ValueObject\GetAndSetToMethodCall;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symplify\SymfonyPhpConfig\ValueObjectInliner;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
 
     $services->set(GetAndSetToMethodCallRector::class)
         ->call('configure', [[
-            GetAndSetToMethodCallRector::TYPE_TO_METHOD_CALLS => [
-                'SomeContainer' => [
-                    'set' => 'addService',
-
-                ], ], ]]);
+            GetAndSetToMethodCallRector::TYPE_TO_METHOD_CALLS => ValueObjectInliner::inline([
+                new GetAndSetToMethodCall('SomeContainer', 'addService', 'getService'),
+            ]),
+        ]]);
 };
 ```
 
@@ -15017,34 +10314,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
  $container = new SomeContainer;
 -$container->someService = $someService;
 +$container->setService("someService", $someService);
-```
-
-<br>
-
-```php
-use Rector\Transform\Rector\Assign\GetAndSetToMethodCallRector;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(GetAndSetToMethodCallRector::class)
-        ->call('configure', [[
-            GetAndSetToMethodCallRector::TYPE_TO_METHOD_CALLS => [
-                'SomeContainer' => [
-                    'get' => 'getService',
-
-
-                ], ], ]]);
-};
-```
-
-↓
-
-```diff
- $container = new SomeContainer;
--$someService = $container->someService;
-+$someService = $container->getService("someService");
 ```
 
 <br>
@@ -15068,7 +10337,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->call('configure', [[
             MergeInterfacesRector::OLD_TO_NEW_INTERFACES => [
                 'SomeOldInterface' => 'SomeInterface',
-                
+
             ], ]]);
 };
 ```
@@ -15093,8 +10362,8 @@ Turns old method call with specific types to new one with arguments
 - class: [`Rector\Transform\Rector\MethodCall\MethodCallToAnotherMethodCallWithArgumentsRector`](../rules/Transform/Rector/MethodCall/MethodCallToAnotherMethodCallWithArgumentsRector.php)
 
 ```php
-use Rector\Renaming\ValueObject\MethodCallRenameWithArrayKey;
 use Rector\Transform\Rector\MethodCall\MethodCallToAnotherMethodCallWithArgumentsRector;
+use Rector\Transform\ValueObject\MethodCallToAnotherMethodCallWithArguments;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symplify\SymfonyPhpConfig\ValueObjectInliner;
 
@@ -15104,8 +10373,10 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(MethodCallToAnotherMethodCallWithArgumentsRector::class)
         ->call('configure', [[
             MethodCallToAnotherMethodCallWithArgumentsRector::METHOD_CALL_RENAMES_WITH_ADDED_ARGUMENTS => ValueObjectInliner::inline([
-                new MethodCallRenameWithArrayKey('Nette\DI\ServiceDefinition', 'setInject', 'addTag', 'inject'),
-            ]),
+                new MethodCallToAnotherMethodCallWithArguments('Nette\DI\ServiceDefinition', 'setInject', 'addTag', [
+                    'inject',
+                ]), ]
+            ),
         ]]);
 };
 ```
@@ -15116,6 +10387,53 @@ return static function (ContainerConfigurator $containerConfigurator): void {
  $serviceDefinition = new Nette\DI\ServiceDefinition;
 -$serviceDefinition->setInject();
 +$serviceDefinition->addTag('inject');
+```
+
+<br>
+
+### MethodCallToMethodCallRector
+
+Change method one method from one service to a method call to in another service
+
+:wrench: **configure it!**
+
+- class: [`Rector\Transform\Rector\MethodCall\MethodCallToMethodCallRector`](../rules/Transform/Rector/MethodCall/MethodCallToMethodCallRector.php)
+
+```php
+use Rector\Transform\Rector\MethodCall\MethodCallToMethodCallRector;
+use Rector\Transform\ValueObject\MethodCallToMethodCall;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symplify\SymfonyPhpConfig\ValueObjectInliner;
+
+return static function (ContainerConfigurator $containerConfigurator): void {
+    $services = $containerConfigurator->services();
+
+    $services->set(MethodCallToMethodCallRector::class)
+        ->call('configure', [[
+            MethodCallToMethodCallRector::METHOD_CALLS_TO_METHOD_CALLS => ValueObjectInliner::inline([
+                new MethodCallToMethodCall('FirstDependency', 'go', 'SecondDependency', 'away'),
+            ]),
+        ]]);
+};
+```
+
+↓
+
+```diff
+ class SomeClass
+ {
+     public function __construct(
+-        private FirstDependency $firstDependency
++        private SecondDependency $secondDependency
+     ) {
+     }
+
+     public function run()
+     {
+-        $this->firstDependency->go();
++        $this->secondDependency->away();
+     }
+ }
 ```
 
 <br>
@@ -15139,7 +10457,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->call('configure', [[
             MethodCallToPropertyFetchRector::METHOD_CALL_TO_PROPERTY_FETCHES => [
                 'someMethod' => 'someProperty',
-                
+
             ], ]]);
 };
 ```
@@ -15153,50 +10471,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
      {
 -        $this->someMethod();
 +        $this->someProperty;
-     }
- }
-```
-
-<br>
-
-### MethodCallToReturnRector
-
-Wrap method call to return
-
-:wrench: **configure it!**
-
-- class: [`Rector\Transform\Rector\Expression\MethodCallToReturnRector`](../rules/Transform/Rector/Expression/MethodCallToReturnRector.php)
-
-```php
-use Rector\Transform\Rector\Expression\MethodCallToReturnRector;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(MethodCallToReturnRector::class)
-        ->call('configure', [[
-            MethodCallToReturnRector::METHOD_CALL_WRAPS => [
-                'SomeClass' => ['deny'],
-                
-            ], ]]);
-};
-```
-
-↓
-
-```diff
- class SomeClass
- {
-     public function run()
-     {
--        $this->deny();
-+        return $this->deny();
-     }
-
-     public function deny()
-     {
-         return 1;
      }
  }
 ```
@@ -15245,30 +10519,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
      {
 -        return $this->anotherDependency->process('value');
 +        return StaticCaller::anotherMethod('value');
-     }
- }
-```
-
-<br>
-
-### NativeTestCaseRector
-
-Change Rector test case to Community version
-
-- class: [`Rector\Transform\Rector\Class_\NativeTestCaseRector`](../rules/Transform/Rector/Class_/NativeTestCaseRector.php)
-
-```diff
--use Rector\Testing\PHPUnit\AbstractRectorTestCase;
-+use Rector\Testing\PHPUnit\AbstractCommunityRectorTestCase;
-
--final class SomeClassTest extends AbstractRectorTestCase
-+final class SomeClassTest extends AbstractCommunityRectorTestCase
- {
--    public function getRectorClass(): string
-+    public function provideConfigFilePath(): string
-     {
--        return SomeRector::class;
-+        return __DIR__ . '/config/configured_rule.php';
      }
  }
 ```
@@ -15461,17 +10711,19 @@ Replaces parent class to specific traits
 
 ```php
 use Rector\Transform\Rector\Class_\ParentClassToTraitsRector;
+use Rector\Transform\ValueObject\ParentClassToTraits;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symplify\SymfonyPhpConfig\ValueObjectInliner;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
 
     $services->set(ParentClassToTraitsRector::class)
         ->call('configure', [[
-            ParentClassToTraitsRector::PARENT_CLASS_TO_TRAITS => [
-                'Nette\Object' => ['Nette\SmartObject'],
-                
-            ], ]]);
+            ParentClassToTraitsRector::PARENT_CLASS_TO_TRAITS => ValueObjectInliner::inline([
+                new ParentClassToTraits('Nette\Object', ['Nette\SmartObject']), ]
+            ),
+        ]]);
 };
 ```
 
@@ -15543,8 +10795,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(PropertyFetchToMethodCallRector::class)
         ->call('configure', [[
             PropertyFetchToMethodCallRector::PROPERTIES_TO_METHOD_CALLS => ValueObjectInliner::inline([
-                new PropertyFetchToMethodCall('SomeObject', 'property', 'getProperty', [], 'setProperty'),
-            ]),
+                new PropertyFetchToMethodCall('SomeObject', 'property', 'getProperty', 'setProperty', []), ]
+            ),
         ]]);
 };
 ```
@@ -15572,8 +10824,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(PropertyFetchToMethodCallRector::class)
         ->call('configure', [[
             PropertyFetchToMethodCallRector::PROPERTIES_TO_METHOD_CALLS => ValueObjectInliner::inline([
-                new PropertyFetchToMethodCall('SomeObject', 'property', 'getConfig', ['someArg'], null),
-            ]),
+                new PropertyFetchToMethodCall('SomeObject', 'property', 'getConfig', ['someArg']), ]
+            ),
         ]]);
 };
 ```
@@ -15942,7 +11194,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->call('configure', [[
             ToStringToMethodCallRector::METHOD_NAMES_BY_TYPE => [
                 'SomeObject' => 'getPath',
-                
+
             ], ]]);
 };
 ```
@@ -15997,60 +11249,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
 <br>
 
-### VariableMethodCallToServiceCallRector
-
-Replace variable method call to a service one
-
-:wrench: **configure it!**
-
-- class: [`Rector\Transform\Rector\MethodCall\VariableMethodCallToServiceCallRector`](../rules/Transform/Rector/MethodCall/VariableMethodCallToServiceCallRector.php)
-
-```php
-use Rector\Transform\Rector\MethodCall\VariableMethodCallToServiceCallRector;
-use Rector\Transform\ValueObject\VariableMethodCallToServiceCall;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use Symplify\SymfonyPhpConfig\ValueObjectInliner;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(VariableMethodCallToServiceCallRector::class)
-        ->call('configure', [[
-            VariableMethodCallToServiceCallRector::VARIABLE_METHOD_CALLS_TO_SERVICE_CALLS => ValueObjectInliner::inline([
-                new VariableMethodCallToServiceCall(
-                    'PhpParser\Node',
-                    'getAttribute',
-                    'php_doc_info',
-                    'Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory',
-                    'createFromNodeOrEmpty'
-                ),
-            ]),
-        ]]);
-};
-```
-
-↓
-
-```diff
-+use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
- use PhpParser\Node;
-
- class SomeClass
- {
-+    public function __construct(PhpDocInfoFactory $phpDocInfoFactory)
-+    {
-+        $this->phpDocInfoFactory = $phpDocInfoFactory;
-+    }
-     public function run(Node $node)
-     {
--        $phpDocInfo = $node->getAttribute('php_doc_info');
-+        $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($node);
-     }
- }
-```
-
-<br>
-
 ### WrapReturnRector
 
 Wrap return value of specific method
@@ -16070,7 +11268,9 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $services->set(WrapReturnRector::class)
         ->call('configure', [[
-            WrapReturnRector::TYPE_METHOD_WRAPS => ValueObjectInliner::inline([new WrapReturn('SomeClass', 'getItem', true)]),
+            WrapReturnRector::TYPE_METHOD_WRAPS => ValueObjectInliner::inline([
+                new WrapReturn('SomeClass', 'getItem', true),
+            ]),
         ]]);
 };
 ```
@@ -16167,29 +11367,21 @@ Add known return type to functions
 
 ### AddMethodCallBasedStrictParamTypeRector
 
-Change param type to strict type of passed expression
+Change private method param type to strict type, based on passed strict types
 
 - class: [`Rector\TypeDeclaration\Rector\ClassMethod\AddMethodCallBasedStrictParamTypeRector`](../rules/TypeDeclaration/Rector/ClassMethod/AddMethodCallBasedStrictParamTypeRector.php)
 
 ```diff
- class SomeClass
+ final class SomeClass
  {
--    public function getById($id)
-+    public function getById(int $id)
+     public function run(int $value)
      {
-     }
- }
-
- class CallerClass
- {
-     public function run(SomeClass $someClass)
-     {
-         $someClass->getById($this->getId());
+         $this->resolve($value);
      }
 
-     public function getId(): int
+-    private function resolve($value)
++    private function resolve(int $value)
      {
-         return 1000;
      }
  }
 ```
@@ -16237,29 +11429,6 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
 <br>
 
-### AddParamTypeFromCallersRector
-
-Add param type based on called types in that particular method
-
-- class: [`Rector\TypeDeclaration\Rector\ClassMethod\AddParamTypeFromCallersRector`](../rules/TypeDeclaration/Rector/ClassMethod/AddParamTypeFromCallersRector.php)
-
-```diff
- final class SomeClass
- {
-     public function run(Return_ $return)
-     {
-         $this->print($return);
-     }
-
--    public function print($return)
-+    public function print(Return_ $return)
-     {
-     }
- }
-```
-
-<br>
-
 ### AddReturnTypeDeclarationRector
 
 Changes defined return typehint of method and class.
@@ -16282,9 +11451,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services->set(AddReturnTypeDeclarationRector::class)
         ->call('configure', [[
             AddReturnTypeDeclarationRector::METHOD_RETURN_TYPES => ValueObjectInliner::inline([
-                new AddReturnTypeDeclaration('SomeClass', 'getData', new ArrayType(new MixedType(false, null), new MixedType(
-                    false,
-                    null
+                new AddReturnTypeDeclaration('SomeClass', 'getData', new ArrayType(new MixedType(false), new MixedType(
+                    false
                 ))),
             ]),
         ]]);
@@ -16296,8 +11464,8 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 ```diff
  class SomeClass
  {
--    public getData()
-+    public getData(): array
+-    public function getData()
++    public function getData(): array
      {
      }
  }
@@ -16309,7 +11477,25 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
 Add return type void to function like without any return
 
+:wrench: **configure it!**
+
 - class: [`Rector\TypeDeclaration\Rector\ClassMethod\AddVoidReturnTypeWhereNoReturnRector`](../rules/TypeDeclaration/Rector/ClassMethod/AddVoidReturnTypeWhereNoReturnRector.php)
+
+```php
+use Rector\TypeDeclaration\Rector\ClassMethod\AddVoidReturnTypeWhereNoReturnRector;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+
+return static function (ContainerConfigurator $containerConfigurator): void {
+    $services = $containerConfigurator->services();
+
+    $services->set(AddVoidReturnTypeWhereNoReturnRector::class)
+        ->call('configure', [[
+            AddVoidReturnTypeWhereNoReturnRector::USE_PHPDOC => false,
+        ]]);
+};
+```
+
+↓
 
 ```diff
  final class SomeClass
@@ -16371,6 +11557,63 @@ Change null in argument, that is now not nullable anymore
 
 <br>
 
+### ParamTypeByMethodCallTypeRector
+
+Change param type based on passed method call type
+
+- class: [`Rector\TypeDeclaration\Rector\ClassMethod\ParamTypeByMethodCallTypeRector`](../rules/TypeDeclaration/Rector/ClassMethod/ParamTypeByMethodCallTypeRector.php)
+
+```diff
+ class SomeTypedService
+ {
+     public function run(string $name)
+     {
+     }
+ }
+
+ final class UseDependency
+ {
+     public function __construct(
+         private SomeTypedService $someTypedService
+     ) {
+     }
+
+-    public function go($value)
++    public function go(string $value)
+     {
+         $this->someTypedService->run($value);
+     }
+ }
+```
+
+<br>
+
+### ParamTypeByParentCallTypeRector
+
+Change param type based on parent param type
+
+- class: [`Rector\TypeDeclaration\Rector\ClassMethod\ParamTypeByParentCallTypeRector`](../rules/TypeDeclaration/Rector/ClassMethod/ParamTypeByParentCallTypeRector.php)
+
+```diff
+ class SomeControl
+ {
+     public function __construct(string $name)
+     {
+     }
+ }
+
+ class VideoControl extends SomeControl
+ {
+-    public function __construct($name)
++    public function __construct(string $name)
+     {
+         parent::__construct($name);
+     }
+ }
+```
+
+<br>
+
 ### ParamTypeDeclarationRector
 
 Change `@param` types to type declarations if not a BC-break
@@ -16378,7 +11621,7 @@ Change `@param` types to type declarations if not a BC-break
 - class: [`Rector\TypeDeclaration\Rector\FunctionLike\ParamTypeDeclarationRector`](../rules/TypeDeclaration/Rector/FunctionLike/ParamTypeDeclarationRector.php)
 
 ```diff
- class ParentClass
+ abstract class VendorParentClass
  {
      /**
       * @param int $number
@@ -16388,7 +11631,7 @@ Change `@param` types to type declarations if not a BC-break
      }
  }
 
- final class ChildClass extends ParentClass
+ final class ChildClass extends VendorParentClass
  {
      /**
       * @param int $number
@@ -16413,7 +11656,7 @@ Change `@param` types to type declarations if not a BC-break
 
 Add param type from `$param` set to typed property
 
-- class: [`Rector\TypeDeclaration\Rector\ClassMethod\ParamTypeFromStrictTypedPropertyRector`](../rules/TypeDeclaration/Rector/ClassMethod/ParamTypeFromStrictTypedPropertyRector.php)
+- class: [`Rector\TypeDeclaration\Rector\Param\ParamTypeFromStrictTypedPropertyRector`](../rules/TypeDeclaration/Rector/Param/ParamTypeFromStrictTypedPropertyRector.php)
 
 ```diff
  final class SomeClass
@@ -16453,6 +11696,27 @@ Add `@var` to properties that are missing it
 
 <br>
 
+### ReturnNeverTypeRector
+
+Add "never" return-type for methods that never return anything
+
+- class: [`Rector\TypeDeclaration\Rector\ClassMethod\ReturnNeverTypeRector`](../rules/TypeDeclaration/Rector/ClassMethod/ReturnNeverTypeRector.php)
+
+```diff
+ final class SomeClass
+ {
++    /**
++     * @return never
++     */
+     public function run()
+     {
+         throw new InvalidException();
+     }
+ }
+```
+
+<br>
+
 ### ReturnTypeDeclarationRector
 
 Change `@return` types and type from static analysis to type declarations if not a BC-break
@@ -16476,7 +11740,7 @@ Change `@return` types and type from static analysis to type declarations if not
 
 ### ReturnTypeFromReturnNewRector
 
-Add return type void to function like without any return
+Add return type to function like with return new
 
 - class: [`Rector\TypeDeclaration\Rector\ClassMethod\ReturnTypeFromReturnNewRector`](../rules/TypeDeclaration/Rector/ClassMethod/ReturnTypeFromReturnNewRector.php)
 
@@ -16484,7 +11748,7 @@ Add return type void to function like without any return
  final class SomeClass
  {
 -    public function action()
-+    public function action(): Respose
++    public function action(): Response
      {
          return new Response();
      }
@@ -16553,6 +11817,27 @@ Add typed properties based only on strict constructor types
      public function __construct(string $name)
      {
          $this->name = $name;
+     }
+ }
+```
+
+<br>
+
+### TypedPropertyFromStrictGetterMethodReturnTypeRector
+
+Complete property type based on getter strict types
+
+- class: [`Rector\TypeDeclaration\Rector\Property\TypedPropertyFromStrictGetterMethodReturnTypeRector`](../rules/TypeDeclaration/Rector/Property/TypedPropertyFromStrictGetterMethodReturnTypeRector.php)
+
+```diff
+ final class SomeClass
+ {
+-    public $name;
++    public ?string $name;
+
+     public function getName(): string|null
+     {
+         return $this->name;
      }
  }
 ```
@@ -16635,60 +11920,17 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 ```diff
  class FrameworkClass
  {
-     protected someMethod()
+     protected function someMethod()
      {
      }
  }
 
  class MyClass extends FrameworkClass
  {
--    public someMethod()
-+    protected someMethod()
+-    public function someMethod()
++    protected function someMethod()
      {
      }
- }
-```
-
-<br>
-
-### ChangePropertyVisibilityRector
-
-Change visibility of property from parent class.
-
-:wrench: **configure it!**
-
-- class: [`Rector\Visibility\Rector\Property\ChangePropertyVisibilityRector`](../rules/Visibility/Rector/Property/ChangePropertyVisibilityRector.php)
-
-```php
-use Rector\Visibility\Rector\Property\ChangePropertyVisibilityRector;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
-    $services = $containerConfigurator->services();
-
-    $services->set(ChangePropertyVisibilityRector::class)
-        ->call('configure', [[
-            ChangePropertyVisibilityRector::PROPERTY_TO_VISIBILITY_BY_CLASS => [
-                'FrameworkClass' => [
-                    'someProperty' => 2,
-                    
-                    
-                ], ], ]]);
-};
-```
-
-↓
-
-```diff
- class FrameworkClass
- {
-     protected $someProperty;
- }
-
- class MyClass extends FrameworkClass
- {
--    public $someProperty;
-+    protected $someProperty;
  }
 ```
 

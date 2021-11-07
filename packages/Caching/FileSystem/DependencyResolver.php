@@ -1,77 +1,40 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Caching\FileSystem;
 
 use PhpParser\Node;
-use PHPStan\Analyser\Scope;
+use PHPStan\Analyser\MutatingScope;
+use PHPStan\Analyser\NodeScopeResolver;
 use PHPStan\Dependency\DependencyResolver as PHPStanDependencyResolver;
-use PHPStan\File\FileHelper;
-use Rector\Core\Configuration\Configuration;
-
+use RectorPrefix20211107\Symplify\PackageBuilder\Reflection\PrivatesAccessor;
 final class DependencyResolver
 {
     /**
-     * @var FileHelper
+     * @var \PHPStan\Analyser\NodeScopeResolver
      */
-    private $fileHelper;
-
-    /**
-     * @var Configuration
-     */
-    private $configuration;
-
+    private $nodeScopeResolver;
     /**
      * @var PHPStanDependencyResolver
      */
     private $phpStanDependencyResolver;
-
-    public function __construct(
-        Configuration $configuration,
-        PHPStanDependencyResolver $phpStanDependencyResolver,
-        FileHelper $fileHelper
-    ) {
-        $this->fileHelper = $fileHelper;
-        $this->configuration = $configuration;
+    /**
+     * @var \Symplify\PackageBuilder\Reflection\PrivatesAccessor
+     */
+    private $privatesAccessor;
+    public function __construct(\PHPStan\Analyser\NodeScopeResolver $nodeScopeResolver, \PHPStan\Dependency\DependencyResolver $phpStanDependencyResolver, \RectorPrefix20211107\Symplify\PackageBuilder\Reflection\PrivatesAccessor $privatesAccessor)
+    {
+        $this->nodeScopeResolver = $nodeScopeResolver;
         $this->phpStanDependencyResolver = $phpStanDependencyResolver;
+        $this->privatesAccessor = $privatesAccessor;
     }
-
     /**
      * @return string[]
      */
-    public function resolveDependencies(Node $node, Scope $scope): array
+    public function resolveDependencies(\PhpParser\Node $node, \PHPStan\Analyser\MutatingScope $mutatingScope) : array
     {
-        $fileInfos = $this->configuration->getFileInfos();
-
-        $analysedFileAbsolutesPaths = [];
-        foreach ($fileInfos as $fileInfo) {
-            $analysedFileAbsolutesPaths[] = $fileInfo->getRealPath();
-        }
-
-        $dependencyFiles = [];
-
-        $nodeDependencies = $this->phpStanDependencyResolver->resolveDependencies($node, $scope);
-        foreach ($nodeDependencies as $nodeDependency) {
-            $dependencyFile = $nodeDependency->getFileName();
-            if (! $dependencyFile) {
-                continue;
-            }
-
-            $dependencyFile = $this->fileHelper->normalizePath($dependencyFile);
-            if ($scope->getFile() === $dependencyFile) {
-                continue;
-            }
-
-            if (! in_array($dependencyFile, $analysedFileAbsolutesPaths, true)) {
-                continue;
-            }
-
-            $dependencyFiles[] = $dependencyFile;
-        }
-
-        $dependencyFiles = array_unique($dependencyFiles, SORT_STRING);
-
-        return array_values($dependencyFiles);
+        $analysedFileAbsolutesPaths = $this->privatesAccessor->getPrivateProperty($this->nodeScopeResolver, 'analysedFiles');
+        $nodeDependencies = $this->phpStanDependencyResolver->resolveDependencies($node, $mutatingScope);
+        return $nodeDependencies->getFileDependencies($mutatingScope->getFile(), $analysedFileAbsolutesPaths);
     }
 }

@@ -1,11 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Core\Php\Regex;
 
-use Nette\Utils\Strings;
+use RectorPrefix20211107\Nette\Utils\Strings;
 use PhpParser\Node;
+use PhpParser\Node\Arg;
+use PhpParser\Node\Const_;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\ClassConstFetch;
@@ -13,209 +14,161 @@ use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Scalar\String_;
-use PhpParser\Node\Stmt\ClassConst;
 use PhpParser\Node\Stmt\ClassMethod;
 use PHPStan\Type\ObjectType;
 use Rector\Core\PhpParser\Comparing\NodeComparator;
 use Rector\Core\PhpParser\Node\BetterNodeFinder;
-use Rector\NodeCollector\NodeCollector\NodeRepository;
+use Rector\Core\PhpParser\NodeFinder\LocalConstantFinder;
 use Rector\NodeNameResolver\NodeNameResolver;
-use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\NodeTypeResolver;
-
 final class RegexPatternArgumentManipulator
 {
     /**
      * @var array<string, int>
      */
-    private const FUNCTIONS_WITH_PATTERNS_TO_ARGUMENT_POSITION = [
-        'preg_match' => 0,
-        'preg_replace_callback_array' => 0,
-        'preg_replace_callback' => 0,
-        'preg_replace' => 0,
-        'preg_match_all' => 0,
-        'preg_split' => 0,
-        'preg_grep' => 0,
-    ];
-
+    private const FUNCTIONS_WITH_PATTERNS_TO_ARGUMENT_POSITION = ['preg_match' => 0, 'preg_replace_callback_array' => 0, 'preg_replace_callback' => 0, 'preg_replace' => 0, 'preg_match_all' => 0, 'preg_split' => 0, 'preg_grep' => 0];
     /**
      * @var array<string, array<string, int>>
      */
-    private const STATIC_METHODS_WITH_PATTERNS_TO_ARGUMENT_POSITION = [
-        Strings::class => [
-            'match' => 1,
-            'matchAll' => 1,
-            'replace' => 1,
-            'split' => 1,
-        ],
-    ];
-
+    private const STATIC_METHODS_WITH_PATTERNS_TO_ARGUMENT_POSITION = [\RectorPrefix20211107\Nette\Utils\Strings::class => ['match' => 1, 'matchAll' => 1, 'replace' => 1, 'split' => 1]];
     /**
-     * @var NodeTypeResolver
-     */
-    private $nodeTypeResolver;
-
-    /**
-     * @var NodeNameResolver
-     */
-    private $nodeNameResolver;
-
-    /**
-     * @var BetterNodeFinder
+     * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
      */
     private $betterNodeFinder;
-
     /**
-     * @var NodeRepository
+     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeRepository;
-
+    private $nodeNameResolver;
     /**
-     * @var NodeComparator
+     * @var \Rector\NodeTypeResolver\NodeTypeResolver
+     */
+    private $nodeTypeResolver;
+    /**
+     * @var \Rector\Core\PhpParser\NodeFinder\LocalConstantFinder
+     */
+    private $localConstantFinder;
+    /**
+     * @var \Rector\Core\PhpParser\Comparing\NodeComparator
      */
     private $nodeComparator;
-
-    public function __construct(
-        BetterNodeFinder $betterNodeFinder,
-        NodeNameResolver $nodeNameResolver,
-        NodeTypeResolver $nodeTypeResolver,
-        NodeRepository $nodeRepository,
-        NodeComparator $nodeComparator
-    ) {
-        $this->nodeTypeResolver = $nodeTypeResolver;
-        $this->nodeNameResolver = $nodeNameResolver;
+    public function __construct(\Rector\Core\PhpParser\Node\BetterNodeFinder $betterNodeFinder, \Rector\NodeNameResolver\NodeNameResolver $nodeNameResolver, \Rector\NodeTypeResolver\NodeTypeResolver $nodeTypeResolver, \Rector\Core\PhpParser\NodeFinder\LocalConstantFinder $localConstantFinder, \Rector\Core\PhpParser\Comparing\NodeComparator $nodeComparator)
+    {
         $this->betterNodeFinder = $betterNodeFinder;
-        $this->nodeRepository = $nodeRepository;
+        $this->nodeNameResolver = $nodeNameResolver;
+        $this->nodeTypeResolver = $nodeTypeResolver;
+        $this->localConstantFinder = $localConstantFinder;
         $this->nodeComparator = $nodeComparator;
     }
-
     /**
      * @return String_[]
      */
-    public function matchCallArgumentWithRegexPattern(Expr $expr): array
+    public function matchCallArgumentWithRegexPattern(\PhpParser\Node\Expr $expr) : array
     {
-        if ($expr instanceof FuncCall) {
+        if ($expr instanceof \PhpParser\Node\Expr\FuncCall) {
             return $this->processFuncCall($expr);
         }
-
-        if ($expr instanceof StaticCall) {
+        if ($expr instanceof \PhpParser\Node\Expr\StaticCall) {
             return $this->processStaticCall($expr);
         }
-
         return [];
     }
-
     /**
      * @return String_[]
      */
-    private function processFuncCall(FuncCall $funcCall): array
+    private function processFuncCall(\PhpParser\Node\Expr\FuncCall $funcCall) : array
     {
         foreach (self::FUNCTIONS_WITH_PATTERNS_TO_ARGUMENT_POSITION as $functionName => $argumentPosition) {
-            if (! $this->nodeNameResolver->isName($funcCall, $functionName)) {
+            if (!$this->nodeNameResolver->isName($funcCall, $functionName)) {
                 continue;
             }
-
-            if (! isset($funcCall->args[$argumentPosition])) {
+            if (!isset($funcCall->args[$argumentPosition])) {
                 return [];
             }
-
+            if (!$funcCall->args[$argumentPosition] instanceof \PhpParser\Node\Arg) {
+                return [];
+            }
             return $this->resolveArgumentValues($funcCall->args[$argumentPosition]->value);
         }
-
         return [];
     }
-
     /**
      * @return String_[]
      */
-    private function processStaticCall(StaticCall $staticCall): array
+    private function processStaticCall(\PhpParser\Node\Expr\StaticCall $staticCall) : array
     {
         foreach (self::STATIC_METHODS_WITH_PATTERNS_TO_ARGUMENT_POSITION as $type => $methodNamesToArgumentPosition) {
-            if (! $this->nodeTypeResolver->isObjectType($staticCall->class, new ObjectType($type))) {
+            if (!$this->nodeTypeResolver->isObjectType($staticCall->class, new \PHPStan\Type\ObjectType($type))) {
                 continue;
             }
-
             foreach ($methodNamesToArgumentPosition as $methodName => $argumentPosition) {
-                if (! $this->nodeNameResolver->isName($staticCall->name, $methodName)) {
+                if (!$this->nodeNameResolver->isName($staticCall->name, $methodName)) {
                     continue;
                 }
-
-                if (! isset($staticCall->args[$argumentPosition])) {
+                if (!isset($staticCall->args[$argumentPosition])) {
                     return [];
                 }
-
+                if (!$staticCall->args[$argumentPosition] instanceof \PhpParser\Node\Arg) {
+                    return [];
+                }
                 return $this->resolveArgumentValues($staticCall->args[$argumentPosition]->value);
             }
         }
-
         return [];
     }
-
     /**
      * @return String_[]
      */
-    private function resolveArgumentValues(Expr $expr): array
+    private function resolveArgumentValues(\PhpParser\Node\Expr $expr) : array
     {
-        if ($expr instanceof String_) {
+        if ($expr instanceof \PhpParser\Node\Scalar\String_) {
             return [$expr];
         }
-
-        if ($expr instanceof Variable) {
+        if ($expr instanceof \PhpParser\Node\Expr\Variable) {
             $strings = [];
             $assignNodes = $this->findAssignerForVariable($expr);
             foreach ($assignNodes as $assignNode) {
-                if ($assignNode->expr instanceof String_) {
+                if ($assignNode->expr instanceof \PhpParser\Node\Scalar\String_) {
                     $strings[] = $assignNode->expr;
                 }
             }
-
             return $strings;
         }
-
-        if ($expr instanceof ClassConstFetch) {
-            return $this->resolveClassConstFetchValue($expr);
+        if ($expr instanceof \PhpParser\Node\Expr\ClassConstFetch) {
+            return $this->matchClassConstFetchStringValue($expr);
         }
-
         return [];
     }
-
     /**
      * @return Assign[]
      */
-    private function findAssignerForVariable(Variable $variable): array
+    private function findAssignerForVariable(\PhpParser\Node\Expr\Variable $variable) : array
     {
-        $classMethod = $variable->getAttribute(AttributeKey::METHOD_NODE);
-        if (! $classMethod instanceof ClassMethod) {
+        $classMethod = $this->betterNodeFinder->findParentType($variable, \PhpParser\Node\Stmt\ClassMethod::class);
+        if (!$classMethod instanceof \PhpParser\Node\Stmt\ClassMethod) {
             return [];
         }
-
-        return $this->betterNodeFinder->find([$classMethod], function (Node $node) use ($variable): ?Assign {
-            if (! $node instanceof Assign) {
+        return $this->betterNodeFinder->find([$classMethod], function (\PhpParser\Node $node) use($variable) : ?Assign {
+            if (!$node instanceof \PhpParser\Node\Expr\Assign) {
                 return null;
             }
-
-            if (! $this->nodeComparator->areNodesEqual($node->var, $variable)) {
+            if (!$this->nodeComparator->areNodesEqual($node->var, $variable)) {
                 return null;
             }
-
             return $node;
         });
     }
-
     /**
      * @return String_[]
      */
-    private function resolveClassConstFetchValue(ClassConstFetch $classConstFetch): array
+    private function matchClassConstFetchStringValue(\PhpParser\Node\Expr\ClassConstFetch $classConstFetch) : array
     {
-        $classConstNode = $this->nodeRepository->findClassConstByClassConstFetch($classConstFetch);
-        if (! $classConstNode instanceof ClassConst) {
+        $classConst = $this->localConstantFinder->match($classConstFetch);
+        if (!$classConst instanceof \PhpParser\Node\Const_) {
             return [];
         }
-
-        if ($classConstNode->consts[0]->value instanceof String_) {
-            return [$classConstNode->consts[0]->value];
+        if ($classConst->value instanceof \PhpParser\Node\Scalar\String_) {
+            return [$classConst->value];
         }
-
         return [];
     }
 }

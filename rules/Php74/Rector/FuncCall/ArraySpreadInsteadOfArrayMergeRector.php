@@ -1,10 +1,10 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Php74\Rector\FuncCall;
 
 use PhpParser\Node;
+use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ArrayItem;
@@ -19,33 +19,27 @@ use PHPStan\Type\Type;
 use Rector\Core\Rector\AbstractRector;
 use Rector\Core\ValueObject\PhpVersionFeature;
 use Rector\NodeTypeResolver\TypeAnalyzer\ArrayTypeAnalyzer;
+use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-
 /**
- * @see https://wiki.php.net/rfc/spread_operator_for_array
- * @see https://twitter.com/nikita_ppv/status/1126470222838366209
+ * @changelog https://wiki.php.net/rfc/spread_operator_for_array
+ *
  * @see \Rector\Tests\Php74\Rector\FuncCall\ArraySpreadInsteadOfArrayMergeRector\ArraySpreadInsteadOfArrayMergeRectorTest
  */
-final class ArraySpreadInsteadOfArrayMergeRector extends AbstractRector
+final class ArraySpreadInsteadOfArrayMergeRector extends \Rector\Core\Rector\AbstractRector implements \Rector\VersionBonding\Contract\MinPhpVersionInterface
 {
     /**
-     * @var ArrayTypeAnalyzer
+     * @var \Rector\NodeTypeResolver\TypeAnalyzer\ArrayTypeAnalyzer
      */
     private $arrayTypeAnalyzer;
-
-    public function __construct(ArrayTypeAnalyzer $arrayTypeAnalyzer)
+    public function __construct(\Rector\NodeTypeResolver\TypeAnalyzer\ArrayTypeAnalyzer $arrayTypeAnalyzer)
     {
         $this->arrayTypeAnalyzer = $arrayTypeAnalyzer;
     }
-
-    public function getRuleDefinition(): RuleDefinition
+    public function getRuleDefinition() : \Symplify\RuleDocGenerator\ValueObject\RuleDefinition
     {
-        return new RuleDefinition(
-            'Change array_merge() to spread operator, except values with possible string key values',
-            [
-                new CodeSample(
-                    <<<'CODE_SAMPLE'
+        return new \Symplify\RuleDocGenerator\ValueObject\RuleDefinition('Change array_merge() to spread operator, except values with possible string key values', [new \Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample(<<<'CODE_SAMPLE'
 class SomeClass
 {
     public function run($iter1, $iter2)
@@ -60,8 +54,7 @@ class SomeClass
     }
 }
 CODE_SAMPLE
-                    ,
-                    <<<'CODE_SAMPLE'
+, <<<'CODE_SAMPLE'
 class SomeClass
 {
     public function run($iter1, $iter2)
@@ -73,126 +66,115 @@ class SomeClass
     }
 }
 CODE_SAMPLE
-                ),
-            ]
-        );
+)]);
     }
-
     /**
      * @return array<class-string<Node>>
      */
-    public function getNodeTypes(): array
+    public function getNodeTypes() : array
     {
-        return [FuncCall::class];
+        return [\PhpParser\Node\Expr\FuncCall::class];
     }
-
     /**
      * @param FuncCall $node
      */
-    public function refactor(Node $node): ?Node
+    public function refactor(\PhpParser\Node $node) : ?\PhpParser\Node
     {
-        if (! $this->isAtLeastPhpVersion(PhpVersionFeature::ARRAY_SPREAD)) {
-            return null;
-        }
-
         if ($this->isName($node, 'array_merge')) {
             return $this->refactorArray($node);
         }
-
         return null;
     }
-
-    private function refactorArray(FuncCall $funcCall): ?Array_
+    public function provideMinPhpVersion() : int
     {
-        $array = new Array_();
-
+        return \Rector\Core\ValueObject\PhpVersionFeature::ARRAY_SPREAD;
+    }
+    private function refactorArray(\PhpParser\Node\Expr\FuncCall $funcCall) : ?\PhpParser\Node\Expr\Array_
+    {
+        $array = new \PhpParser\Node\Expr\Array_();
         foreach ($funcCall->args as $arg) {
+            if (!$arg instanceof \PhpParser\Node\Arg) {
+                continue;
+            }
             // cannot handle unpacked arguments
             if ($arg->unpack) {
                 return null;
             }
-
             $value = $arg->value;
             if ($this->shouldSkipArrayForInvalidTypeOrKeys($value)) {
                 return null;
             }
-
             $value = $this->resolveValue($value);
             $array->items[] = $this->createUnpackedArrayItem($value);
         }
-
         return $array;
     }
-
-    private function shouldSkipArrayForInvalidTypeOrKeys(Expr $expr): bool
+    private function shouldSkipArrayForInvalidTypeOrKeys(\PhpParser\Node\Expr $expr) : bool
     {
         // we have no idea what it is → cannot change it
-        if (! $this->arrayTypeAnalyzer->isArrayType($expr)) {
-            return true;
+        if (!$this->arrayTypeAnalyzer->isArrayType($expr)) {
+            return \true;
         }
-
-        $arrayStaticType = $this->getStaticType($expr);
+        $arrayStaticType = $this->getType($expr);
         if ($this->isConstantArrayTypeWithStringKeyType($arrayStaticType)) {
-            return true;
+            return \true;
         }
-
-        if (! $arrayStaticType instanceof ArrayType) {
-            return true;
+        if (!$arrayStaticType instanceof \PHPStan\Type\ArrayType) {
+            return \true;
         }
-
         // integer key type is required, @see https://twitter.com/nikita_ppv/status/1126470222838366209
-        return ! $arrayStaticType->getKeyType() instanceof IntegerType;
+        return !$arrayStaticType->getKeyType() instanceof \PHPStan\Type\IntegerType;
     }
-
-    private function resolveValue(Expr $expr): Expr
+    private function resolveValue(\PhpParser\Node\Expr $expr) : \PhpParser\Node\Expr
     {
-        if ($expr instanceof FuncCall && $this->isIteratorToArrayFuncCall($expr)) {
+        if ($expr instanceof \PhpParser\Node\Expr\FuncCall && $this->isIteratorToArrayFuncCall($expr)) {
+            /** @var Arg $arg */
+            $arg = $expr->args[0];
             /** @var FuncCall $expr */
-            $expr = $expr->args[0]->value;
+            $expr = $arg->value;
         }
-
-        if (! $expr instanceof Ternary) {
+        if (!$expr instanceof \PhpParser\Node\Expr\Ternary) {
             return $expr;
         }
-
-        if (! $expr->cond instanceof FuncCall) {
+        if (!$expr->cond instanceof \PhpParser\Node\Expr\FuncCall) {
             return $expr;
         }
-
-        if (! $this->isName($expr->cond, 'is_array')) {
+        if (!$this->isName($expr->cond, 'is_array')) {
             return $expr;
         }
-
-        if ($expr->if instanceof Variable && $this->isIteratorToArrayFuncCall($expr->else)) {
+        if ($expr->if instanceof \PhpParser\Node\Expr\Variable && $this->isIteratorToArrayFuncCall($expr->else)) {
             return $expr->if;
         }
-
         return $expr;
     }
-
-    private function createUnpackedArrayItem(Expr $expr): ArrayItem
+    private function createUnpackedArrayItem(\PhpParser\Node\Expr $expr) : \PhpParser\Node\Expr\ArrayItem
     {
-        return new ArrayItem($expr, null, false, [], true);
+        return new \PhpParser\Node\Expr\ArrayItem($expr, null, \false, [], \true);
     }
-
-    private function isConstantArrayTypeWithStringKeyType(Type $type): bool
+    private function isConstantArrayTypeWithStringKeyType(\PHPStan\Type\Type $type) : bool
     {
-        if (! $type instanceof ConstantArrayType) {
-            return false;
+        if (!$type instanceof \PHPStan\Type\Constant\ConstantArrayType) {
+            return \false;
         }
-
         foreach ($type->getKeyTypes() as $keyType) {
             // key cannot be string
-            if ($keyType instanceof ConstantStringType) {
-                return true;
+            if ($keyType instanceof \PHPStan\Type\Constant\ConstantStringType) {
+                return \true;
             }
         }
-
-        return false;
+        return \false;
     }
-
-    private function isIteratorToArrayFuncCall(Expr $expr): bool
+    private function isIteratorToArrayFuncCall(\PhpParser\Node\Expr $expr) : bool
     {
-        return $this->nodeNameResolver->isFuncCallName($expr, 'iterator_to_array');
+        if (!$expr instanceof \PhpParser\Node\Expr\FuncCall) {
+            return \false;
+        }
+        if (!$this->nodeNameResolver->isName($expr, 'iterator_to_array')) {
+            return \false;
+        }
+        if (!isset($expr->args[0])) {
+            return \false;
+        }
+        return $expr->args[0] instanceof \PhpParser\Node\Arg;
     }
 }

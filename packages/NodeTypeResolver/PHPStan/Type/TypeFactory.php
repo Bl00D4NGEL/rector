@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\NodeTypeResolver\PHPStan\Type;
 
 use PHPStan\Type\ArrayType;
@@ -14,153 +13,136 @@ use PHPStan\Type\Constant\ConstantStringType;
 use PHPStan\Type\FloatType;
 use PHPStan\Type\IntegerType;
 use PHPStan\Type\MixedType;
+use PHPStan\Type\ObjectType;
 use PHPStan\Type\StringType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypeUtils;
-use PHPStan\Type\VerbosityLevel;
-use Rector\StaticTypeMapper\TypeFactory\UnionTypeFactory;
-use Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType;
-use Rector\StaticTypeMapper\ValueObject\Type\ShortenedObjectType;
-
+use PHPStan\Type\UnionType;
+use Rector\NodeTypeResolver\PHPStan\TypeHasher;
 final class TypeFactory
 {
     /**
-     * @var UnionTypeFactory
+     * @var \Rector\NodeTypeResolver\PHPStan\TypeHasher
      */
-    private $unionTypeFactory;
-
-    public function __construct(UnionTypeFactory $unionTypeFactory)
+    private $typeHasher;
+    public function __construct(\Rector\NodeTypeResolver\PHPStan\TypeHasher $typeHasher)
     {
-        $this->unionTypeFactory = $unionTypeFactory;
+        $this->typeHasher = $typeHasher;
     }
-
     /**
      * @param Type[] $types
      */
-    public function createMixedPassedOrUnionTypeAndKeepConstant(array $types): Type
+    public function createMixedPassedOrUnionTypeAndKeepConstant(array $types) : \PHPStan\Type\Type
     {
         $types = $this->unwrapUnionedTypes($types);
-        $types = $this->uniquateTypes($types, true);
-
+        $types = $this->uniquateTypes($types, \true);
         return $this->createUnionOrSingleType($types);
     }
-
     /**
      * @param Type[] $types
      */
-    public function createMixedPassedOrUnionType(array $types): Type
+    public function createMixedPassedOrUnionType(array $types) : \PHPStan\Type\Type
     {
         $types = $this->unwrapUnionedTypes($types);
         $types = $this->uniquateTypes($types);
-
         return $this->createUnionOrSingleType($types);
     }
-
     /**
-     * @param Type[] $types
-     * @return Type[]
+     * @template TType as Type
+     * @param array<TType> $types
+     * @return array<TType>
      */
-    public function uniquateTypes(array $types, bool $keepConstant = false): array
+    public function uniquateTypes(array $types, bool $keepConstant = \false) : array
     {
         $uniqueTypes = [];
         foreach ($types as $type) {
-            if (! $keepConstant) {
+            if (!$keepConstant) {
                 $type = $this->removeValueFromConstantType($type);
             }
-
-            if ($type instanceof ShortenedObjectType) {
-                $type = new FullyQualifiedObjectType($type->getFullyQualifiedName());
-            }
-
-            $typeHash = md5($type->describe(VerbosityLevel::cache()));
+            $typeHash = $this->typeHasher->createTypeHash($type);
             $uniqueTypes[$typeHash] = $type;
         }
-
         // re-index
-        return array_values($uniqueTypes);
+        return \array_values($uniqueTypes);
     }
-
     /**
      * @param Type[] $types
      * @return Type[]
      */
-    private function unwrapUnionedTypes(array $types): array
+    private function unwrapUnionedTypes(array $types) : array
     {
         // unwrap union types
         $unwrappedTypes = [];
         foreach ($types as $type) {
-            $flattenTypes = TypeUtils::flattenTypes($type);
-
+            $flattenTypes = \PHPStan\Type\TypeUtils::flattenTypes($type);
             foreach ($flattenTypes as $flattenType) {
-                if ($flattenType instanceof ConstantArrayType) {
-                    $unwrappedTypes = array_merge($unwrappedTypes, $this->unwrapConstantArrayTypes($flattenType));
+                if ($flattenType instanceof \PHPStan\Type\Constant\ConstantArrayType) {
+                    $unwrappedTypes = \array_merge($unwrappedTypes, $this->unwrapConstantArrayTypes($flattenType));
                 } else {
-                    $unwrappedTypes[] = $flattenType;
+                    $unwrappedTypes = $this->resolveNonConstantArrayType($flattenType, $unwrappedTypes);
                 }
             }
         }
-
         return $unwrappedTypes;
     }
-
+    /**
+     * @param Type[] $unwrappedTypes
+     * @return Type[]
+     */
+    private function resolveNonConstantArrayType(\PHPStan\Type\Type $type, array $unwrappedTypes) : array
+    {
+        if ($type instanceof \PHPStan\Type\ObjectType && $type->getClassName() === 'Rector\\Core\\Stubs\\DummyTraitClass') {
+            return $unwrappedTypes;
+        }
+        $unwrappedTypes[] = $type;
+        return $unwrappedTypes;
+    }
     /**
      * @param Type[] $types
      */
-    private function createUnionOrSingleType(array $types): Type
+    private function createUnionOrSingleType(array $types) : \PHPStan\Type\Type
     {
         if ($types === []) {
-            return new MixedType();
+            return new \PHPStan\Type\MixedType();
         }
-
-        if (count($types) === 1) {
+        if (\count($types) === 1) {
             return $types[0];
         }
-
-        return $this->unionTypeFactory->createUnionObjectType($types);
+        return new \PHPStan\Type\UnionType($types);
     }
-
-    private function removeValueFromConstantType(Type $type): Type
+    private function removeValueFromConstantType(\PHPStan\Type\Type $type) : \PHPStan\Type\Type
     {
         // remove values from constant types
-        if ($type instanceof ConstantFloatType) {
-            return new FloatType();
+        if ($type instanceof \PHPStan\Type\Constant\ConstantFloatType) {
+            return new \PHPStan\Type\FloatType();
         }
-
-        if ($type instanceof ConstantStringType) {
-            return new StringType();
+        if ($type instanceof \PHPStan\Type\Constant\ConstantStringType) {
+            return new \PHPStan\Type\StringType();
         }
-
-        if ($type instanceof ConstantIntegerType) {
-            return new IntegerType();
+        if ($type instanceof \PHPStan\Type\Constant\ConstantIntegerType) {
+            return new \PHPStan\Type\IntegerType();
         }
-
-        if ($type instanceof ConstantBooleanType) {
-            return new BooleanType();
+        if ($type instanceof \PHPStan\Type\Constant\ConstantBooleanType) {
+            return new \PHPStan\Type\BooleanType();
         }
-
         return $type;
     }
-
     /**
      * @return Type[]
      */
-    private function unwrapConstantArrayTypes(ConstantArrayType $constantArrayType): array
+    private function unwrapConstantArrayTypes(\PHPStan\Type\Constant\ConstantArrayType $constantArrayType) : array
     {
         $unwrappedTypes = [];
-
-        $flattenKeyTypes = TypeUtils::flattenTypes($constantArrayType->getKeyType());
-        $flattenItemTypes = TypeUtils::flattenTypes($constantArrayType->getItemType());
-
+        $flattenKeyTypes = \PHPStan\Type\TypeUtils::flattenTypes($constantArrayType->getKeyType());
+        $flattenItemTypes = \PHPStan\Type\TypeUtils::flattenTypes($constantArrayType->getItemType());
         foreach ($flattenItemTypes as $position => $nestedFlattenItemType) {
             /** @var Type|null $nestedFlattenKeyType */
-            $nestedFlattenKeyType = $flattenKeyTypes[$position];
+            $nestedFlattenKeyType = $flattenKeyTypes[$position] ?? null;
             if ($nestedFlattenKeyType === null) {
-                $nestedFlattenKeyType = new MixedType();
+                $nestedFlattenKeyType = new \PHPStan\Type\MixedType();
             }
-
-            $unwrappedTypes[] = new ArrayType($nestedFlattenKeyType, $nestedFlattenItemType);
+            $unwrappedTypes[] = new \PHPStan\Type\ArrayType($nestedFlattenKeyType, $nestedFlattenItemType);
         }
-
         return $unwrappedTypes;
     }
 }

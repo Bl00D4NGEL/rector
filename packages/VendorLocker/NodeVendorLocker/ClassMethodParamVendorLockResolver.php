@@ -1,116 +1,137 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\VendorLocker\NodeVendorLocker;
 
 use PhpParser\Node\Stmt\ClassMethod;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
-use Rector\NodeCollector\NodeCollector\NodeRepository;
+use Rector\FamilyTree\Reflection\FamilyRelationsAnalyzer;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\Node\AttributeKey;
-use Rector\VendorLocker\Reflection\ClassReflectionAncestorAnalyzer;
-use Rector\VendorLocker\Reflection\MethodReflectionContractAnalyzer;
-
+use RectorPrefix20211107\Symplify\SmartFileSystem\Normalizer\PathNormalizer;
 final class ClassMethodParamVendorLockResolver
 {
     /**
-     * @var ClassReflectionAncestorAnalyzer
-     */
-    private $classReflectionAncestorAnalyzer;
-
-    /**
-     * @var MethodReflectionContractAnalyzer
-     */
-    private $methodReflectionContractAnalyzer;
-
-    /**
-     * @var NodeNameResolver
+     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
     private $nodeNameResolver;
-
     /**
-     * @var NodeRepository
+     * @var \Symplify\SmartFileSystem\Normalizer\PathNormalizer
      */
-    private $nodeRepository;
-
-    public function __construct(
-        ClassReflectionAncestorAnalyzer $classReflectionAncestorAnalyzer,
-        MethodReflectionContractAnalyzer $methodReflectionContractAnalyzer,
-        NodeNameResolver $nodeNameResolver,
-        NodeRepository $nodeRepository
-    ) {
-        $this->classReflectionAncestorAnalyzer = $classReflectionAncestorAnalyzer;
-        $this->methodReflectionContractAnalyzer = $methodReflectionContractAnalyzer;
-        $this->nodeNameResolver = $nodeNameResolver;
-        $this->nodeRepository = $nodeRepository;
-    }
-
-    public function isVendorLocked(ClassMethod $classMethod, int $paramPosition): bool
+    private $pathNormalizer;
+    /**
+     * @var \Rector\FamilyTree\Reflection\FamilyRelationsAnalyzer
+     */
+    private $familyRelationsAnalyzer;
+    public function __construct(\Rector\NodeNameResolver\NodeNameResolver $nodeNameResolver, \RectorPrefix20211107\Symplify\SmartFileSystem\Normalizer\PathNormalizer $pathNormalizer, \Rector\FamilyTree\Reflection\FamilyRelationsAnalyzer $familyRelationsAnalyzer)
     {
-        $scope = $classMethod->getAttribute(AttributeKey::SCOPE);
-        if (! $scope instanceof Scope) {
-            return false;
-        }
-
-        $classReflection = $scope->getClassReflection();
-        if (! $classReflection instanceof ClassReflection) {
-            return false;
-        }
-
-        if (! $this->classReflectionAncestorAnalyzer->hasAncestors($classReflection)) {
-            return false;
-        }
-
-        $methodName = $this->nodeNameResolver->getName($classMethod);
-
-        if ($classReflection->getParentClass() !== false) {
-            $vendorLock = $this->isParentClassVendorLocking(
-                $classReflection->getParentClass(),
-                $paramPosition,
-                $methodName
-            );
-            if ($vendorLock !== null) {
-                return $vendorLock;
-            }
-        }
-
-        if ($classReflection->isClass()) {
-            return $this->methodReflectionContractAnalyzer->hasInterfaceContract($classReflection, $methodName);
-        }
-
-        if ($classReflection->isInterface()) {
-            return $this->methodReflectionContractAnalyzer->hasInterfaceContract($classReflection, $methodName);
-        }
-
-        return false;
+        $this->nodeNameResolver = $nodeNameResolver;
+        $this->pathNormalizer = $pathNormalizer;
+        $this->familyRelationsAnalyzer = $familyRelationsAnalyzer;
     }
-
-    private function isParentClassVendorLocking(
-        ClassReflection $parentClassReflection,
-        int $paramPosition,
-        string $methodName
-    ): ?bool {
-        $parentClass = $this->nodeRepository->findClass($parentClassReflection->getName());
-        if ($parentClass !== null) {
-            $parentClassMethod = $parentClass->getMethod($methodName);
-            // parent class method in local scope → it's ok
-            if ($parentClassMethod !== null) {
-                // parent method has no type → we cannot change it here
-                if (! isset($parentClassMethod->params[$paramPosition])) {
-                    return false;
+    /**
+     * Includes non-vendor classes
+     */
+    public function isSoftLocked(\PhpParser\Node\Stmt\ClassMethod $classMethod) : bool
+    {
+        if ($this->isVendorLocked($classMethod)) {
+            return \true;
+        }
+        $classReflection = $this->resolveClassReflection($classMethod);
+        if (!$classReflection instanceof \PHPStan\Reflection\ClassReflection) {
+            return \false;
+        }
+        /** @var string $methodName */
+        $methodName = $this->nodeNameResolver->getName($classMethod);
+        return $this->hasClassMethodLockMatchingFileName($classReflection, $methodName, '');
+    }
+    public function isVendorLocked(\PhpParser\Node\Stmt\ClassMethod $classMethod) : bool
+    {
+        if ($classMethod->isMagic()) {
+            return \true;
+        }
+        $classReflection = $this->resolveClassReflection($classMethod);
+        if (!$classReflection instanceof \PHPStan\Reflection\ClassReflection) {
+            return \false;
+        }
+        /** @var string $methodName */
+        $methodName = $this->nodeNameResolver->getName($classMethod);
+        if ($this->hasTraitMethodVendorLock($classReflection, $methodName)) {
+            return \true;
+        }
+        // has interface vendor lock? → better skip it, as PHPStan has access only to just analyzed classes
+        if ($this->hasParentInterfaceMethod($classReflection, $methodName)) {
+            return \true;
+        }
+        /** @var string $methodName */
+        $methodName = $this->nodeNameResolver->getName($classMethod);
+        return $this->hasClassMethodLockMatchingFileName($classReflection, $methodName, '/vendor/');
+    }
+    private function hasTraitMethodVendorLock(\PHPStan\Reflection\ClassReflection $classReflection, string $methodName) : bool
+    {
+        $relatedReflectionClasses = $this->familyRelationsAnalyzer->getChildrenOfClassReflection($classReflection);
+        foreach ($relatedReflectionClasses as $relatedReflectionClass) {
+            foreach ($relatedReflectionClass->getTraits() as $traitReflectionClass) {
+                /** @var ClassReflection $traitReflectionClass */
+                if ($traitReflectionClass->hasMethod($methodName)) {
+                    return \true;
                 }
-                return $parentClassMethod->params[$paramPosition]->type === null;
             }
         }
-
-        if ($parentClassReflection->hasMethod($methodName)) {
-            // parent class method in external scope → it's not ok
-            // if not, look for it's parent parent
-            return true;
+        return \false;
+    }
+    /**
+     * @return \PHPStan\Reflection\ClassReflection|null
+     */
+    private function resolveClassReflection(\PhpParser\Node\Stmt\ClassMethod $classMethod)
+    {
+        $scope = $classMethod->getAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::SCOPE);
+        if (!$scope instanceof \PHPStan\Analyser\Scope) {
+            return null;
         }
-
-        return null;
+        return $scope->getClassReflection();
+    }
+    /**
+     * Has interface even in our project?
+     * Better skip it, as PHPStan has access only to just analyzed classes.
+     * This might change type, that works for current class, but breaks another implementer.
+     */
+    private function hasParentInterfaceMethod(\PHPStan\Reflection\ClassReflection $classReflection, string $methodName) : bool
+    {
+        foreach ($classReflection->getInterfaces() as $interfaceClassReflection) {
+            if ($interfaceClassReflection->hasMethod($methodName)) {
+                return \true;
+            }
+        }
+        return \false;
+    }
+    private function hasClassMethodLockMatchingFileName(\PHPStan\Reflection\ClassReflection $classReflection, string $methodName, string $filePathPartName) : bool
+    {
+        foreach ($classReflection->getAncestors() as $ancestorClassReflection) {
+            // skip self
+            if ($ancestorClassReflection === $classReflection) {
+                continue;
+            }
+            // parent type
+            if (!$ancestorClassReflection->hasNativeMethod($methodName)) {
+                continue;
+            }
+            // is file in vendor?
+            $fileName = $ancestorClassReflection->getFileName();
+            // probably internal class
+            if ($fileName === null) {
+                continue;
+            }
+            // not conditions? its a match
+            if ($filePathPartName === '') {
+                return \true;
+            }
+            $normalizedFileName = $this->pathNormalizer->normalizePath($fileName);
+            if (\strpos($normalizedFileName, $filePathPartName) !== \false) {
+                return \true;
+            }
+        }
+        return \false;
     }
 }

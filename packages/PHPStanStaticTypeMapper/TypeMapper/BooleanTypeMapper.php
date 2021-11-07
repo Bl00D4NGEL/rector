@@ -1,86 +1,72 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\PHPStanStaticTypeMapper\TypeMapper;
 
 use PhpParser\Node;
 use PhpParser\Node\Name;
+use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use PHPStan\Type\BooleanType;
+use PHPStan\Type\Constant\ConstantBooleanType;
 use PHPStan\Type\Type;
-use Rector\AttributeAwarePhpDoc\Ast\Type\AttributeAwareIdentifierTypeNode;
 use Rector\Core\Php\PhpVersionProvider;
 use Rector\Core\ValueObject\PhpVersionFeature;
 use Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface;
-use Rector\StaticTypeMapper\ValueObject\Type\FalseBooleanType;
-
-final class BooleanTypeMapper implements TypeMapperInterface
+use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
+/**
+ * @implements TypeMapperInterface<BooleanType>
+ */
+final class BooleanTypeMapper implements \Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface
 {
     /**
-     * @var PhpVersionProvider
+     * @var \Rector\Core\Php\PhpVersionProvider
      */
     private $phpVersionProvider;
-
-    public function __construct(PhpVersionProvider $phpVersionProvider)
+    public function __construct(\Rector\Core\Php\PhpVersionProvider $phpVersionProvider)
     {
         $this->phpVersionProvider = $phpVersionProvider;
     }
-
     /**
      * @return class-string<Type>
      */
-    public function getNodeClass(): string
+    public function getNodeClass() : string
     {
-        return BooleanType::class;
+        return \PHPStan\Type\BooleanType::class;
     }
-
     /**
-     * @param BooleanType $type
+     * @param \PHPStan\Type\Type $type
+     * @param \Rector\PHPStanStaticTypeMapper\Enum\TypeKind $typeKind
      */
-    public function mapToPHPStanPhpDocTypeNode(Type $type): TypeNode
+    public function mapToPHPStanPhpDocTypeNode($type, $typeKind) : \PHPStan\PhpDocParser\Ast\Type\TypeNode
     {
         if ($this->isFalseBooleanTypeWithUnion($type)) {
-            return new AttributeAwareIdentifierTypeNode('false');
+            return new \PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode('false');
         }
-
-        return new AttributeAwareIdentifierTypeNode('bool');
+        return new \PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode('bool');
     }
-
     /**
-     * @param BooleanType $type
+     * @param \PHPStan\Type\Type $type
+     * @param \Rector\PHPStanStaticTypeMapper\Enum\TypeKind $typeKind
      */
-    public function mapToPhpParserNode(Type $type, ?string $kind = null): ?Node
+    public function mapToPhpParserNode($type, $typeKind) : ?\PhpParser\Node
     {
-        if (! $this->phpVersionProvider->isAtLeastPhpVersion(PhpVersionFeature::SCALAR_TYPES)) {
+        if (!$this->phpVersionProvider->isAtLeastPhpVersion(\Rector\Core\ValueObject\PhpVersionFeature::SCALAR_TYPES)) {
             return null;
         }
-
         if ($this->isFalseBooleanTypeWithUnion($type)) {
-            return new Name('false');
+            return new \PhpParser\Node\Name('false');
         }
-
-        return new Name('bool');
+        return new \PhpParser\Node\Name('bool');
     }
-
-    /**
-     * @param BooleanType $type
-     */
-    public function mapToDocString(Type $type, ?Type $parentType = null): string
+    private function isFalseBooleanTypeWithUnion(\PHPStan\Type\Type $type) : bool
     {
-        if ($this->isFalseBooleanTypeWithUnion($type)) {
-            return 'false';
+        if (!$type instanceof \PHPStan\Type\Constant\ConstantBooleanType) {
+            return \false;
         }
-
-        return 'bool';
-    }
-
-    private function isFalseBooleanTypeWithUnion(Type $type): bool
-    {
-        if (! $type instanceof FalseBooleanType) {
-            return false;
+        if ($type->getValue()) {
+            return \false;
         }
-
-        return $this->phpVersionProvider->isAtLeastPhpVersion(PhpVersionFeature::UNION_TYPES);
+        return $this->phpVersionProvider->isAtLeastPhpVersion(\Rector\Core\ValueObject\PhpVersionFeature::UNION_TYPES);
     }
 }

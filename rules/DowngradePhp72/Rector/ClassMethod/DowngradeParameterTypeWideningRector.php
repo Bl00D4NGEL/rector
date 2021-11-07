@@ -1,318 +1,237 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\DowngradePhp72\Rector\ClassMethod;
 
 use PhpParser\Node;
-use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Param;
-use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\ClassMethod;
-use PhpParser\Node\Stmt\Function_;
-use PhpParser\Node\Stmt\Interface_;
-use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
-use Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTypeChanger;
+use Rector\Core\Contract\Rector\ConfigurableRectorInterface;
+use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\Core\Rector\AbstractRector;
-use Rector\NodeTypeResolver\Node\AttributeKey;
-use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
+use Rector\Core\Reflection\ReflectionResolver;
+use Rector\DowngradePhp72\NodeAnalyzer\BuiltInMethodAnalyzer;
+use Rector\DowngradePhp72\NodeAnalyzer\OverrideFromAnonymousClassMethodAnalyzer;
+use Rector\DowngradePhp72\NodeAnalyzer\SealedClassAnalyzer;
+use Rector\DowngradePhp72\PhpDoc\NativeParamToPhpDocDecorator;
+use Rector\TypeDeclaration\NodeAnalyzer\AutowiredClassMethodOrPropertyAnalyzer;
+use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-
+use RectorPrefix20211107\Webmozart\Assert\Assert;
 /**
- * @see https://www.php.net/manual/en/migration72.new-features.php#migration72.new-features.param-type-widening
+ * @changelog https://www.php.net/manual/en/migration72.new-features.php#migration72.new-features.param-type-widening
+ * @see https://3v4l.org/fOgSE
  *
  * @see \Rector\Tests\DowngradePhp72\Rector\ClassMethod\DowngradeParameterTypeWideningRector\DowngradeParameterTypeWideningRectorTest
  */
-final class DowngradeParameterTypeWideningRector extends AbstractRector
+final class DowngradeParameterTypeWideningRector extends \Rector\Core\Rector\AbstractRector implements \Rector\Core\Contract\Rector\ConfigurableRectorInterface
 {
     /**
-     * @var PhpDocTypeChanger
+     * @var string
      */
-    private $phpDocTypeChanger;
-
-    public function __construct(PhpDocTypeChanger $phpDocTypeChanger)
+    public const SAFE_TYPES = 'safe_types';
+    /**
+     * @var string
+     */
+    public const SAFE_TYPES_TO_METHODS = 'safe_types_to_methods';
+    /**
+     * @var string[]
+     */
+    private $safeTypes = [];
+    /**
+     * @var array<string, string[]>
+     */
+    private $safeTypesToMethods = [];
+    /**
+     * @var \Rector\DowngradePhp72\PhpDoc\NativeParamToPhpDocDecorator
+     */
+    private $nativeParamToPhpDocDecorator;
+    /**
+     * @var \Rector\Core\Reflection\ReflectionResolver
+     */
+    private $reflectionResolver;
+    /**
+     * @var \Rector\TypeDeclaration\NodeAnalyzer\AutowiredClassMethodOrPropertyAnalyzer
+     */
+    private $autowiredClassMethodOrPropertyAnalyzer;
+    /**
+     * @var \Rector\DowngradePhp72\NodeAnalyzer\BuiltInMethodAnalyzer
+     */
+    private $builtInMethodAnalyzer;
+    /**
+     * @var \Rector\DowngradePhp72\NodeAnalyzer\OverrideFromAnonymousClassMethodAnalyzer
+     */
+    private $overrideFromAnonymousClassMethodAnalyzer;
+    /**
+     * @var \Rector\DowngradePhp72\NodeAnalyzer\SealedClassAnalyzer
+     */
+    private $sealedClassAnalyzer;
+    public function __construct(\Rector\DowngradePhp72\PhpDoc\NativeParamToPhpDocDecorator $nativeParamToPhpDocDecorator, \Rector\Core\Reflection\ReflectionResolver $reflectionResolver, \Rector\TypeDeclaration\NodeAnalyzer\AutowiredClassMethodOrPropertyAnalyzer $autowiredClassMethodOrPropertyAnalyzer, \Rector\DowngradePhp72\NodeAnalyzer\BuiltInMethodAnalyzer $builtInMethodAnalyzer, \Rector\DowngradePhp72\NodeAnalyzer\OverrideFromAnonymousClassMethodAnalyzer $overrideFromAnonymousClassMethodAnalyzer, \Rector\DowngradePhp72\NodeAnalyzer\SealedClassAnalyzer $sealedClassAnalyzer)
     {
-        $this->phpDocTypeChanger = $phpDocTypeChanger;
+        $this->nativeParamToPhpDocDecorator = $nativeParamToPhpDocDecorator;
+        $this->reflectionResolver = $reflectionResolver;
+        $this->autowiredClassMethodOrPropertyAnalyzer = $autowiredClassMethodOrPropertyAnalyzer;
+        $this->builtInMethodAnalyzer = $builtInMethodAnalyzer;
+        $this->overrideFromAnonymousClassMethodAnalyzer = $overrideFromAnonymousClassMethodAnalyzer;
+        $this->sealedClassAnalyzer = $sealedClassAnalyzer;
     }
-
-    public function getRuleDefinition(): RuleDefinition
+    public function getRuleDefinition() : \Symplify\RuleDocGenerator\ValueObject\RuleDefinition
     {
-        return new RuleDefinition(
-            'Remove argument type declarations in the parent and in all child classes, whenever some child class removes it',
-            [
-                new CodeSample(
-                    <<<'CODE_SAMPLE'
-interface A
+        return new \Symplify\RuleDocGenerator\ValueObject\RuleDefinition('Change param type to match the lowest type in whole family tree', [new \Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample(<<<'CODE_SAMPLE'
+interface SomeInterface
 {
     public function test(array $input);
 }
 
-class B implements A
+final class SomeClass implements SomeInterface
 {
-    public function test($input){} // type omitted for $input
-}
-
-class C implements A
-{
-    public function test(array $input){}
-}
-CODE_SAMPLE
-                    ,
-                    <<<'CODE_SAMPLE'
-interface A
-{
-    /**
-     * @param array $input
-     */
-    public function test($input);
-}
-
-class B implements A
-{
-    public function test($input){} // type omitted for $input
-}
-
-class C implements A
-{
-    /**
-     * @param array $input
-     */
-    public function test($input);
-}
-CODE_SAMPLE
-            ),
-            ]);
+    public function test($input)
+    {
     }
+}
+CODE_SAMPLE
+, <<<'CODE_SAMPLE'
+interface SomeInterface
+{
+    /**
+     * @param mixed[] $input
+     */
+    public function test($input);
+}
 
+final class SomeClass implements SomeInterface
+{
+    public function test($input)
+    {
+    }
+}
+CODE_SAMPLE
+, [self::SAFE_TYPES => [], self::SAFE_TYPES_TO_METHODS => []])]);
+    }
     /**
      * @return array<class-string<Node>>
      */
-    public function getNodeTypes(): array
+    public function getNodeTypes() : array
     {
-        return [Function_::class, ClassMethod::class];
+        return [\PhpParser\Node\Stmt\ClassMethod::class];
     }
-
     /**
-     * @param ClassMethod|Function_ $node
+     * @param ClassMethod $node
      */
-    public function refactor(Node $node): ?Node
+    public function refactor(\PhpParser\Node $node) : ?\PhpParser\Node
     {
-        if ($node->params === null) {
+        $classLike = $this->betterNodeFinder->findParentType($node, \PhpParser\Node\Stmt\ClassLike::class);
+        if (!$classLike instanceof \PhpParser\Node\Stmt\ClassLike) {
             return null;
         }
-        if ($node->params === []) {
+        $ancestorOverridableAnonymousClass = $this->overrideFromAnonymousClassMethodAnalyzer->matchAncestorClassReflectionOverrideable($classLike, $node);
+        if ($ancestorOverridableAnonymousClass instanceof \PHPStan\Reflection\ClassReflection) {
+            return $this->processRemoveParamTypeFromMethod($ancestorOverridableAnonymousClass, $node);
+        }
+        $classReflection = $this->reflectionResolver->resolveClassAndAnonymousClass($classLike);
+        if (!$classReflection instanceof \PHPStan\Reflection\ClassReflection) {
+            throw new \Rector\Core\Exception\ShouldNotHappenException();
+        }
+        return $this->processRemoveParamTypeFromMethod($classReflection, $node);
+    }
+    /**
+     * @param array<string, mixed> $configuration
+     */
+    public function configure(array $configuration) : void
+    {
+        $safeTypes = $configuration[self::SAFE_TYPES] ?? [];
+        \RectorPrefix20211107\Webmozart\Assert\Assert::isArray($safeTypes);
+        \RectorPrefix20211107\Webmozart\Assert\Assert::allString($safeTypes);
+        $this->safeTypes = $safeTypes;
+        $safeTypesToMethods = $configuration[self::SAFE_TYPES_TO_METHODS] ?? [];
+        \RectorPrefix20211107\Webmozart\Assert\Assert::isArray($safeTypesToMethods);
+        foreach ($safeTypesToMethods as $key => $value) {
+            \RectorPrefix20211107\Webmozart\Assert\Assert::string($key);
+            \RectorPrefix20211107\Webmozart\Assert\Assert::allString($value);
+        }
+        $this->safeTypesToMethods = $safeTypesToMethods;
+    }
+    private function shouldSkip(\PHPStan\Reflection\ClassReflection $classReflection, \PhpParser\Node\Stmt\ClassMethod $classMethod) : bool
+    {
+        if ($classMethod->params === []) {
+            return \true;
+        }
+        if ($classMethod->isPrivate()) {
+            return \true;
+        }
+        if ($classMethod->isMagic()) {
+            return \true;
+        }
+        if ($this->sealedClassAnalyzer->isSealedClass($classReflection)) {
+            return \true;
+        }
+        if ($this->autowiredClassMethodOrPropertyAnalyzer->detect($classMethod)) {
+            return \true;
+        }
+        if ($this->hasParamAlreadyNonTyped($classMethod)) {
+            return \true;
+        }
+        return $this->isSafeType($classReflection, $classMethod);
+    }
+    private function processRemoveParamTypeFromMethod(\PHPStan\Reflection\ClassReflection $classReflection, \PhpParser\Node\Stmt\ClassMethod $classMethod) : ?\PhpParser\Node\Stmt\ClassMethod
+    {
+        if ($this->shouldSkip($classReflection, $classMethod)) {
             return null;
         }
-        foreach ($node->params as $position => $param) {
-            $this->refactorParamForAncestorsAndSiblings($param, $node, (int) $position);
+        if ($this->builtInMethodAnalyzer->isImplementsBuiltInInterface($classReflection, $classMethod)) {
+            return null;
         }
-
-        return null;
+        // Downgrade every scalar parameter, just to be sure
+        foreach (\array_keys($classMethod->params) as $paramPosition) {
+            $this->removeParamTypeFromMethod($classMethod, $paramPosition);
+        }
+        return $classMethod;
     }
-
-    private function refactorParamForAncestorsAndSiblings(Param $param, FunctionLike $functionLike, int $position): void
+    private function removeParamTypeFromMethod(\PhpParser\Node\Stmt\ClassMethod $classMethod, int $paramPosition) : void
     {
-        // The param on the child class must have no type
-        if ($param->type !== null) {
+        $param = $classMethod->params[$paramPosition] ?? null;
+        if (!$param instanceof \PhpParser\Node\Param) {
             return;
         }
-
-        $scope = $functionLike->getAttribute(AttributeKey::SCOPE);
-        if (! $scope instanceof Scope) {
-            // possibly trait
-            return;
-        }
-
-        $classReflection = $scope->getClassReflection();
-        if (! $classReflection instanceof ClassReflection) {
-            return;
-        }
-
-        /** @var string $methodName */
-        $methodName = $this->getName($functionLike);
-        $paramName = $this->getName($param);
-
-        // Obtain the list of the ancestors classes and implemented interfaces
-        // with a different signature
-        /** @var ClassLike[] $ancestorAndInterfaces */
-        $ancestorAndInterfaces = array_merge(
-            $this->getClassesWithDifferentSignature($classReflection, $methodName, $paramName),
-            $this->getInterfacesWithDifferentSignature($classReflection, $methodName, $paramName)
-        );
-
-        // Remove the types in:
-        // - all ancestors + their descendant classes
-        // - all implemented interfaces + their implementing classes
-        foreach ($ancestorAndInterfaces as $ancestorAndInterface) {
-            /** @var string $parentClassName */
-            $parentClassName = $ancestorAndInterface->getAttribute(AttributeKey::CLASS_NAME);
-            $classMethod = $this->nodeRepository->findClassMethod($parentClassName, $methodName);
-            /**
-             * If it doesn't find the method, it's because the method
-             * lives somewhere else.
-             * For instance, in test "interface_on_parent_class.php.inc",
-             * the ancestor abstract class is also retrieved
-             * as containing the method, but it does not: it is
-             * in its implemented interface. That happens because
-             * `ReflectionMethod` doesn't allow to do do the distinction.
-             * The interface is also retrieve though, so that method
-             * will eventually be refactored.
-             */
-            if (! $classMethod instanceof ClassMethod) {
-                continue;
-            }
-            $this->removeParamTypeFromMethod($ancestorAndInterface, $position, $classMethod);
-            $this->removeParamTypeFromMethodForChildren($parentClassName, $methodName, $position);
-        }
-    }
-
-    /**
-     * Obtain the list of the ancestors classes with a different signature
-     * @return Class_[]
-     */
-    private function getClassesWithDifferentSignature(
-        ClassReflection $classReflection,
-        string $methodName,
-        string $paramName
-    ): array {
-        // 1. All ancestor classes with different signature
-        $ancestorClassReflections = array_filter(
-            $classReflection->getParents(),
-            function (ClassReflection $classReflection) use ($methodName, $paramName): bool {
-                return $this->hasMethodWithTypedParam($classReflection, $methodName, $paramName);
-            }
-        );
-
-        $classes = [];
-        foreach ($ancestorClassReflections as $ancestorClassReflection) {
-            $class = $this->nodeRepository->findClass($ancestorClassReflection->getName());
-            if (! $class instanceof Class_) {
-                continue;
-            }
-
-            $classes[] = $class;
-        }
-
-        return $classes;
-    }
-
-    /**
-     * Obtain the list of the implemented interfaces with a different signature
-     * @return Interface_[]
-     */
-    private function getInterfacesWithDifferentSignature(
-        ClassReflection $classReflection,
-        string $methodName,
-        string $paramName
-    ): array {
-        $interfaceClassReflections = array_filter(
-            $classReflection->getInterfaces(),
-            function (ClassReflection $interfaceReflection) use ($methodName, $paramName): bool {
-                return $this->hasMethodWithTypedParam($interfaceReflection, $methodName, $paramName);
-            }
-        );
-
-        $interfaces = [];
-        foreach ($interfaceClassReflections as $interfaceClassReflection) {
-            $interface = $this->nodeRepository->findInterface($interfaceClassReflection->getName());
-            if (! $interface instanceof Interface_) {
-                continue;
-            }
-
-            $interfaces[] = $interface;
-        }
-
-        return $interfaces;
-    }
-
-    private function removeParamTypeFromMethod(
-        ClassLike $classLike,
-        int $position,
-        ClassMethod $classMethod
-    ): void {
-        $classMethodName = $this->getName($classMethod);
-        $currentClassMethod = $classLike->getMethod($classMethodName);
-        if (! $currentClassMethod instanceof ClassMethod) {
-            return;
-        }
-
-        if (! isset($currentClassMethod->params[$position])) {
-            return;
-        }
-
-        $param = $currentClassMethod->params[$position];
-
-        // It already has no type => nothing to do
-        if ($param->type === null) {
-            return;
-        }
-
         // Add the current type in the PHPDoc
-        $this->addPHPDocParamTypeToMethod($classMethod, $param);
-
-        // Remove the type
+        $this->nativeParamToPhpDocDecorator->decorate($classMethod, $param);
         $param->type = null;
     }
-
-    private function removeParamTypeFromMethodForChildren(
-        string $parentClassName,
-        string $methodName,
-        int $position
-    ): void {
-        $childrenClassLikes = $this->nodeRepository->findClassesAndInterfacesByType($parentClassName);
-        foreach ($childrenClassLikes as $childClassLike) {
-            $childClassName = $childClassLike->getAttribute(AttributeKey::CLASS_NAME);
-            if ($childClassName === null) {
-                continue;
-            }
-            $childClassMethod = $this->nodeRepository->findClassMethod($childClassName, $methodName);
-            if (! $childClassMethod instanceof ClassMethod) {
-                continue;
-            }
-            $this->removeParamTypeFromMethod($childClassLike, $position, $childClassMethod);
-        }
-    }
-
-    private function hasMethodWithTypedParam(
-        ClassReflection $classReflection,
-        string $methodName,
-        string $paramName
-    ): bool {
-        if (! $classReflection->hasMethod($methodName)) {
-            return false;
-        }
-
-        $reflectionClass = $classReflection->getNativeReflection();
-        $reflectionMethodReflection = $reflectionClass->getMethod($methodName);
-
-        foreach ($reflectionMethodReflection->getParameters() as $reflectionParameter) {
-            if ($reflectionParameter->getName() !== $paramName) {
-                continue;
-            }
-
-            if ($reflectionParameter->getType() !== null) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Add the current param type in the PHPDoc
-     */
-    private function addPHPDocParamTypeToMethod(ClassMethod $classMethod, Param $param): void
+    private function hasParamAlreadyNonTyped(\PhpParser\Node\Stmt\ClassMethod $classMethod) : bool
     {
-        if ($param->type === null) {
-            return;
+        foreach ($classMethod->params as $param) {
+            if ($param->type !== null) {
+                return \false;
+            }
         }
-
-        $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($classMethod);
-
-        $paramName = $this->getName($param);
-        $mappedCurrentParamType = $this->staticTypeMapper->mapPhpParserNodePHPStanType($param->type);
-        $this->phpDocTypeChanger->changeParamType($phpDocInfo, $mappedCurrentParamType, $param, $paramName);
+        return \true;
+    }
+    private function isSafeType(\PHPStan\Reflection\ClassReflection $classReflection, \PhpParser\Node\Stmt\ClassMethod $classMethod) : bool
+    {
+        $classReflectionName = $classReflection->getName();
+        foreach ($this->safeTypes as $safeType) {
+            if ($classReflection->isSubclassOf($safeType)) {
+                return \true;
+            }
+            // skip self too
+            if ($classReflectionName === $safeType) {
+                return \true;
+            }
+        }
+        foreach ($this->safeTypesToMethods as $safeType => $safeMethods) {
+            if (!$this->isNames($classMethod, $safeMethods)) {
+                continue;
+            }
+            if ($classReflection->isSubclassOf($safeType)) {
+                return \true;
+            }
+            // skip self too
+            if ($classReflectionName === $safeType) {
+                return \true;
+            }
+        }
+        return \false;
     }
 }

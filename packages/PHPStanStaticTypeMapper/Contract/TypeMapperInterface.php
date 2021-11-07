@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\PHPStanStaticTypeMapper\Contract;
 
 use PhpParser\Node;
@@ -10,17 +9,25 @@ use PhpParser\Node\NullableType;
 use PhpParser\Node\UnionType;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use PHPStan\Type\Type;
-
+use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
+/**
+ * @template T of Type
+ */
 interface TypeMapperInterface
 {
-    public function getNodeClass(): string;
-
-    public function mapToPHPStanPhpDocTypeNode(Type $type): TypeNode;
-
     /**
-     * @return Name|NullableType|UnionType|null
+     * @return class-string<Type>
      */
-    public function mapToPhpParserNode(Type $type, ?string $kind = null): ?Node;
-
-    public function mapToDocString(Type $type, ?Type $parentType = null): string;
+    public function getNodeClass() : string;
+    /**
+     * @param \PHPStan\Type\Type $type
+     * @param \Rector\PHPStanStaticTypeMapper\Enum\TypeKind $typeKind
+     */
+    public function mapToPHPStanPhpDocTypeNode($type, $typeKind) : \PHPStan\PhpDocParser\Ast\Type\TypeNode;
+    /**
+     * @param \PHPStan\Type\Type $type
+     * @return Name|NullableType|UnionType|null
+     * @param \Rector\PHPStanStaticTypeMapper\Enum\TypeKind $typeKind
+     */
+    public function mapToPhpParserNode($type, $typeKind) : ?\PhpParser\Node;
 }

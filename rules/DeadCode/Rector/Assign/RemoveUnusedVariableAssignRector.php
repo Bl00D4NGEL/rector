@@ -1,29 +1,66 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\DeadCode\Rector\Assign;
 
 use PhpParser\Node;
+use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Assign;
+use PhpParser\Node\Expr\FuncCall;
+use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\New_;
+use PhpParser\Node\Expr\NullsafeMethodCall;
+use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\FunctionLike;
+use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
+use PhpParser\Node\Stmt\If_;
+use Rector\Core\Php\ReservedKeywordAnalyzer;
+use Rector\Core\PhpParser\Comparing\ConditionSearcher;
 use Rector\Core\Rector\AbstractRector;
+use Rector\DeadCode\NodeAnalyzer\ExprUsedInNextNodeAnalyzer;
+use Rector\DeadCode\NodeAnalyzer\UsedVariableNameAnalyzer;
+use Rector\DeadCode\SideEffect\SideEffectNodeDetector;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-
 /**
  * @see \Rector\Tests\DeadCode\Rector\Assign\RemoveUnusedVariableAssignRector\RemoveUnusedVariableAssignRectorTest
  */
-final class RemoveUnusedVariableAssignRector extends AbstractRector
+final class RemoveUnusedVariableAssignRector extends \Rector\Core\Rector\AbstractRector
 {
-    public function getRuleDefinition(): RuleDefinition
+    /**
+     * @var \Rector\Core\Php\ReservedKeywordAnalyzer
+     */
+    private $reservedKeywordAnalyzer;
+    /**
+     * @var \Rector\Core\PhpParser\Comparing\ConditionSearcher
+     */
+    private $conditionSearcher;
+    /**
+     * @var \Rector\DeadCode\NodeAnalyzer\UsedVariableNameAnalyzer
+     */
+    private $usedVariableNameAnalyzer;
+    /**
+     * @var \Rector\DeadCode\SideEffect\SideEffectNodeDetector
+     */
+    private $sideEffectNodeDetector;
+    /**
+     * @var \Rector\DeadCode\NodeAnalyzer\ExprUsedInNextNodeAnalyzer
+     */
+    private $exprUsedInNextNodeAnalyzer;
+    public function __construct(\Rector\Core\Php\ReservedKeywordAnalyzer $reservedKeywordAnalyzer, \Rector\Core\PhpParser\Comparing\ConditionSearcher $conditionSearcher, \Rector\DeadCode\NodeAnalyzer\UsedVariableNameAnalyzer $usedVariableNameAnalyzer, \Rector\DeadCode\SideEffect\SideEffectNodeDetector $sideEffectNodeDetector, \Rector\DeadCode\NodeAnalyzer\ExprUsedInNextNodeAnalyzer $exprUsedInNextNodeAnalyzer)
     {
-        return new RuleDefinition('Remove unused assigns to variables', [
-            new CodeSample(
-                <<<'CODE_SAMPLE'
+        $this->reservedKeywordAnalyzer = $reservedKeywordAnalyzer;
+        $this->conditionSearcher = $conditionSearcher;
+        $this->usedVariableNameAnalyzer = $usedVariableNameAnalyzer;
+        $this->sideEffectNodeDetector = $sideEffectNodeDetector;
+        $this->exprUsedInNextNodeAnalyzer = $exprUsedInNextNodeAnalyzer;
+    }
+    public function getRuleDefinition() : \Symplify\RuleDocGenerator\ValueObject\RuleDefinition
+    {
+        return new \Symplify\RuleDocGenerator\ValueObject\RuleDefinition('Remove unused assigns to variables', [new \Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample(<<<'CODE_SAMPLE'
 class SomeClass
 {
     public function run()
@@ -32,8 +69,7 @@ class SomeClass
     }
 }
 CODE_SAMPLE
-,
-                <<<'CODE_SAMPLE'
+, <<<'CODE_SAMPLE'
 class SomeClass
 {
     public function run()
@@ -41,61 +77,112 @@ class SomeClass
     }
 }
 CODE_SAMPLE
-            ),
-        ]);
+)]);
     }
-
     /**
      * @return array<class-string<Node>>
      */
-    public function getNodeTypes(): array
+    public function getNodeTypes() : array
     {
-        return [Assign::class];
+        return [\PhpParser\Node\Expr\Assign::class];
     }
-
     /**
      * @param Assign $node
      */
-    public function refactor(Node $node): ?Node
+    public function refactor(\PhpParser\Node $node) : ?\PhpParser\Node
     {
-        $classMethod = $node->getAttribute(AttributeKey::METHOD_NODE);
-        if (! $classMethod instanceof FunctionLike) {
+        if ($this->shouldSkip($node)) {
             return null;
         }
-
-        if (! $node->var instanceof Variable) {
+        $variable = $node->var;
+        if (!$variable instanceof \PhpParser\Node\Expr\Variable) {
             return null;
         }
-
+        $variableName = $this->getName($variable);
+        if ($variableName !== null && $this->reservedKeywordAnalyzer->isNativeVariable($variableName)) {
+            return null;
+        }
         // variable is used
-        $variableUsages = $this->findVariableUsages($classMethod, $node);
-        if ($variableUsages !== []) {
+        if ($this->isUsed($node, $variable)) {
+            return $this->refactorUsedVariable($node);
+        }
+        $parentNode = $node->getAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::PARENT_NODE);
+        if (!$parentNode instanceof \PhpParser\Node\Stmt\Expression) {
             return null;
         }
-
-        $parentNode = $node->getAttribute(AttributeKey::PARENT_NODE);
-        if (! $parentNode instanceof Expression) {
-            return null;
+        if ($this->sideEffectNodeDetector->detectCallExpr($node->expr)) {
+            // keep the expr, can have side effect
+            return $node->expr;
         }
-
         $this->removeNode($node);
         return $node;
     }
-
-    /**
-     * @return Variable[]
-     */
-    private function findVariableUsages(FunctionLike $functionLike, Assign $assign): array
+    private function shouldSkip(\PhpParser\Node\Expr\Assign $assign) : bool
     {
-        return $this->betterNodeFinder->find((array) $functionLike->getStmts(), function (Node $node) use (
-            $assign
-        ): bool {
-            if (! $node instanceof Variable) {
-                return false;
-            }
-
-            // skip assign value
-            return $assign->var !== $node;
+        $classMethod = $this->betterNodeFinder->findParentType($assign, \PhpParser\Node\Stmt\ClassMethod::class);
+        if (!$classMethod instanceof \PhpParser\Node\FunctionLike) {
+            return \true;
+        }
+        $variable = $assign->var;
+        if (!$variable instanceof \PhpParser\Node\Expr\Variable) {
+            return \true;
+        }
+        return $variable->name instanceof \PhpParser\Node\Expr\Variable && $this->betterNodeFinder->findFirstNext($assign, function (\PhpParser\Node $node) : bool {
+            return $node instanceof \PhpParser\Node\Expr\Variable;
         });
+    }
+    private function isUsed(\PhpParser\Node\Expr\Assign $assign, \PhpParser\Node\Expr\Variable $variable) : bool
+    {
+        $isUsedPrev = (bool) $this->betterNodeFinder->findFirstPreviousOfNode($variable, function (\PhpParser\Node $node) use($variable) : bool {
+            return $this->usedVariableNameAnalyzer->isVariableNamed($node, $variable);
+        });
+        if ($isUsedPrev) {
+            return \true;
+        }
+        if ($this->exprUsedInNextNodeAnalyzer->isUsed($variable)) {
+            return \true;
+        }
+        /** @var FuncCall|MethodCall|New_|NullsafeMethodCall|StaticCall $expr */
+        $expr = $assign->expr;
+        if (!$this->sideEffectNodeDetector->detectCallExpr($expr)) {
+            return \false;
+        }
+        return $this->isUsedInAssignExpr($expr, $assign);
+    }
+    /**
+     * @param \PhpParser\Node\Expr\FuncCall|\PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\New_|\PhpParser\Node\Expr\NullsafeMethodCall|\PhpParser\Node\Expr\StaticCall $expr
+     */
+    private function isUsedInAssignExpr($expr, \PhpParser\Node\Expr\Assign $assign) : bool
+    {
+        foreach ($expr->args as $arg) {
+            if (!$arg instanceof \PhpParser\Node\Arg) {
+                continue;
+            }
+            $variable = $arg->value;
+            if (!$variable instanceof \PhpParser\Node\Expr\Variable) {
+                continue;
+            }
+            $previousAssign = $this->betterNodeFinder->findFirstPreviousOfNode($assign, function (\PhpParser\Node $node) use($variable) : bool {
+                return $node instanceof \PhpParser\Node\Expr\Assign && $this->usedVariableNameAnalyzer->isVariableNamed($node->var, $variable);
+            });
+            if ($previousAssign instanceof \PhpParser\Node\Expr\Assign) {
+                return $this->isUsed($assign, $variable);
+            }
+        }
+        return \false;
+    }
+    private function refactorUsedVariable(\PhpParser\Node\Expr\Assign $assign) : ?\PhpParser\Node\Expr\Assign
+    {
+        $parentNode = $assign->getAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::PARENT_NODE);
+        $if = $parentNode->getAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::NEXT_NODE);
+        // check if next node is if
+        if (!$if instanceof \PhpParser\Node\Stmt\If_) {
+            return null;
+        }
+        if ($this->conditionSearcher->hasIfAndElseForVariableRedeclaration($assign, $if)) {
+            $this->removeNode($assign);
+            return $assign;
+        }
+        return null;
     }
 }

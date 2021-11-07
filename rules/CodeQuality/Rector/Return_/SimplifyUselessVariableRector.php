@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\CodeQuality\Rector\Return_;
 
 use PhpParser\Node;
@@ -9,158 +8,159 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\AssignOp;
 use PhpParser\Node\Expr\Variable;
+use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Return_;
 use PHPStan\Type\MixedType;
+use Rector\Core\NodeAnalyzer\CallAnalyzer;
+use Rector\Core\NodeAnalyzer\VariableAnalyzer;
 use Rector\Core\PhpParser\Node\AssignAndBinaryMap;
 use Rector\Core\Rector\AbstractRector;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-
 /**
  * @see Based on https://github.com/slevomat/coding-standard/blob/master/SlevomatCodingStandard/Sniffs/Variables/UselessVariableSniff.php
  * @see \Rector\Tests\CodeQuality\Rector\Return_\SimplifyUselessVariableRector\SimplifyUselessVariableRectorTest
  */
-final class SimplifyUselessVariableRector extends AbstractRector
+final class SimplifyUselessVariableRector extends \Rector\Core\Rector\AbstractRector
 {
     /**
-     * @var AssignAndBinaryMap
+     * @var \Rector\Core\PhpParser\Node\AssignAndBinaryMap
      */
     private $assignAndBinaryMap;
-
-    public function __construct(AssignAndBinaryMap $assignAndBinaryMap)
+    /**
+     * @var \Rector\Core\NodeAnalyzer\VariableAnalyzer
+     */
+    private $variableAnalyzer;
+    /**
+     * @var \Rector\Core\NodeAnalyzer\CallAnalyzer
+     */
+    private $callAnalyzer;
+    public function __construct(\Rector\Core\PhpParser\Node\AssignAndBinaryMap $assignAndBinaryMap, \Rector\Core\NodeAnalyzer\VariableAnalyzer $variableAnalyzer, \Rector\Core\NodeAnalyzer\CallAnalyzer $callAnalyzer)
     {
         $this->assignAndBinaryMap = $assignAndBinaryMap;
+        $this->variableAnalyzer = $variableAnalyzer;
+        $this->callAnalyzer = $callAnalyzer;
     }
-
-    public function getRuleDefinition(): RuleDefinition
+    public function getRuleDefinition() : \Symplify\RuleDocGenerator\ValueObject\RuleDefinition
     {
-        return new RuleDefinition('Removes useless variable assigns', [
-            new CodeSample(
-                <<<'CODE_SAMPLE'
+        return new \Symplify\RuleDocGenerator\ValueObject\RuleDefinition('Removes useless variable assigns', [new \Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample(<<<'CODE_SAMPLE'
 function () {
     $a = true;
     return $a;
 };
 CODE_SAMPLE
-                ,
-                <<<'CODE_SAMPLE'
+, <<<'CODE_SAMPLE'
 function () {
     return true;
 };
 CODE_SAMPLE
-            ),
-        ]);
+)]);
     }
-
     /**
      * @return array<class-string<Node>>
      */
-    public function getNodeTypes(): array
+    public function getNodeTypes() : array
     {
-        return [Return_::class];
+        return [\PhpParser\Node\Stmt\Return_::class];
     }
-
     /**
      * @param Return_ $node
      */
-    public function refactor(Node $node): ?Node
+    public function refactor(\PhpParser\Node $node) : ?\PhpParser\Node
     {
         if ($this->shouldSkip($node)) {
             return null;
         }
-
-        $previousNode = $node->getAttribute(AttributeKey::PREVIOUS_NODE);
-        if (! $previousNode instanceof Expression) {
-            return null;
-        }
-
-        /** @var AssignOp|Assign $previousNode */
-        $previousNode = $previousNode->expr;
+        /** @var Expression $previousExpression */
+        $previousExpression = $node->getAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::PREVIOUS_NODE);
+        /** @var Assign|AssignOp $previousNode */
+        $previousNode = $previousExpression->expr;
         $previousVariableNode = $previousNode->var;
-
         if ($this->hasSomeComment($previousVariableNode)) {
             return null;
         }
-
-        if ($previousNode instanceof Assign) {
+        if ($previousNode instanceof \PhpParser\Node\Expr\Assign) {
             if ($this->isReturnWithVarAnnotation($node)) {
                 return null;
             }
-
             $node->expr = $previousNode->expr;
         }
-
-        if ($previousNode instanceof AssignOp) {
+        if ($previousNode instanceof \PhpParser\Node\Expr\AssignOp) {
             $binaryClass = $this->assignAndBinaryMap->getAlternative($previousNode);
             if ($binaryClass === null) {
                 return null;
             }
-
             $node->expr = new $binaryClass($previousNode->var, $previousNode->expr);
         }
-
         $this->removeNode($previousNode);
-
         return $node;
     }
-
-    private function shouldSkip(Return_ $return): bool
+    private function hasByRefReturn(\PhpParser\Node\Stmt\Return_ $return) : bool
     {
-        if (! $return->expr instanceof Variable) {
-            return true;
+        $node = $return;
+        while ($node = $node->getAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::PARENT_NODE)) {
+            if ($node instanceof \PhpParser\Node\FunctionLike) {
+                return $node->returnsByRef();
+            }
         }
-
+        return \false;
+    }
+    private function shouldSkip(\PhpParser\Node\Stmt\Return_ $return) : bool
+    {
+        if (!$return->expr instanceof \PhpParser\Node\Expr\Variable) {
+            return \true;
+        }
+        if ($this->hasByRefReturn($return)) {
+            return \true;
+        }
+        /** @var Variable $variableNode */
         $variableNode = $return->expr;
-
-        $previousExpression = $return->getAttribute(AttributeKey::PREVIOUS_NODE);
-        if (! $previousExpression instanceof Node) {
-            return true;
+        $previousExpression = $return->getAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::PREVIOUS_NODE);
+        if (!$previousExpression instanceof \PhpParser\Node\Stmt\Expression) {
+            return \true;
         }
-        if (! $previousExpression instanceof Expression) {
-            return true;
-        }
-
         // is variable part of single assign
         $previousNode = $previousExpression->expr;
-        if (! $previousNode instanceof AssignOp && ! $previousNode instanceof Assign) {
-            return true;
+        if (!$previousNode instanceof \PhpParser\Node\Expr\AssignOp && !$previousNode instanceof \PhpParser\Node\Expr\Assign) {
+            return \true;
         }
-
         // is the same variable
-        if (! $this->nodeComparator->areNodesEqual($previousNode->var, $variableNode)) {
-            return true;
+        if (!$this->nodeComparator->areNodesEqual($previousNode->var, $variableNode)) {
+            return \true;
         }
-        return $this->isPreviousExpressionVisuallySimilar($previousExpression, $previousNode);
+        if ($this->isPreviousExpressionVisuallySimilar($previousExpression, $previousNode)) {
+            return \true;
+        }
+        if ($this->variableAnalyzer->isStaticOrGlobal($variableNode)) {
+            return \true;
+        }
+        return $this->callAnalyzer->isNewInstance($previousNode->var);
     }
-
-    private function hasSomeComment(Expr $expr): bool
+    private function hasSomeComment(\PhpParser\Node\Expr $expr) : bool
     {
         if ($expr->getComments() !== []) {
-            return true;
+            return \true;
         }
-
         return $expr->getDocComment() !== null;
     }
-
-    private function isReturnWithVarAnnotation(Return_ $return): bool
+    private function isReturnWithVarAnnotation(\PhpParser\Node\Stmt\Return_ $return) : bool
     {
         $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($return);
-        return ! $phpDocInfo->getVarType() instanceof MixedType;
+        return !$phpDocInfo->getVarType() instanceof \PHPStan\Type\MixedType;
     }
-
     /**
-     * @param AssignOp|Assign $previousNode
+     * @param \PhpParser\Node\Expr\Assign|\PhpParser\Node\Expr\AssignOp $previousNode
      */
-    private function isPreviousExpressionVisuallySimilar(Expression $previousExpression, Node $previousNode): bool
+    private function isPreviousExpressionVisuallySimilar(\PhpParser\Node\Stmt\Expression $previousExpression, $previousNode) : bool
     {
-        $prePreviousExpression = $previousExpression->getAttribute(AttributeKey::PREVIOUS_STATEMENT);
-        if (! $prePreviousExpression instanceof Expression) {
-            return false;
+        $prePreviousExpression = $previousExpression->getAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::PREVIOUS_STATEMENT);
+        if (!$prePreviousExpression instanceof \PhpParser\Node\Stmt\Expression) {
+            return \false;
         }
-        if (! $prePreviousExpression->expr instanceof AssignOp) {
-            return false;
+        if (!$prePreviousExpression->expr instanceof \PhpParser\Node\Expr\AssignOp) {
+            return \false;
         }
         return $this->nodeComparator->areNodesEqual($prePreviousExpression->expr->var, $previousNode->var);
     }

@@ -1,155 +1,101 @@
 <?php
 
-declare(strict_types=1);
+declare (strict_types=1);
+namespace RectorPrefix20211107;
 
-use Composer\Semver\VersionParser;
-use Doctrine\Common\Annotations\Reader;
-use Doctrine\Inflector\Inflector;
-use Doctrine\Inflector\Rules\English\InflectorFactory;
+use RectorPrefix20211107\Composer\Semver\VersionParser;
+use RectorPrefix20211107\Doctrine\Inflector\Inflector;
+use RectorPrefix20211107\Doctrine\Inflector\Rules\English\InflectorFactory;
+use RectorPrefix20211107\Ergebnis\Json\Printer\Printer;
+use RectorPrefix20211107\Ergebnis\Json\Printer\PrinterInterface;
+use RectorPrefix20211107\Idiosyncratic\EditorConfig\EditorConfig;
 use PhpParser\BuilderFactory;
 use PhpParser\Lexer;
 use PhpParser\NodeFinder;
 use PhpParser\NodeVisitor\CloningVisitor;
 use PhpParser\NodeVisitor\NodeConnectingVisitor;
-use PhpParser\Parser;
 use PhpParser\ParserFactory;
 use PHPStan\Analyser\NodeScopeResolver;
 use PHPStan\Analyser\ScopeFactory;
 use PHPStan\Dependency\DependencyResolver;
 use PHPStan\File\FileHelper;
+use PHPStan\Parser\Parser;
 use PHPStan\PhpDoc\TypeNodeResolver;
 use PHPStan\PhpDocParser\Parser\PhpDocParser;
+use PHPStan\PhpDocParser\Parser\TypeParser;
 use PHPStan\Reflection\ReflectionProvider;
-use Psr\Cache\CacheItemPoolInterface;
-use Psr\SimpleCache\CacheInterface;
 use Rector\BetterPhpDocParser\PhpDocParser\BetterPhpDocParser;
-use Rector\Caching\Cache\Adapter\FilesystemAdapterFactory;
-use Rector\Core\Bootstrap\NoRectorsLoadedReporter;
+use Rector\BetterPhpDocParser\PhpDocParser\BetterTypeParser;
+use Rector\Caching\Cache;
+use Rector\Caching\CacheFactory;
 use Rector\Core\Console\ConsoleApplication;
-use Rector\Core\PhpParser\Parser\NikicPhpParserFactory;
-use Rector\Core\PhpParser\Parser\PhpParserLexerFactory;
-use Rector\DoctrineAnnotationGenerated\ConstantPreservingAnnotationReader;
 use Rector\NodeTypeResolver\DependencyInjection\PHPStanServicesFactory;
 use Rector\NodeTypeResolver\Reflection\BetterReflection\SourceLocator\IntermediateSourceLocator;
 use Rector\NodeTypeResolver\Reflection\BetterReflection\SourceLocatorProvider\DynamicSourceLocatorProvider;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
-use Symfony\Component\Cache\Adapter\TagAwareAdapter;
-use Symfony\Component\Cache\Adapter\TagAwareAdapterInterface;
-use Symfony\Component\Cache\Psr16Cache;
-use Symfony\Component\Console\Application as SymfonyApplication;
-use Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix20211107\Symfony\Component\Console\Application;
+use RectorPrefix20211107\Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
-use Symplify\Astral\NodeTraverser\SimpleCallableNodeTraverser;
-use Symplify\PackageBuilder\Console\Command\CommandNaming;
-use Symplify\PackageBuilder\Console\Style\SymfonyStyleFactory;
-use Symplify\PackageBuilder\Parameter\ParameterProvider;
-use Symplify\PackageBuilder\Php\TypeChecker;
-use Symplify\PackageBuilder\Reflection\PrivatesAccessor;
-use Symplify\PackageBuilder\Reflection\PrivatesCaller;
-use Symplify\PackageBuilder\Strings\StringFormatConverter;
-use Symplify\SmartFileSystem\FileSystemFilter;
-use Symplify\SmartFileSystem\FileSystemGuard;
-use Symplify\SmartFileSystem\Finder\FinderSanitizer;
-use Symplify\SmartFileSystem\Json\JsonFileSystem;
-use Symplify\SmartFileSystem\SmartFileSystem;
-
-return static function (ContainerConfigurator $containerConfigurator): void {
+use function RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\Configurator\service;
+use RectorPrefix20211107\Symplify\Astral\NodeTraverser\SimpleCallableNodeTraverser;
+use RectorPrefix20211107\Symplify\PackageBuilder\Console\Command\CommandNaming;
+use RectorPrefix20211107\Symplify\PackageBuilder\Console\Style\SymfonyStyleFactory;
+use RectorPrefix20211107\Symplify\PackageBuilder\Parameter\ParameterProvider;
+use RectorPrefix20211107\Symplify\PackageBuilder\Php\TypeChecker;
+use RectorPrefix20211107\Symplify\PackageBuilder\Reflection\PrivatesAccessor;
+use RectorPrefix20211107\Symplify\PackageBuilder\Reflection\PrivatesCaller;
+use RectorPrefix20211107\Symplify\PackageBuilder\Strings\StringFormatConverter;
+use RectorPrefix20211107\Symplify\SmartFileSystem\FileSystemFilter;
+use RectorPrefix20211107\Symplify\SmartFileSystem\FileSystemGuard;
+use RectorPrefix20211107\Symplify\SmartFileSystem\Finder\FinderSanitizer;
+use RectorPrefix20211107\Symplify\SmartFileSystem\Json\JsonFileSystem;
+use RectorPrefix20211107\Symplify\SmartFileSystem\SmartFileSystem;
+return static function (\Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator $containerConfigurator) : void {
     $services = $containerConfigurator->services();
-
-    $services->defaults()
-        ->public()
-        ->autowire()
-        ->autoconfigure();
-
-    $services->load('Rector\Core\\', __DIR__ . '/../src')
-        ->exclude([
-            __DIR__ . '/../src/Rector',
-            __DIR__ . '/../src/Exception',
-            __DIR__ . '/../src/DependencyInjection/CompilerPass',
-            __DIR__ . '/../src/DependencyInjection/Loader',
-            __DIR__ . '/../src/HttpKernel',
-            __DIR__ . '/../src/ValueObject',
-            __DIR__ . '/../src/Bootstrap',
-            __DIR__ . '/../src/PhpParser/Node/CustomNode',
-        ]);
-
-    $services->alias(SymfonyApplication::class, ConsoleApplication::class);
-
-    $services->set(FileSystemGuard::class);
-
-    $services->set(NoRectorsLoadedReporter::class);
-    $services->set(SimpleCallableNodeTraverser::class);
-
-    $services->set(ParserFactory::class);
-    $services->set(BuilderFactory::class);
-    $services->set(CloningVisitor::class);
-    $services->set(NodeFinder::class);
-
-    $services->set(Parser::class)
-        ->factory([service(NikicPhpParserFactory::class), 'create']);
-    $services->set(Lexer::class)
-        ->factory([service(PhpParserLexerFactory::class), 'create']);
-
+    $services->defaults()->public()->autowire()->autoconfigure();
+    $services->load('Rector\\Core\\', __DIR__ . '/../src')->exclude([__DIR__ . '/../src/Rector', __DIR__ . '/../src/Exception', __DIR__ . '/../src/DependencyInjection/CompilerPass', __DIR__ . '/../src/DependencyInjection/Loader', __DIR__ . '/../src/Kernel', __DIR__ . '/../src/ValueObject', __DIR__ . '/../src/Bootstrap', __DIR__ . '/../src/Enum', __DIR__ . '/../src/PhpParser/Node/CustomNode', __DIR__ . '/../src/PhpParser/ValueObject', __DIR__ . '/../src/functions', __DIR__ . '/../src/constants.php', __DIR__ . '/../src/PhpParser/NodeVisitor/CreatedByRuleNodeVisitor.php']);
+    $services->alias(\RectorPrefix20211107\Symfony\Component\Console\Application::class, \Rector\Core\Console\ConsoleApplication::class);
+    $services->set(\RectorPrefix20211107\Symplify\SmartFileSystem\FileSystemGuard::class);
+    $services->set(\RectorPrefix20211107\Symplify\Astral\NodeTraverser\SimpleCallableNodeTraverser::class);
+    $services->set(\PhpParser\ParserFactory::class);
+    $services->set(\PhpParser\BuilderFactory::class);
+    $services->set(\PhpParser\NodeVisitor\CloningVisitor::class);
+    $services->set(\PhpParser\NodeFinder::class);
+    $services->set(\PHPStan\Parser\Parser::class)->factory([\RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\Configurator\service(\Rector\NodeTypeResolver\DependencyInjection\PHPStanServicesFactory::class), 'createPHPStanParser']);
+    $services->set(\PhpParser\Lexer::class)->factory([\RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\Configurator\service(\Rector\NodeTypeResolver\DependencyInjection\PHPStanServicesFactory::class), 'createEmulativeLexer']);
     // symplify/package-builder
-    $services->set(PrivatesAccessor::class);
-    $services->set(PrivatesCaller::class);
-    $services->set(FinderSanitizer::class);
-    $services->set(FileSystemFilter::class);
-
-    $services->set(ParameterProvider::class)
-        ->arg('$container', service('service_container'));
-
-    $services->set(CommandNaming::class);
-    $services->set(SmartFileSystem::class);
-
-    $services->set(StringFormatConverter::class);
-
-    $services->set(SymfonyStyleFactory::class);
-    $services->set(SymfonyStyle::class)
-        ->factory([service(SymfonyStyleFactory::class), 'create']);
-
-    $services->set(JsonFileSystem::class);
-    $services->set(NodeConnectingVisitor::class);
-
-    $services->set(InflectorFactory::class);
-    $services->set(Inflector::class)
-        ->factory([service(InflectorFactory::class), 'build']);
-
-    $services->set(VersionParser::class);
-    $services->set(TypeChecker::class);
-
+    $services->set(\RectorPrefix20211107\Symplify\PackageBuilder\Reflection\PrivatesAccessor::class);
+    $services->set(\RectorPrefix20211107\Symplify\PackageBuilder\Reflection\PrivatesCaller::class);
+    $services->set(\RectorPrefix20211107\Symplify\SmartFileSystem\Finder\FinderSanitizer::class);
+    $services->set(\RectorPrefix20211107\Symplify\SmartFileSystem\FileSystemFilter::class);
+    $services->set(\RectorPrefix20211107\Symplify\PackageBuilder\Parameter\ParameterProvider::class)->arg('$container', \RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\Configurator\service('service_container'));
+    $services->set(\RectorPrefix20211107\Symplify\PackageBuilder\Console\Command\CommandNaming::class);
+    $services->set(\RectorPrefix20211107\Symplify\SmartFileSystem\SmartFileSystem::class);
+    $services->set(\RectorPrefix20211107\Symplify\PackageBuilder\Strings\StringFormatConverter::class);
+    $services->set(\RectorPrefix20211107\Symplify\PackageBuilder\Console\Style\SymfonyStyleFactory::class);
+    $services->set(\RectorPrefix20211107\Symfony\Component\Console\Style\SymfonyStyle::class)->factory([\RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\Configurator\service(\RectorPrefix20211107\Symplify\PackageBuilder\Console\Style\SymfonyStyleFactory::class), 'create']);
+    $services->set(\RectorPrefix20211107\Symplify\SmartFileSystem\Json\JsonFileSystem::class);
+    $services->set(\PhpParser\NodeVisitor\NodeConnectingVisitor::class);
+    $services->set(\RectorPrefix20211107\Doctrine\Inflector\Rules\English\InflectorFactory::class);
+    $services->set(\RectorPrefix20211107\Doctrine\Inflector\Inflector::class)->factory([\RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\Configurator\service(\RectorPrefix20211107\Doctrine\Inflector\Rules\English\InflectorFactory::class), 'build']);
+    $services->set(\RectorPrefix20211107\Composer\Semver\VersionParser::class);
+    $services->set(\RectorPrefix20211107\Symplify\PackageBuilder\Php\TypeChecker::class);
     // phpdoc parser
     $services->set(\PHPStan\PhpDocParser\Lexer\Lexer::class);
-    $services->alias(PhpDocParser::class, BetterPhpDocParser::class);
-    $services->alias(Reader::class, ConstantPreservingAnnotationReader::class);
-
+    $services->alias(\PHPStan\PhpDocParser\Parser\PhpDocParser::class, \Rector\BetterPhpDocParser\PhpDocParser\BetterPhpDocParser::class);
     // cache
-    $services->set(DependencyResolver::class)
-        ->factory([service(PHPStanServicesFactory::class), 'createDependencyResolver']);
-    $services->set(FileHelper::class)
-        ->factory([service(PHPStanServicesFactory::class), 'createFileHelper']);
-    $services->set(Psr16Cache::class);
-    $services->alias(CacheInterface::class, Psr16Cache::class);
-    $services->set(FilesystemAdapter::class)
-        ->factory([service(FilesystemAdapterFactory::class), 'create']);
-    $services->set(TagAwareAdapter::class)
-        ->arg('$itemsPool', service(FilesystemAdapter::class));
-    $services->alias(CacheItemPoolInterface::class, FilesystemAdapter::class);
-    $services->alias(TagAwareAdapterInterface::class, TagAwareAdapter::class);
-
+    $services->set(\PHPStan\Dependency\DependencyResolver::class)->factory([\RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\Configurator\service(\Rector\NodeTypeResolver\DependencyInjection\PHPStanServicesFactory::class), 'createDependencyResolver']);
+    $services->set(\PHPStan\File\FileHelper::class)->factory([\RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\Configurator\service(\Rector\NodeTypeResolver\DependencyInjection\PHPStanServicesFactory::class), 'createFileHelper']);
+    $services->set(\Rector\Caching\Cache::class)->factory([\RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\Configurator\service(\Rector\Caching\CacheFactory::class), 'create']);
     // type resolving
-    $services->set(IntermediateSourceLocator::class);
-
+    $services->set(\Rector\NodeTypeResolver\Reflection\BetterReflection\SourceLocator\IntermediateSourceLocator::class);
+    $services->alias(\PHPStan\PhpDocParser\Parser\TypeParser::class, \Rector\BetterPhpDocParser\PhpDocParser\BetterTypeParser::class);
     // PHPStan services
-    $services->set(ReflectionProvider::class)
-        ->factory([service(PHPStanServicesFactory::class), 'createReflectionProvider']);
-    $services->set(NodeScopeResolver::class)
-        ->factory([service(PHPStanServicesFactory::class), 'createNodeScopeResolver']);
-    $services->set(ScopeFactory::class)
-        ->factory([service(PHPStanServicesFactory::class), 'createScopeFactory']);
-    $services->set(TypeNodeResolver::class)
-        ->factory([service(PHPStanServicesFactory::class), 'createTypeNodeResolver']);
-    $services->set(DynamicSourceLocatorProvider::class)
-        ->factory([service(PHPStanServicesFactory::class), 'createDynamicSourceLocatorProvider']);
+    $services->set(\PHPStan\Reflection\ReflectionProvider::class)->factory([\RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\Configurator\service(\Rector\NodeTypeResolver\DependencyInjection\PHPStanServicesFactory::class), 'createReflectionProvider']);
+    $services->set(\PHPStan\Analyser\NodeScopeResolver::class)->factory([\RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\Configurator\service(\Rector\NodeTypeResolver\DependencyInjection\PHPStanServicesFactory::class), 'createNodeScopeResolver']);
+    $services->set(\PHPStan\Analyser\ScopeFactory::class)->factory([\RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\Configurator\service(\Rector\NodeTypeResolver\DependencyInjection\PHPStanServicesFactory::class), 'createScopeFactory']);
+    $services->set(\PHPStan\PhpDoc\TypeNodeResolver::class)->factory([\RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\Configurator\service(\Rector\NodeTypeResolver\DependencyInjection\PHPStanServicesFactory::class), 'createTypeNodeResolver']);
+    $services->set(\Rector\NodeTypeResolver\Reflection\BetterReflection\SourceLocatorProvider\DynamicSourceLocatorProvider::class)->factory([\RectorPrefix20211107\Symfony\Component\DependencyInjection\Loader\Configurator\service(\Rector\NodeTypeResolver\DependencyInjection\PHPStanServicesFactory::class), 'createDynamicSourceLocatorProvider']);
+    $services->set(\RectorPrefix20211107\Ergebnis\Json\Printer\Printer::class);
+    $services->alias(\RectorPrefix20211107\Ergebnis\Json\Printer\PrinterInterface::class, \RectorPrefix20211107\Ergebnis\Json\Printer\Printer::class);
+    $services->set(\RectorPrefix20211107\Idiosyncratic\EditorConfig\EditorConfig::class);
 };

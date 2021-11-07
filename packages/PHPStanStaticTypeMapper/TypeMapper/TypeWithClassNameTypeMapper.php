@@ -1,58 +1,55 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\PHPStanStaticTypeMapper\TypeMapper;
 
 use PhpParser\Node;
+use PhpParser\Node\Name;
+use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypeWithClassName;
-use PHPStan\Type\VerbosityLevel;
-use Rector\AttributeAwarePhpDoc\Ast\Type\AttributeAwareIdentifierTypeNode;
+use Rector\Core\Php\PhpVersionProvider;
+use Rector\Core\ValueObject\PhpVersionFeature;
 use Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface;
-
-final class TypeWithClassNameTypeMapper implements TypeMapperInterface
+use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
+/**
+ * @implements TypeMapperInterface<TypeWithClassName>
+ */
+final class TypeWithClassNameTypeMapper implements \Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface
 {
     /**
-     * @var StringTypeMapper
+     * @var \Rector\Core\Php\PhpVersionProvider
      */
-    private $stringTypeMapper;
-
-    public function __construct(StringTypeMapper $stringTypeMapper)
+    private $phpVersionProvider;
+    public function __construct(\Rector\Core\Php\PhpVersionProvider $phpVersionProvider)
     {
-        $this->stringTypeMapper = $stringTypeMapper;
+        $this->phpVersionProvider = $phpVersionProvider;
     }
-
     /**
      * @return class-string<Type>
      */
-    public function getNodeClass(): string
+    public function getNodeClass() : string
     {
-        return TypeWithClassName::class;
+        return \PHPStan\Type\TypeWithClassName::class;
     }
-
     /**
-     * @param TypeWithClassName $type
+     * @param \PHPStan\Type\Type $type
+     * @param \Rector\PHPStanStaticTypeMapper\Enum\TypeKind $typeKind
      */
-    public function mapToPHPStanPhpDocTypeNode(Type $type): TypeNode
+    public function mapToPHPStanPhpDocTypeNode($type, $typeKind) : \PHPStan\PhpDocParser\Ast\Type\TypeNode
     {
-        return new AttributeAwareIdentifierTypeNode('string-class');
+        return new \PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode('string-class');
     }
-
     /**
-     * @param TypeWithClassName $type
+     * @param \PHPStan\Type\Type $type
+     * @param \Rector\PHPStanStaticTypeMapper\Enum\TypeKind $typeKind
      */
-    public function mapToPhpParserNode(Type $type, ?string $kind = null): ?Node
+    public function mapToPhpParserNode($type, $typeKind) : ?\PhpParser\Node
     {
-        return $this->stringTypeMapper->mapToPhpParserNode($type, $kind);
-    }
-
-    /**
-     * @param TypeWithClassName $type
-     */
-    public function mapToDocString(Type $type, ?Type $parentType = null): string
-    {
-        return $type->describe(VerbosityLevel::typeOnly());
+        if (!$this->phpVersionProvider->isAtLeastPhpVersion(\Rector\Core\ValueObject\PhpVersionFeature::SCALAR_TYPES)) {
+            return null;
+        }
+        return new \PhpParser\Node\Name('string');
     }
 }

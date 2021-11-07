@@ -1,51 +1,64 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Php80\Rector\ClassMethod;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
-use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\ClassMethod;
+use PHPStan\Reflection\MethodReflection;
+use PHPStan\Reflection\ParametersAcceptorSelector;
+use Rector\CodingStyle\Reflection\VendorLocationDetector;
 use Rector\Core\Rector\AbstractRector;
-use Rector\NodeTypeResolver\Node\AttributeKey;
+use Rector\Core\Reflection\ReflectionResolver;
+use Rector\Core\ValueObject\PhpVersionFeature;
 use Rector\Php80\NodeResolver\ArgumentSorter;
 use Rector\Php80\NodeResolver\RequireOptionalParamResolver;
+use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-
 /**
- * @see https://php.watch/versions/8.0#deprecate-required-param-after-optional
+ * @changelog https://php.watch/versions/8.0#deprecate-required-param-after-optional
  *
  * @see \Rector\Tests\Php80\Rector\ClassMethod\OptionalParametersAfterRequiredRector\OptionalParametersAfterRequiredRectorTest
  */
-final class OptionalParametersAfterRequiredRector extends AbstractRector
+final class OptionalParametersAfterRequiredRector extends \Rector\Core\Rector\AbstractRector implements \Rector\VersionBonding\Contract\MinPhpVersionInterface
 {
     /**
-     * @var RequireOptionalParamResolver
+     * @var string
+     */
+    private const ALREADY_SORTED = 'already_sorted';
+    /**
+     * @var \Rector\Php80\NodeResolver\RequireOptionalParamResolver
      */
     private $requireOptionalParamResolver;
-
     /**
-     * @var ArgumentSorter
+     * @var \Rector\Php80\NodeResolver\ArgumentSorter
      */
     private $argumentSorter;
-
-    public function __construct(
-        RequireOptionalParamResolver $requireOptionalParamResolver,
-        ArgumentSorter $argumentSorter
-    ) {
+    /**
+     * @var \Rector\Core\Reflection\ReflectionResolver
+     */
+    private $reflectionResolver;
+    /**
+     * @var \Rector\CodingStyle\Reflection\VendorLocationDetector
+     */
+    private $vendorLocationDetector;
+    public function __construct(\Rector\Php80\NodeResolver\RequireOptionalParamResolver $requireOptionalParamResolver, \Rector\Php80\NodeResolver\ArgumentSorter $argumentSorter, \Rector\Core\Reflection\ReflectionResolver $reflectionResolver, \Rector\CodingStyle\Reflection\VendorLocationDetector $vendorLocationDetector)
+    {
         $this->requireOptionalParamResolver = $requireOptionalParamResolver;
         $this->argumentSorter = $argumentSorter;
+        $this->reflectionResolver = $reflectionResolver;
+        $this->vendorLocationDetector = $vendorLocationDetector;
     }
-
-    public function getRuleDefinition(): RuleDefinition
+    public function provideMinPhpVersion() : int
     {
-        return new RuleDefinition('Move required parameters after optional ones', [
-            new CodeSample(
-                <<<'CODE_SAMPLE'
+        return \Rector\Core\ValueObject\PhpVersionFeature::DEPRECATE_REQUIRED_PARAMETER_AFTER_OPTIONAL;
+    }
+    public function getRuleDefinition() : \Symplify\RuleDocGenerator\ValueObject\RuleDefinition
+    {
+        return new \Symplify\RuleDocGenerator\ValueObject\RuleDefinition('Move required parameters after optional ones', [new \Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample(<<<'CODE_SAMPLE'
 class SomeObject
 {
     public function run($optional = 1, $required)
@@ -53,9 +66,7 @@ class SomeObject
     }
 }
 CODE_SAMPLE
-
-                ,
-                <<<'CODE_SAMPLE'
+, <<<'CODE_SAMPLE'
 class SomeObject
 {
     public function run($required, $optional = 1)
@@ -63,114 +74,102 @@ class SomeObject
     }
 }
 CODE_SAMPLE
-
-            ),
-        ]);
+)]);
     }
-
     /**
      * @return array<class-string<Node>>
      */
-    public function getNodeTypes(): array
+    public function getNodeTypes() : array
     {
-        return [ClassMethod::class, New_::class, MethodCall::class];
+        return [\PhpParser\Node\Stmt\ClassMethod::class, \PhpParser\Node\Expr\New_::class, \PhpParser\Node\Expr\MethodCall::class];
     }
-
     /**
      * @param ClassMethod|New_|MethodCall $node
      */
-    public function refactor(Node $node): ?Node
+    public function refactor(\PhpParser\Node $node) : ?\PhpParser\Node
     {
-        if ($node instanceof ClassMethod) {
+        $isAlreadySorted = $node->getAttribute(self::ALREADY_SORTED);
+        if ($isAlreadySorted) {
+            return null;
+        }
+        if ($node instanceof \PhpParser\Node\Stmt\ClassMethod) {
             return $this->refactorClassMethod($node);
         }
-
-        if ($node instanceof New_) {
+        if ($node instanceof \PhpParser\Node\Expr\New_) {
             return $this->refactorNew($node);
         }
-
         return $this->refactorMethodCall($node);
     }
-
-    private function refactorClassMethod(ClassMethod $classMethod): ?ClassMethod
+    private function refactorClassMethod(\PhpParser\Node\Stmt\ClassMethod $classMethod) : ?\PhpParser\Node\Stmt\ClassMethod
     {
         if ($classMethod->params === []) {
             return null;
         }
-
-        $expectedOrderParams = $this->requireOptionalParamResolver->resolve($classMethod);
-        if ($classMethod->params === $expectedOrderParams) {
+        $classMethodReflection = $this->reflectionResolver->resolveMethodReflectionFromClassMethod($classMethod);
+        if (!$classMethodReflection instanceof \PHPStan\Reflection\MethodReflection) {
             return null;
         }
-
-        $classMethod->params = $expectedOrderParams;
-
+        $expectedArgOrParamOrder = $this->resolveExpectedArgParamOrderIfDifferent($classMethodReflection, $classMethod->params);
+        if ($expectedArgOrParamOrder === null) {
+            return null;
+        }
+        $newParams = $this->argumentSorter->sortArgsByExpectedParamOrder($classMethod->params, $expectedArgOrParamOrder);
+        $classMethod->params = $newParams;
+        $classMethod->setAttribute(self::ALREADY_SORTED, \true);
         return $classMethod;
     }
-
-    private function refactorNew(New_ $new): ?New_
+    private function refactorNew(\PhpParser\Node\Expr\New_ $new) : ?\PhpParser\Node\Expr\New_
     {
         if ($new->args === []) {
             return null;
         }
-
-        $constructorClassMethod = $this->nodeRepository->findClassMethodConstructorByNew($new);
-        if (! $constructorClassMethod instanceof ClassMethod) {
+        $methodReflection = $this->reflectionResolver->resolveMethodReflectionFromNew($new);
+        if (!$methodReflection instanceof \PHPStan\Reflection\MethodReflection) {
             return null;
         }
-
-        // we need orignal node, as the order might have already hcanged
-        $originalClassMethod = $constructorClassMethod->getAttribute(AttributeKey::ORIGINAL_NODE);
-        if (! $originalClassMethod instanceof ClassMethod) {
+        $expectedArgOrParamOrder = $this->resolveExpectedArgParamOrderIfDifferent($methodReflection, $new->args);
+        if ($expectedArgOrParamOrder === null) {
             return null;
         }
-
-        $expectedOrderedParams = $this->requireOptionalParamResolver->resolve($originalClassMethod);
-        if ($expectedOrderedParams === $constructorClassMethod->getParams()) {
-            return null;
-        }
-
-        if (count($new->args) !== count($constructorClassMethod->getParams())) {
-            return null;
-        }
-
-        $newArgs = $this->argumentSorter->sortArgsByExpectedParamOrder($new->args, $expectedOrderedParams);
-        if ($new->args === $newArgs) {
-            return null;
-        }
-
-        $new->args = $newArgs;
+        $new->args = $this->argumentSorter->sortArgsByExpectedParamOrder($new->args, $expectedArgOrParamOrder);
+        $new->setAttribute(self::ALREADY_SORTED, \true);
         return $new;
     }
-
-    private function refactorMethodCall(MethodCall $methodCall): ?MethodCall
+    private function refactorMethodCall(\PhpParser\Node\Expr\MethodCall $methodCall) : ?\PhpParser\Node\Expr\MethodCall
     {
-        $classMethod = $this->nodeRepository->findClassMethodByMethodCall($methodCall);
-        if (! $classMethod instanceof ClassMethod) {
+        $methodReflection = $this->reflectionResolver->resolveFunctionLikeReflectionFromCall($methodCall);
+        if (!$methodReflection instanceof \PHPStan\Reflection\MethodReflection) {
             return null;
         }
-
-        // because parameters can be already changed
-        $originalClassMethod = $classMethod->getAttribute(AttributeKey::ORIGINAL_NODE);
-        if (! $originalClassMethod instanceof ClassMethod) {
+        $expectedArgOrParamOrder = $this->resolveExpectedArgParamOrderIfDifferent($methodReflection, $methodCall->args);
+        if ($expectedArgOrParamOrder === null) {
             return null;
         }
-
-        $expectedOrderedParams = $this->requireOptionalParamResolver->resolve($originalClassMethod);
-        if ($expectedOrderedParams === $classMethod->getParams()) {
-            return null;
-        }
-
-        if (count($methodCall->args) !== count($classMethod->getParams())) {
-            return null;
-        }
-
-        $newArgs = $this->argumentSorter->sortArgsByExpectedParamOrder($methodCall->args, $expectedOrderedParams);
+        $newArgs = $this->argumentSorter->sortArgsByExpectedParamOrder($methodCall->args, $expectedArgOrParamOrder);
         if ($methodCall->args === $newArgs) {
             return null;
         }
-
         $methodCall->args = $newArgs;
+        $methodCall->setAttribute(self::ALREADY_SORTED, \true);
         return $methodCall;
+    }
+    /**
+     * @param array<Node\Arg|Node\Param> $argsOrParams
+     * @return int[]|null
+     */
+    private function resolveExpectedArgParamOrderIfDifferent(\PHPStan\Reflection\MethodReflection $methodReflection, array $argsOrParams) : ?array
+    {
+        if ($this->vendorLocationDetector->detectMethodReflection($methodReflection)) {
+            return null;
+        }
+        $parametersAcceptor = \PHPStan\Reflection\ParametersAcceptorSelector::selectSingle($methodReflection->getVariants());
+        $expectedParameterReflections = $this->requireOptionalParamResolver->resolveFromReflection($methodReflection);
+        if (\count($argsOrParams) !== \count($parametersAcceptor->getParameters())) {
+            return null;
+        }
+        if ($expectedParameterReflections === $parametersAcceptor->getParameters()) {
+            return null;
+        }
+        return \array_keys($expectedParameterReflections);
     }
 }

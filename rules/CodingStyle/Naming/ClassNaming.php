@@ -1,18 +1,16 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\CodingStyle\Naming;
 
-use Nette\Utils\Strings;
+use RectorPrefix20211107\Nette\Utils\Strings;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\Function_;
-use Rector\Core\Util\StaticRectorStrings;
 use Rector\Testing\PHPUnit\StaticPHPUnitEnvironment;
+use RectorPrefix20211107\Stringy\Stringy;
 use Symplify\SmartFileSystem\SmartFileInfo;
-
 final class ClassNaming
 {
     /**
@@ -20,73 +18,61 @@ final class ClassNaming
      * @var string
      */
     private const INPUT_HASH_NAMING_REGEX = '#input_(.*?)_#';
-
     /**
-     * @param string|Name|Identifier $name
+     * @param \PhpParser\Node\Identifier|\PhpParser\Node\Name|string $name
      */
-    public function getVariableName($name): string
+    public function getVariableName($name) : string
     {
         $shortName = $this->getShortName($name);
-        return lcfirst($shortName);
+        return \lcfirst($shortName);
     }
-
     /**
-     * @param string|Name|Identifier|ClassLike $name
+     * @param \PhpParser\Node\Identifier|\PhpParser\Node\Name|\PhpParser\Node\Stmt\ClassLike|string $name
      */
-    public function getShortName($name): string
+    public function getShortName($name) : string
     {
-        if ($name instanceof ClassLike) {
+        if ($name instanceof \PhpParser\Node\Stmt\ClassLike) {
             if ($name->name === null) {
                 return '';
             }
-
             return $this->getShortName($name->name);
         }
-
-        if ($name instanceof Name || $name instanceof Identifier) {
+        if ($name instanceof \PhpParser\Node\Name || $name instanceof \PhpParser\Node\Identifier) {
             $name = $name->toString();
         }
-
-        $name = trim($name, '\\');
-
-        return Strings::after($name, '\\', -1) ?: $name;
+        $name = \trim($name, '\\');
+        return \RectorPrefix20211107\Nette\Utils\Strings::after($name, '\\', -1) ?: $name;
     }
-
-    public function getNamespace(string $fullyQualifiedName): ?string
+    public function getNamespace(string $fullyQualifiedName) : ?string
     {
-        $fullyQualifiedName = trim($fullyQualifiedName, '\\');
-
-        return Strings::before($fullyQualifiedName, '\\', -1) ?: null;
+        $fullyQualifiedName = \trim($fullyQualifiedName, '\\');
+        return \RectorPrefix20211107\Nette\Utils\Strings::before($fullyQualifiedName, '\\', -1) ?: null;
     }
-
-    public function getNameFromFileInfo(SmartFileInfo $smartFileInfo): string
+    public function getNameFromFileInfo(\Symplify\SmartFileSystem\SmartFileInfo $smartFileInfo) : string
     {
         $basenameWithoutSuffix = $smartFileInfo->getBasenameWithoutSuffix();
-
         // remove PHPUnit fixture file prefix
-        if (StaticPHPUnitEnvironment::isPHPUnitRun()) {
-            $basenameWithoutSuffix = Strings::replace($basenameWithoutSuffix, self::INPUT_HASH_NAMING_REGEX, '');
+        if (\Rector\Testing\PHPUnit\StaticPHPUnitEnvironment::isPHPUnitRun()) {
+            $basenameWithoutSuffix = \RectorPrefix20211107\Nette\Utils\Strings::replace($basenameWithoutSuffix, self::INPUT_HASH_NAMING_REGEX, '');
         }
-
-        return StaticRectorStrings::underscoreToPascalCase($basenameWithoutSuffix);
+        $stringy = new \RectorPrefix20211107\Stringy\Stringy($basenameWithoutSuffix);
+        return (string) $stringy->upperCamelize();
     }
-
     /**
      * "some_function" → "someFunction"
      */
-    public function createMethodNameFromFunction(Function_ $function): string
+    public function createMethodNameFromFunction(\PhpParser\Node\Stmt\Function_ $function) : string
     {
         $functionName = (string) $function->name;
-        return StaticRectorStrings::underscoreToCamelCase($functionName);
+        $stringy = new \RectorPrefix20211107\Stringy\Stringy($functionName);
+        return (string) $stringy->camelize();
     }
-
-    public function replaceSuffix(string $content, string $oldSuffix, string $newSuffix): string
+    public function replaceSuffix(string $content, string $oldSuffix, string $newSuffix) : string
     {
-        if (! Strings::endsWith($content, $oldSuffix)) {
+        if (\substr_compare($content, $oldSuffix, -\strlen($oldSuffix)) !== 0) {
             return $content . $newSuffix;
         }
-
-        $contentWithoutOldSuffix = Strings::substring($content, 0, -Strings::length($oldSuffix));
+        $contentWithoutOldSuffix = \RectorPrefix20211107\Nette\Utils\Strings::substring($content, 0, -\RectorPrefix20211107\Nette\Utils\Strings::length($oldSuffix));
         return $contentWithoutOldSuffix . $newSuffix;
     }
 }

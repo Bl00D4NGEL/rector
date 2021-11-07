@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Php70\ValueObject;
 
 use PhpParser\Node;
@@ -12,41 +11,36 @@ use PhpParser\Node\Expr\AssignRef;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticPropertyFetch;
 use PhpParser\Node\Expr\Variable;
-
 final class VariableAssignPair
 {
     /**
-     * @var Variable|ArrayDimFetch|PropertyFetch|StaticPropertyFetch
+     * @var ArrayDimFetch|PropertyFetch|StaticPropertyFetch|Variable
      */
     private $variable;
-
     /**
      * @var Assign|AssignOp|AssignRef
      */
     private $assign;
-
     /**
      * @param Variable|ArrayDimFetch|PropertyFetch|StaticPropertyFetch $variable
-     * @param Assign|AssignOp|AssignRef $node
+     * @param Assign|AssignOp|AssignRef $assign
      */
-    public function __construct(Node $variable, Node $node)
+    public function __construct(\PhpParser\Node $variable, \PhpParser\Node $assign)
     {
         $this->variable = $variable;
-        $this->assign = $node;
+        $this->assign = $assign;
     }
-
     /**
-     * @return Variable|ArrayDimFetch|PropertyFetch|StaticPropertyFetch
+     * @return \PhpParser\Node\Expr\ArrayDimFetch|\PhpParser\Node\Expr\PropertyFetch|\PhpParser\Node\Expr\StaticPropertyFetch|\PhpParser\Node\Expr\Variable
      */
-    public function getVariable(): Node
+    public function getVariable()
     {
         return $this->variable;
     }
-
     /**
-     * @return Assign|AssignOp|AssignRef
+     * @return \PhpParser\Node\Expr\Assign|\PhpParser\Node\Expr\AssignOp|\PhpParser\Node\Expr\AssignRef
      */
-    public function getAssign(): Node
+    public function getAssign()
     {
         return $this->assign;
     }

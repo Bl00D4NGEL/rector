@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\RemovingStatic\Rector\StaticCall;
 
 use PhpParser\Node;
@@ -9,46 +8,39 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
+use PhpParser\Node\Stmt\ClassMethod;
 use PHPStan\Type\ObjectType;
 use Rector\Core\Configuration\Option;
 use Rector\Core\Rector\AbstractRector;
 use Rector\Core\ValueObject\MethodName;
 use Rector\Naming\Naming\PropertyNaming;
-use Rector\NodeTypeResolver\Node\AttributeKey;
-use Symplify\PackageBuilder\Parameter\ParameterProvider;
+use RectorPrefix20211107\Symplify\PackageBuilder\Parameter\ParameterProvider;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-
 /**
  * @see \Rector\Tests\RemovingStatic\Rector\StaticCall\DesiredStaticCallTypeToDynamicRector\DesiredStaticCallTypeToDynamicRectorTest
  */
-final class DesiredStaticCallTypeToDynamicRector extends AbstractRector
+final class DesiredStaticCallTypeToDynamicRector extends \Rector\Core\Rector\AbstractRector
 {
     /**
      * @var ObjectType[]
      */
     private $staticObjectTypes = [];
-
     /**
-     * @var PropertyNaming
+     * @var \Rector\Naming\Naming\PropertyNaming
      */
     private $propertyNaming;
-
-    public function __construct(PropertyNaming $propertyNaming, ParameterProvider $parameterProvider)
+    public function __construct(\Rector\Naming\Naming\PropertyNaming $propertyNaming, \RectorPrefix20211107\Symplify\PackageBuilder\Parameter\ParameterProvider $parameterProvider)
     {
-        $typesToRemoveStaticFrom = $parameterProvider->provideArrayParameter(Option::TYPES_TO_REMOVE_STATIC_FROM);
-        foreach ($typesToRemoveStaticFrom as $typeToRemoveStaticFrom) {
-            $this->staticObjectTypes[] = new ObjectType($typeToRemoveStaticFrom);
-        }
-
         $this->propertyNaming = $propertyNaming;
+        $typesToRemoveStaticFrom = $parameterProvider->provideArrayParameter(\Rector\Core\Configuration\Option::TYPES_TO_REMOVE_STATIC_FROM);
+        foreach ($typesToRemoveStaticFrom as $typeToRemoveStaticFrom) {
+            $this->staticObjectTypes[] = new \PHPStan\Type\ObjectType($typeToRemoveStaticFrom);
+        }
     }
-
-    public function getRuleDefinition(): RuleDefinition
+    public function getRuleDefinition() : \Symplify\RuleDocGenerator\ValueObject\RuleDefinition
     {
-        return new RuleDefinition('Change defined static service to dynamic one', [
-            new CodeSample(
-                <<<'CODE_SAMPLE'
+        return new \Symplify\RuleDocGenerator\ValueObject\RuleDefinition('Change defined static service to dynamic one', [new \Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample(<<<'CODE_SAMPLE'
 final class SomeClass
 {
     public function run()
@@ -57,61 +49,54 @@ final class SomeClass
     }
 }
 CODE_SAMPLE
-                ,
-                <<<'CODE_SAMPLE'
+, <<<'CODE_SAMPLE'
 final class SomeClass
 {
     public function run()
     {
-        $this->someStaticMethod::someStatic();
+        $this->someStaticMethod->someStatic();
     }
 }
 CODE_SAMPLE
-            ),
-        ]);
+)]);
     }
-
     /**
      * @return array<class-string<Node>>
      */
-    public function getNodeTypes(): array
+    public function getNodeTypes() : array
     {
-        return [StaticCall::class];
+        return [\PhpParser\Node\Expr\StaticCall::class];
     }
-
     /**
      * @param StaticCall $node
      */
-    public function refactor(Node $node): ?Node
+    public function refactor(\PhpParser\Node $node) : ?\PhpParser\Node
     {
         foreach ($this->staticObjectTypes as $staticObjectType) {
-            if (! $this->isObjectType($node->class, $staticObjectType)) {
+            if (!$this->isObjectType($node->class, $staticObjectType)) {
                 continue;
             }
-
             // is the same class or external call?
             $className = $this->getName($node->class);
             if ($className === 'self') {
                 return $this->createFromSelf($node);
             }
-
             $propertyName = $this->propertyNaming->fqnToVariableName($staticObjectType);
-
-            $currentMethodName = $node->getAttribute(AttributeKey::METHOD_NAME);
-            if ($currentMethodName === MethodName::CONSTRUCT) {
-                $propertyFetch = new Variable($propertyName);
-            } else {
-                $propertyFetch = new PropertyFetch(new Variable('this'), $propertyName);
+            $classMethod = $this->betterNodeFinder->findParentType($node, \PhpParser\Node\Stmt\ClassMethod::class);
+            if (!$classMethod instanceof \PhpParser\Node\Stmt\ClassMethod) {
+                return null;
             }
-
-            return new MethodCall($propertyFetch, $node->name, $node->args);
+            if ($this->nodeNameResolver->isName($classMethod, \Rector\Core\ValueObject\MethodName::CONSTRUCT)) {
+                $propertyFetch = new \PhpParser\Node\Expr\Variable($propertyName);
+            } else {
+                $propertyFetch = new \PhpParser\Node\Expr\PropertyFetch(new \PhpParser\Node\Expr\Variable('this'), $propertyName);
+            }
+            return new \PhpParser\Node\Expr\MethodCall($propertyFetch, $node->name, $node->args);
         }
-
         return null;
     }
-
-    private function createFromSelf(StaticCall $staticCall): MethodCall
+    private function createFromSelf(\PhpParser\Node\Expr\StaticCall $staticCall) : \PhpParser\Node\Expr\MethodCall
     {
-        return new MethodCall(new Variable('this'), $staticCall->name, $staticCall->args);
+        return new \PhpParser\Node\Expr\MethodCall(new \PhpParser\Node\Expr\Variable('this'), $staticCall->name, $staticCall->args);
     }
 }

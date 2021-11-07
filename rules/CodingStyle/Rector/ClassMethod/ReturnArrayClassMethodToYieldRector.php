@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\CodingStyle\Rector\ClassMethod;
 
 use PhpParser\Node;
@@ -19,183 +18,142 @@ use Rector\Core\Rector\AbstractRector;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use Webmozart\Assert\Assert;
-
+use RectorPrefix20211107\Webmozart\Assert\Assert;
 /**
- * @see https://medium.com/tech-tajawal/use-memory-gently-with-yield-in-php-7e62e2480b8d
+ * @changelog https://medium.com/tech-tajawal/use-memory-gently-with-yield-in-php-7e62e2480b8d
  * @see https://3v4l.org/5PJid
  *
  * @see \Rector\Tests\CodingStyle\Rector\ClassMethod\ReturnArrayClassMethodToYieldRector\ReturnArrayClassMethodToYieldRectorTest
  */
-final class ReturnArrayClassMethodToYieldRector extends AbstractRector implements ConfigurableRectorInterface
+final class ReturnArrayClassMethodToYieldRector extends \Rector\Core\Rector\AbstractRector implements \Rector\Core\Contract\Rector\ConfigurableRectorInterface
 {
     /**
      * @var string
      */
     public const METHODS_TO_YIELDS = 'methods_to_yields';
-
     /**
      * @var ReturnArrayClassMethodToyield[]
      */
     private $methodsToYields = [];
-
     /**
-     * @var NodeTransformer
+     * @var \Rector\Core\PhpParser\NodeTransformer
      */
     private $nodeTransformer;
-
     /**
-     * @var CommentsMerger
+     * @var \Rector\BetterPhpDocParser\Comment\CommentsMerger
      */
     private $commentsMerger;
-
-    public function __construct(NodeTransformer $nodeTransformer, CommentsMerger $commentsMerger)
+    public function __construct(\Rector\Core\PhpParser\NodeTransformer $nodeTransformer, \Rector\BetterPhpDocParser\Comment\CommentsMerger $commentsMerger)
     {
         $this->nodeTransformer = $nodeTransformer;
         $this->commentsMerger = $commentsMerger;
-
-        // default values
-        $this->methodsToYields = [
-            new ReturnArrayClassMethodToYield('PHPUnit\Framework\TestCase', 'provideData'),
-            new ReturnArrayClassMethodToYield('PHPUnit\Framework\TestCase', 'provideData*'),
-            new ReturnArrayClassMethodToYield('PHPUnit\Framework\TestCase', 'dataProvider'),
-            new ReturnArrayClassMethodToYield('PHPUnit\Framework\TestCase', 'dataProvider*'),
-        ];
     }
+    public function getRuleDefinition() : \Symplify\RuleDocGenerator\ValueObject\RuleDefinition
+    {
+        return new \Symplify\RuleDocGenerator\ValueObject\RuleDefinition('Turns array return to yield return in specific type and method', [new \Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample(<<<'CODE_SAMPLE'
+use PHPUnit\Framework\TestCase;
 
-    public function getRuleDefinition(): RuleDefinition
-    {
-        return new RuleDefinition('Turns array return to yield return in specific type and method', [
-            new ConfiguredCodeSample(
-                <<<'CODE_SAMPLE'
-class SomeEventSubscriber implements EventSubscriberInterface
+final class SomeTest implements TestCase
 {
-    public static function getSubscribedEvents()
+    public static function provideData()
     {
-        return ['event' => 'callback'];
+        return [['some text']];
     }
 }
 CODE_SAMPLE
-                ,
-                <<<'CODE_SAMPLE'
-class SomeEventSubscriber implements EventSubscriberInterface
+, <<<'CODE_SAMPLE'
+use PHPUnit\Framework\TestCase;
+
+final class SomeTest implements TestCase
 {
-    public static function getSubscribedEvents()
+    public static function provideData()
     {
-        yield 'event' => 'callback';
+        yield ['some text'];
     }
 }
 CODE_SAMPLE
-                ,
-                [
-                    self::METHODS_TO_YIELDS => [
-                        new ReturnArrayClassMethodToYield('EventSubscriberInterface', 'getSubscribedEvents'),
-                    ],
-                ]
-            ),
-        ]);
+, [self::METHODS_TO_YIELDS => [new \Rector\CodingStyle\ValueObject\ReturnArrayClassMethodToYield('PHPUnit\\Framework\\TestCase', '*provide*')]])]);
     }
-
     /**
      * @return array<class-string<Node>>
      */
-    public function getNodeTypes(): array
+    public function getNodeTypes() : array
     {
-        return [ClassMethod::class];
+        return [\PhpParser\Node\Stmt\ClassMethod::class];
     }
-
     /**
      * @param ClassMethod $node
      */
-    public function refactor(Node $node): ?Node
+    public function refactor(\PhpParser\Node $node) : ?\PhpParser\Node
     {
-        $hasChanged = false;
+        $hasChanged = \false;
         foreach ($this->methodsToYields as $methodToYield) {
-            if (! $this->isObjectType($node, $methodToYield->getObjectType())) {
+            if (!$this->isObjectType($node, $methodToYield->getObjectType())) {
                 continue;
             }
-
-            if (! $this->isName($node, $methodToYield->getMethod())) {
+            if (!$this->isName($node, $methodToYield->getMethod())) {
                 continue;
             }
-
             $arrayNode = $this->collectReturnArrayNodesFromClassMethod($node);
-            if (! $arrayNode instanceof Array_) {
+            if (!$arrayNode instanceof \PhpParser\Node\Expr\Array_) {
                 continue;
             }
-
             $this->transformArrayToYieldsOnMethodNode($node, $arrayNode);
-
             $this->commentsMerger->keepParent($node, $arrayNode);
-            $hasChanged = true;
+            $hasChanged = \true;
         }
-
-        if (! $hasChanged) {
+        if (!$hasChanged) {
             return null;
         }
-
         return $node;
     }
-
     /**
-     * @param mixed[] $configuration
+     * @param array<string, ReturnArrayClassMethodToYield[]> $configuration
      */
-    public function configure(array $configuration): void
+    public function configure(array $configuration) : void
     {
         $methodsToYields = $configuration[self::METHODS_TO_YIELDS] ?? [];
-        Assert::allIsInstanceOf($methodsToYields, ReturnArrayClassMethodToYield::class);
+        \RectorPrefix20211107\Webmozart\Assert\Assert::allIsInstanceOf($methodsToYields, \Rector\CodingStyle\ValueObject\ReturnArrayClassMethodToYield::class);
         $this->methodsToYields = $methodsToYields;
     }
-
-    private function collectReturnArrayNodesFromClassMethod(ClassMethod $classMethod): ?Array_
+    private function collectReturnArrayNodesFromClassMethod(\PhpParser\Node\Stmt\ClassMethod $classMethod) : ?\PhpParser\Node\Expr\Array_
     {
         if ($classMethod->stmts === null) {
             return null;
         }
-
         foreach ($classMethod->stmts as $statement) {
-            if ($statement instanceof Return_) {
+            if ($statement instanceof \PhpParser\Node\Stmt\Return_) {
                 $returnedExpr = $statement->expr;
-                if (! $returnedExpr instanceof Array_) {
+                if (!$returnedExpr instanceof \PhpParser\Node\Expr\Array_) {
                     continue;
                 }
-
                 return $returnedExpr;
             }
         }
-
         return null;
     }
-
-    private function transformArrayToYieldsOnMethodNode(ClassMethod $classMethod, Array_ $array): void
+    private function transformArrayToYieldsOnMethodNode(\PhpParser\Node\Stmt\ClassMethod $classMethod, \PhpParser\Node\Expr\Array_ $array) : void
     {
         $yieldNodes = $this->nodeTransformer->transformArrayToYields($array);
-
         // remove whole return node
-        $parentNode = $array->getAttribute(AttributeKey::PARENT_NODE);
-        if (! $parentNode instanceof Node) {
-            throw new ShouldNotHappenException();
+        $parentNode = $array->getAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::PARENT_NODE);
+        if (!$parentNode instanceof \PhpParser\Node) {
+            throw new \Rector\Core\Exception\ShouldNotHappenException();
         }
-
         $this->removeReturnTag($classMethod);
-
         // change return typehint
-        $classMethod->returnType = new FullyQualified('Iterator');
-
+        $classMethod->returnType = new \PhpParser\Node\Name\FullyQualified('Iterator');
         foreach ((array) $classMethod->stmts as $key => $classMethodStmt) {
-            if (! $classMethodStmt instanceof Return_) {
+            if (!$classMethodStmt instanceof \PhpParser\Node\Stmt\Return_) {
                 continue;
             }
-
             unset($classMethod->stmts[$key]);
         }
-
-        $classMethod->stmts = array_merge((array) $classMethod->stmts, $yieldNodes);
+        $classMethod->stmts = \array_merge((array) $classMethod->stmts, $yieldNodes);
     }
-
-    private function removeReturnTag(ClassMethod $classMethod): void
+    private function removeReturnTag(\PhpParser\Node\Stmt\ClassMethod $classMethod) : void
     {
         $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($classMethod);
-        $phpDocInfo->removeByType(ReturnTagValueNode::class);
+        $phpDocInfo->removeByType(\PHPStan\PhpDocParser\Ast\PhpDoc\ReturnTagValueNode::class);
     }
 }

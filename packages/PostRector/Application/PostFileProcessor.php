@@ -1,104 +1,99 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\PostRector\Application;
 
-use PhpParser\Node;
+use PhpParser\Node\Stmt;
 use PhpParser\NodeTraverser;
 use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\Core\Logging\CurrentRectorProvider;
-use Rector\NodeTypeResolver\FileSystem\CurrentFileInfoProvider;
+use Rector\Core\Provider\CurrentFileProvider;
+use Rector\Core\ValueObject\Application\File;
 use Rector\PostRector\Contract\Rector\PostRectorInterface;
-use Symplify\Skipper\Skipper\Skipper;
-use Symplify\SmartFileSystem\SmartFileInfo;
-
+use RectorPrefix20211107\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix20211107\Symplify\Skipper\Skipper\Skipper;
 final class PostFileProcessor
 {
     /**
      * @var PostRectorInterface[]
      */
     private $postRectors = [];
-
     /**
-     * @var Skipper
+     * @var \Symplify\Skipper\Skipper\Skipper
      */
     private $skipper;
-
     /**
-     * @var CurrentFileInfoProvider
+     * @var \Rector\Core\Provider\CurrentFileProvider
      */
-    private $currentFileInfoProvider;
-
+    private $currentFileProvider;
     /**
-     * @var CurrentRectorProvider
+     * @var \Rector\Core\Logging\CurrentRectorProvider
      */
     private $currentRectorProvider;
-
+    /**
+     * @var \Symfony\Component\Console\Style\SymfonyStyle
+     */
+    private $symfonyStyle;
     /**
      * @param PostRectorInterface[] $postRectors
      */
-    public function __construct(
-        Skipper $skipper,
-        CurrentFileInfoProvider $currentFileInfoProvider,
-        CurrentRectorProvider $currentRectorProvider,
-        array $postRectors
-    ) {
-        $this->postRectors = $this->sortByPriority($postRectors);
+    public function __construct(\RectorPrefix20211107\Symplify\Skipper\Skipper\Skipper $skipper, \Rector\Core\Provider\CurrentFileProvider $currentFileProvider, \Rector\Core\Logging\CurrentRectorProvider $currentRectorProvider, \RectorPrefix20211107\Symfony\Component\Console\Style\SymfonyStyle $symfonyStyle, array $postRectors)
+    {
         $this->skipper = $skipper;
-        $this->currentFileInfoProvider = $currentFileInfoProvider;
+        $this->currentFileProvider = $currentFileProvider;
         $this->currentRectorProvider = $currentRectorProvider;
+        $this->symfonyStyle = $symfonyStyle;
+        $this->postRectors = $this->sortByPriority($postRectors);
     }
-
     /**
-     * @param Node[] $nodes
-     * @return Node[]
+     * @param Stmt[] $stmts
+     * @return Stmt[]
      */
-    public function traverse(array $nodes): array
+    public function traverse(array $stmts) : array
     {
         foreach ($this->postRectors as $postRector) {
             if ($this->shouldSkipPostRector($postRector)) {
                 continue;
             }
-
             $this->currentRectorProvider->changeCurrentRector($postRector);
-
-            $nodeTraverser = new NodeTraverser();
+            $this->notifyPostRector($postRector);
+            $nodeTraverser = new \PhpParser\NodeTraverser();
             $nodeTraverser->addVisitor($postRector);
-            $nodes = $nodeTraverser->traverse($nodes);
+            $stmts = $nodeTraverser->traverse($stmts);
         }
-
-        return $nodes;
+        return $stmts;
     }
-
     /**
      * @param PostRectorInterface[] $postRectors
      * @return PostRectorInterface[]
      */
-    private function sortByPriority(array $postRectors): array
+    private function sortByPriority(array $postRectors) : array
     {
         $postRectorsByPriority = [];
-
         foreach ($postRectors as $postRector) {
             if (isset($postRectorsByPriority[$postRector->getPriority()])) {
-                throw new ShouldNotHappenException();
+                throw new \Rector\Core\Exception\ShouldNotHappenException();
             }
-
             $postRectorsByPriority[$postRector->getPriority()] = $postRector;
         }
-
-        krsort($postRectorsByPriority);
-
+        \krsort($postRectorsByPriority);
         return $postRectorsByPriority;
     }
-
-    private function shouldSkipPostRector(PostRectorInterface $postRector): bool
+    private function shouldSkipPostRector(\Rector\PostRector\Contract\Rector\PostRectorInterface $postRector) : bool
     {
-        $smartFileInfo = $this->currentFileInfoProvider->getSmartFileInfo();
-        if (! $smartFileInfo instanceof SmartFileInfo) {
-            return false;
+        $file = $this->currentFileProvider->getFile();
+        if (!$file instanceof \Rector\Core\ValueObject\Application\File) {
+            return \false;
         }
-
+        $smartFileInfo = $file->getSmartFileInfo();
         return $this->skipper->shouldSkipElementAndFileInfo($postRector, $smartFileInfo);
+    }
+    private function notifyPostRector(\Rector\PostRector\Contract\Rector\PostRectorInterface $postRector) : void
+    {
+        if (!$this->symfonyStyle->isVerbose()) {
+            return;
+        }
+        $message = \sprintf('    [%s] %s', 'post rector', \get_class($postRector));
+        $this->symfonyStyle->writeln($message);
     }
 }

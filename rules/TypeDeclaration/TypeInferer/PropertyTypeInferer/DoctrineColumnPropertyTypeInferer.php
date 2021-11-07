@@ -1,10 +1,10 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\TypeDeclaration\TypeInferer\PropertyTypeInferer;
 
 use PhpParser\Node\Stmt\Property;
+use PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprTrueNode;
 use PHPStan\Type\BooleanType;
 use PHPStan\Type\FloatType;
 use PHPStan\Type\IntegerType;
@@ -13,109 +13,98 @@ use PHPStan\Type\NullType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\StringType;
 use PHPStan\Type\Type;
+use Rector\BetterPhpDocParser\PhpDoc\DoctrineAnnotationTagValueNode;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
-use Rector\BetterPhpDocParser\ValueObject\PhpDocNode\Doctrine\Property_\ColumnTagValueNode;
 use Rector\NodeTypeResolver\PHPStan\Type\TypeFactory;
 use Rector\TypeDeclaration\Contract\TypeInferer\PropertyTypeInfererInterface;
-
-final class DoctrineColumnPropertyTypeInferer implements PropertyTypeInfererInterface
+final class DoctrineColumnPropertyTypeInferer implements \Rector\TypeDeclaration\Contract\TypeInferer\PropertyTypeInfererInterface
 {
     /**
      * @var string
      */
     private const DATE_TIME_INTERFACE = 'DateTimeInterface';
-
     /**
      * @var Type[]
      *
-     * @see \Doctrine\DBAL\Platforms\MySqlPlatform::initializeDoctrineTypeMappings()
      * @see https://www.doctrine-project.org/projects/doctrine-orm/en/2.6/reference/basic-mapping.html#doctrine-mapping-types
      */
     private $doctrineTypeToScalarType = [];
-
     /**
-     * @var TypeFactory
+     * @var \Rector\NodeTypeResolver\PHPStan\Type\TypeFactory
      */
     private $typeFactory;
-
     /**
-     * @var PhpDocInfoFactory
+     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
     private $phpDocInfoFactory;
-
-    public function __construct(TypeFactory $typeFactory, PhpDocInfoFactory $phpDocInfoFactory)
+    public function __construct(\Rector\NodeTypeResolver\PHPStan\Type\TypeFactory $typeFactory, \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory $phpDocInfoFactory)
     {
         $this->typeFactory = $typeFactory;
-
-        $this->doctrineTypeToScalarType = [
-            'tinyint' => new BooleanType(),
-            // integers
-            'smallint' => new IntegerType(),
-            'mediumint' => new IntegerType(),
-            'int' => new IntegerType(),
-            'integer' => new IntegerType(),
-            'bigint' => new IntegerType(),
-            'numeric' => new IntegerType(),
-            // floats
-            'decimal' => new FloatType(),
-            'float' => new FloatType(),
-            'double' => new FloatType(),
-            'real' => new FloatType(),
-            // strings
-            'tinytext' => new StringType(),
-            'mediumtext' => new StringType(),
-            'longtext' => new StringType(),
-            'text' => new StringType(),
-            'varchar' => new StringType(),
-            'string' => new StringType(),
-            'char' => new StringType(),
-            'longblob' => new StringType(),
-            'blob' => new StringType(),
-            'mediumblob' => new StringType(),
-            'tinyblob' => new StringType(),
-            'binary' => new StringType(),
-            'varbinary' => new StringType(),
-            'set' => new StringType(),
-            // date time objects
-            'date' => new ObjectType(self::DATE_TIME_INTERFACE),
-            'datetime' => new ObjectType(self::DATE_TIME_INTERFACE),
-            'timestamp' => new ObjectType(self::DATE_TIME_INTERFACE),
-            'time' => new ObjectType(self::DATE_TIME_INTERFACE),
-            'year' => new ObjectType(self::DATE_TIME_INTERFACE),
-        ];
         $this->phpDocInfoFactory = $phpDocInfoFactory;
+        $this->doctrineTypeToScalarType = [
+            'tinyint' => new \PHPStan\Type\BooleanType(),
+            // integers
+            'smallint' => new \PHPStan\Type\IntegerType(),
+            'mediumint' => new \PHPStan\Type\IntegerType(),
+            'int' => new \PHPStan\Type\IntegerType(),
+            'integer' => new \PHPStan\Type\IntegerType(),
+            'bigint' => new \PHPStan\Type\IntegerType(),
+            'numeric' => new \PHPStan\Type\IntegerType(),
+            // floats
+            'decimal' => new \PHPStan\Type\FloatType(),
+            'float' => new \PHPStan\Type\FloatType(),
+            'double' => new \PHPStan\Type\FloatType(),
+            'real' => new \PHPStan\Type\FloatType(),
+            // strings
+            'tinytext' => new \PHPStan\Type\StringType(),
+            'mediumtext' => new \PHPStan\Type\StringType(),
+            'longtext' => new \PHPStan\Type\StringType(),
+            'text' => new \PHPStan\Type\StringType(),
+            'varchar' => new \PHPStan\Type\StringType(),
+            'string' => new \PHPStan\Type\StringType(),
+            'char' => new \PHPStan\Type\StringType(),
+            'longblob' => new \PHPStan\Type\StringType(),
+            'blob' => new \PHPStan\Type\StringType(),
+            'mediumblob' => new \PHPStan\Type\StringType(),
+            'tinyblob' => new \PHPStan\Type\StringType(),
+            'binary' => new \PHPStan\Type\StringType(),
+            'varbinary' => new \PHPStan\Type\StringType(),
+            'set' => new \PHPStan\Type\StringType(),
+            // date time objects
+            'date' => new \PHPStan\Type\ObjectType(self::DATE_TIME_INTERFACE),
+            'datetime' => new \PHPStan\Type\ObjectType(self::DATE_TIME_INTERFACE),
+            'timestamp' => new \PHPStan\Type\ObjectType(self::DATE_TIME_INTERFACE),
+            'time' => new \PHPStan\Type\ObjectType(self::DATE_TIME_INTERFACE),
+            'year' => new \PHPStan\Type\ObjectType(self::DATE_TIME_INTERFACE),
+        ];
     }
-
-    public function inferProperty(Property $property): Type
+    /**
+     * @param \PhpParser\Node\Stmt\Property $property
+     */
+    public function inferProperty($property) : ?\PHPStan\Type\Type
     {
         $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($property);
-
-        $doctrineColumnTagValueNode = $phpDocInfo->getByType(ColumnTagValueNode::class);
-        if (! $doctrineColumnTagValueNode instanceof ColumnTagValueNode) {
-            return new MixedType();
+        $doctrineAnnotationTagValueNode = $phpDocInfo->findOneByAnnotationClass('Doctrine\\ORM\\Mapping\\Column');
+        if (!$doctrineAnnotationTagValueNode instanceof \Rector\BetterPhpDocParser\PhpDoc\DoctrineAnnotationTagValueNode) {
+            return null;
         }
-
-        $type = $doctrineColumnTagValueNode->getType();
+        $type = $doctrineAnnotationTagValueNode->getValueWithoutQuotes('type');
         if ($type === null) {
-            return new MixedType();
+            return new \PHPStan\Type\MixedType();
         }
-
         $scalarType = $this->doctrineTypeToScalarType[$type] ?? null;
-        if (! $scalarType instanceof Type) {
-            return new MixedType();
+        if (!$scalarType instanceof \PHPStan\Type\Type) {
+            return new \PHPStan\Type\MixedType();
         }
-
         $types = [$scalarType];
-
+        $isNullable = $doctrineAnnotationTagValueNode->getValue('nullable');
         // is nullable?
-        if ($doctrineColumnTagValueNode->isNullable()) {
-            $types[] = new NullType();
+        if ($isNullable instanceof \PHPStan\PhpDocParser\Ast\ConstExpr\ConstExprTrueNode) {
+            $types[] = new \PHPStan\Type\NullType();
         }
-
         return $this->typeFactory->createMixedPassedOrUnionType($types);
     }
-
-    public function getPriority(): int
+    public function getPriority() : int
     {
         return 2000;
     }

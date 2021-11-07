@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Renaming\Rector\MethodCall;
 
 use PhpParser\BuilderHelpers;
@@ -12,183 +11,114 @@ use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\ClassMethod;
-use PHPStan\Type\ObjectType;
 use Rector\Core\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Core\NodeManipulator\ClassManipulator;
 use Rector\Core\Rector\AbstractRector;
-use Rector\NodeTypeResolver\Node\AttributeKey;
+use Rector\Renaming\Collector\MethodCallRenameCollector;
 use Rector\Renaming\Contract\MethodCallRenameInterface;
 use Rector\Renaming\ValueObject\MethodCallRename;
 use Rector\Renaming\ValueObject\MethodCallRenameWithArrayKey;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use Webmozart\Assert\Assert;
-
+use RectorPrefix20211107\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Renaming\Rector\MethodCall\RenameMethodRector\RenameMethodRectorTest
  */
-final class RenameMethodRector extends AbstractRector implements ConfigurableRectorInterface
+final class RenameMethodRector extends \Rector\Core\Rector\AbstractRector implements \Rector\Core\Contract\Rector\ConfigurableRectorInterface
 {
     /**
      * @var string
      */
     public const METHOD_CALL_RENAMES = 'method_call_renames';
-
     /**
      * @var MethodCallRenameInterface[]
      */
     private $methodCallRenames = [];
-
     /**
-     * @var ClassManipulator
+     * @var \Rector\Core\NodeManipulator\ClassManipulator
      */
     private $classManipulator;
-
-    public function __construct(ClassManipulator $classManipulator)
+    /**
+     * @var \Rector\Renaming\Collector\MethodCallRenameCollector
+     */
+    private $methodCallRenameCollector;
+    public function __construct(\Rector\Core\NodeManipulator\ClassManipulator $classManipulator, \Rector\Renaming\Collector\MethodCallRenameCollector $methodCallRenameCollector)
     {
         $this->classManipulator = $classManipulator;
+        $this->methodCallRenameCollector = $methodCallRenameCollector;
     }
-
-    public function getRuleDefinition(): RuleDefinition
+    public function getRuleDefinition() : \Symplify\RuleDocGenerator\ValueObject\RuleDefinition
     {
-        return new RuleDefinition('Turns method names to new ones.', [
-            new ConfiguredCodeSample(
-                <<<'CODE_SAMPLE'
+        return new \Symplify\RuleDocGenerator\ValueObject\RuleDefinition('Turns method names to new ones.', [new \Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample(<<<'CODE_SAMPLE'
 $someObject = new SomeExampleClass;
 $someObject->oldMethod();
 CODE_SAMPLE
-                ,
-                <<<'CODE_SAMPLE'
+, <<<'CODE_SAMPLE'
 $someObject = new SomeExampleClass;
 $someObject->newMethod();
 CODE_SAMPLE
-                ,
-                [
-                    self::METHOD_CALL_RENAMES => [
-                        new MethodCallRename('SomeExampleClass', 'oldMethod', 'newMethod'),
-                    ],
-                ]
-            ),
-        ]);
+, [self::METHOD_CALL_RENAMES => [new \Rector\Renaming\ValueObject\MethodCallRename('SomeExampleClass', 'oldMethod', 'newMethod')]])]);
     }
-
     /**
      * @return array<class-string<Node>>
      */
-    public function getNodeTypes(): array
+    public function getNodeTypes() : array
     {
-        return [MethodCall::class, StaticCall::class, ClassMethod::class];
+        return [\PhpParser\Node\Expr\MethodCall::class, \PhpParser\Node\Expr\StaticCall::class, \PhpParser\Node\Stmt\ClassMethod::class];
     }
-
     /**
      * @param MethodCall|StaticCall|ClassMethod $node
      */
-    public function refactor(Node $node): ?Node
+    public function refactor(\PhpParser\Node $node) : ?\PhpParser\Node
     {
         foreach ($this->methodCallRenames as $methodCallRename) {
-            $implementsInterface = $this->classManipulator->hasParentMethodOrInterface(
-                $methodCallRename->getOldObjectType(),
-                $methodCallRename->getOldMethod()
-            );
+            $implementsInterface = $this->classManipulator->hasParentMethodOrInterface($methodCallRename->getObjectType(), $methodCallRename->getOldMethod(), $methodCallRename->getNewMethod());
             if ($implementsInterface) {
                 continue;
             }
-
-            if (! $this->nodeTypeResolver->isMethodStaticCallOrClassMethodObjectType(
-                $node,
-                $methodCallRename->getOldObjectType()
-            )) {
+            if (!$this->nodeTypeResolver->isMethodStaticCallOrClassMethodObjectType($node, $methodCallRename->getObjectType())) {
                 continue;
             }
-
-            if (! $this->isName($node->name, $methodCallRename->getOldMethod())) {
+            if (!$this->isName($node->name, $methodCallRename->getOldMethod())) {
                 continue;
             }
-
-            if ($this->skipClassMethod($node, $methodCallRename)) {
+            if ($this->shouldSkipClassMethod($node, $methodCallRename)) {
                 continue;
             }
-
-            $node->name = new Identifier($methodCallRename->getNewMethod());
-
-            if ($methodCallRename instanceof MethodCallRenameWithArrayKey && ! $node instanceof ClassMethod) {
-                return new ArrayDimFetch($node, BuilderHelpers::normalizeValue($methodCallRename->getArrayKey()));
+            $node->name = new \PhpParser\Node\Identifier($methodCallRename->getNewMethod());
+            if ($methodCallRename instanceof \Rector\Renaming\ValueObject\MethodCallRenameWithArrayKey && !$node instanceof \PhpParser\Node\Stmt\ClassMethod) {
+                return new \PhpParser\Node\Expr\ArrayDimFetch($node, \PhpParser\BuilderHelpers::normalizeValue($methodCallRename->getArrayKey()));
             }
-
             return $node;
         }
-
         return null;
     }
-
     /**
      * @param array<string, MethodCallRenameInterface[]> $configuration
      */
-    public function configure(array $configuration): void
+    public function configure(array $configuration) : void
     {
         $methodCallRenames = $configuration[self::METHOD_CALL_RENAMES] ?? [];
-        Assert::allIsInstanceOf($methodCallRenames, MethodCallRenameInterface::class);
-
+        \RectorPrefix20211107\Webmozart\Assert\Assert::allIsInstanceOf($methodCallRenames, \Rector\Renaming\Contract\MethodCallRenameInterface::class);
         $this->methodCallRenames = $methodCallRenames;
+        $this->methodCallRenameCollector->addMethodCallRenames($methodCallRenames);
     }
-
     /**
-     * @param MethodCall|StaticCall|ClassMethod $node
+     * @param \PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\StaticCall|\PhpParser\Node\Stmt\ClassMethod $node
      */
-    private function skipClassMethod(Node $node, MethodCallRenameInterface $methodCallRename): bool
+    private function shouldSkipClassMethod($node, \Rector\Renaming\Contract\MethodCallRenameInterface $methodCallRename) : bool
     {
-        if (! $node instanceof ClassMethod) {
-            return false;
+        if (!$node instanceof \PhpParser\Node\Stmt\ClassMethod) {
+            return \false;
         }
-
-        if ($this->shouldSkipForAlreadyExistingClassMethod($node, $methodCallRename)) {
-            return true;
-        }
-
-        return $this->shouldSkipForExactClassMethodForClassMethodOrTargetInvokePrivate(
-            $node,
-            $methodCallRename->getOldObjectType(),
-            $methodCallRename->getNewMethod()
-        );
+        return $this->shouldSkipForAlreadyExistingClassMethod($node, $methodCallRename);
     }
-
-    private function shouldSkipForAlreadyExistingClassMethod(
-        ClassMethod $classMethod,
-        MethodCallRenameInterface $methodCallRename
-    ): bool {
-        $classLike = $classMethod->getAttribute(AttributeKey::CLASS_NODE);
-        if (! $classLike instanceof ClassLike) {
-            return false;
+    private function shouldSkipForAlreadyExistingClassMethod(\PhpParser\Node\Stmt\ClassMethod $classMethod, \Rector\Renaming\Contract\MethodCallRenameInterface $methodCallRename) : bool
+    {
+        $classLike = $this->betterNodeFinder->findParentType($classMethod, \PhpParser\Node\Stmt\ClassLike::class);
+        if (!$classLike instanceof \PhpParser\Node\Stmt\ClassLike) {
+            return \false;
         }
-
         return (bool) $classLike->getMethod($methodCallRename->getNewMethod());
-    }
-
-    private function shouldSkipForExactClassMethodForClassMethodOrTargetInvokePrivate(
-        ClassMethod $classMethod,
-        ObjectType $objectType,
-        string $newMethodName
-    ): bool {
-        $className = $classMethod->getAttribute(AttributeKey::CLASS_NAME);
-        $methodCalls = $this->nodeRepository->findMethodCallsOnClass($className);
-
-        $name = $this->getName($classMethod->name);
-        if (isset($methodCalls[$name])) {
-            return false;
-        }
-
-        $classMethodClass = $classMethod->getAttribute(AttributeKey::CLASS_NAME);
-        if ($classMethodClass === $objectType) {
-            return true;
-        }
-
-        if ($classMethod->isPublic()) {
-            return false;
-        }
-
-        $newClassMethod = clone $classMethod;
-        $newClassMethod->name = new Identifier($newMethodName);
-
-        return $newClassMethod->isMagic();
     }
 }

@@ -1,17 +1,15 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\TypeDeclaration\TypeInferer\PropertyTypeInferer;
 
-use Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Param;
-use PhpParser\Node\Stmt\Class_;
+use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Property;
 use PhpParser\NodeTraverser;
@@ -20,7 +18,9 @@ use PHPStan\Type\ArrayType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\NullType;
 use PHPStan\Type\Type;
+use Rector\Core\NodeAnalyzer\ParamAnalyzer;
 use Rector\Core\NodeManipulator\ClassMethodPropertyFetchManipulator;
+use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\Core\ValueObject\MethodName;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\Node\AttributeKey;
@@ -30,54 +30,47 @@ use Rector\StaticTypeMapper\StaticTypeMapper;
 use Rector\StaticTypeMapper\ValueObject\Type\AliasedObjectType;
 use Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType;
 use Rector\TypeDeclaration\Contract\TypeInferer\PropertyTypeInfererInterface;
-use Symplify\Astral\NodeTraverser\SimpleCallableNodeTraverser;
-
-final class ConstructorPropertyTypeInferer implements PropertyTypeInfererInterface
+use RectorPrefix20211107\Symplify\Astral\NodeTraverser\SimpleCallableNodeTraverser;
+final class ConstructorPropertyTypeInferer implements \Rector\TypeDeclaration\Contract\TypeInferer\PropertyTypeInfererInterface
 {
     /**
-     * @var ClassMethodPropertyFetchManipulator
+     * @var \Rector\Core\NodeManipulator\ClassMethodPropertyFetchManipulator
      */
     private $classMethodPropertyFetchManipulator;
-
     /**
-     * @var ReflectionProvider
+     * @var \PHPStan\Reflection\ReflectionProvider
      */
     private $reflectionProvider;
-
     /**
-     * @var NodeNameResolver
+     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
     private $nodeNameResolver;
-
     /**
-     * @var SimpleCallableNodeTraverser
+     * @var \Symplify\Astral\NodeTraverser\SimpleCallableNodeTraverser
      */
     private $simpleCallableNodeTraverser;
-
     /**
-     * @var TypeFactory
+     * @var \Rector\NodeTypeResolver\PHPStan\Type\TypeFactory
      */
     private $typeFactory;
-
     /**
-     * @var StaticTypeMapper
+     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
     private $staticTypeMapper;
-
     /**
-     * @var NodeTypeResolver
+     * @var \Rector\NodeTypeResolver\NodeTypeResolver
      */
     private $nodeTypeResolver;
-
-    public function __construct(
-        ClassMethodPropertyFetchManipulator $classMethodPropertyFetchManipulator,
-        ReflectionProvider $reflectionProvider,
-        NodeNameResolver $nodeNameResolver,
-        SimpleCallableNodeTraverser $simpleCallableNodeTraverser,
-        TypeFactory $typeFactory,
-        StaticTypeMapper $staticTypeMapper,
-        NodeTypeResolver $nodeTypeResolver
-    ) {
+    /**
+     * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
+     */
+    private $betterNodeFinder;
+    /**
+     * @var \Rector\Core\NodeAnalyzer\ParamAnalyzer
+     */
+    private $paramAnalyzer;
+    public function __construct(\Rector\Core\NodeManipulator\ClassMethodPropertyFetchManipulator $classMethodPropertyFetchManipulator, \PHPStan\Reflection\ReflectionProvider $reflectionProvider, \Rector\NodeNameResolver\NodeNameResolver $nodeNameResolver, \RectorPrefix20211107\Symplify\Astral\NodeTraverser\SimpleCallableNodeTraverser $simpleCallableNodeTraverser, \Rector\NodeTypeResolver\PHPStan\Type\TypeFactory $typeFactory, \Rector\StaticTypeMapper\StaticTypeMapper $staticTypeMapper, \Rector\NodeTypeResolver\NodeTypeResolver $nodeTypeResolver, \Rector\Core\PhpParser\Node\BetterNodeFinder $betterNodeFinder, \Rector\Core\NodeAnalyzer\ParamAnalyzer $paramAnalyzer)
+    {
         $this->classMethodPropertyFetchManipulator = $classMethodPropertyFetchManipulator;
         $this->reflectionProvider = $reflectionProvider;
         $this->nodeNameResolver = $nodeNameResolver;
@@ -85,157 +78,127 @@ final class ConstructorPropertyTypeInferer implements PropertyTypeInfererInterfa
         $this->typeFactory = $typeFactory;
         $this->staticTypeMapper = $staticTypeMapper;
         $this->nodeTypeResolver = $nodeTypeResolver;
+        $this->betterNodeFinder = $betterNodeFinder;
+        $this->paramAnalyzer = $paramAnalyzer;
     }
-
-    public function inferProperty(Property $property): Type
+    /**
+     * @param \PhpParser\Node\Stmt\Property $property
+     */
+    public function inferProperty($property) : ?\PHPStan\Type\Type
     {
-        $classLike = $property->getAttribute(AttributeKey::CLASS_NODE);
-        if (! $classLike instanceof Class_) {
-            // anonymous class
-            return new MixedType();
+        $classLike = $this->betterNodeFinder->findParentType($property, \PhpParser\Node\Stmt\ClassLike::class);
+        if (!$classLike instanceof \PhpParser\Node\Stmt\ClassLike) {
+            return null;
         }
-
-        $classMethod = $classLike->getMethod(MethodName::CONSTRUCT);
-        if (! $classMethod instanceof ClassMethod) {
-            return new MixedType();
+        $classMethod = $classLike->getMethod(\Rector\Core\ValueObject\MethodName::CONSTRUCT);
+        if (!$classMethod instanceof \PhpParser\Node\Stmt\ClassMethod) {
+            return null;
         }
-
         $propertyName = $this->nodeNameResolver->getName($property);
-
         $param = $this->classMethodPropertyFetchManipulator->resolveParamForPropertyFetch($classMethod, $propertyName);
-        if (! $param instanceof Param) {
-            return new MixedType();
+        if (!$param instanceof \PhpParser\Node\Param) {
+            return null;
         }
-
         // A. infer from type declaration of parameter
         if ($param->type !== null) {
             return $this->resolveFromParamType($param, $classMethod, $propertyName);
         }
-
-        return new MixedType();
+        return null;
     }
-
-    public function getPriority(): int
+    public function getPriority() : int
     {
         return 800;
     }
-
-    private function resolveFromParamType(Param $param, ClassMethod $classMethod, string $propertyName): Type
+    private function resolveFromParamType(\PhpParser\Node\Param $param, \PhpParser\Node\Stmt\ClassMethod $classMethod, string $propertyName) : \PHPStan\Type\Type
     {
         $type = $this->resolveParamTypeToPHPStanType($param);
-        if ($type instanceof MixedType) {
-            return new MixedType();
+        if ($type instanceof \PHPStan\Type\MixedType) {
+            return new \PHPStan\Type\MixedType();
         }
-
         $types = [];
-
         // it's an array - annotation → make type more precise, if possible
-        if ($type instanceof ArrayType || $param->variadic) {
+        if ($type instanceof \PHPStan\Type\ArrayType || $param->variadic) {
             $types[] = $this->getResolveParamStaticTypeAsPHPStanType($classMethod, $propertyName);
         } else {
             $types[] = $type;
         }
-
         if ($this->isParamNullable($param)) {
-            $types[] = new NullType();
+            $types[] = new \PHPStan\Type\NullType();
         }
-
         return $this->typeFactory->createMixedPassedOrUnionType($types);
     }
-
-    private function resolveParamTypeToPHPStanType(Param $param): Type
+    private function resolveParamTypeToPHPStanType(\PhpParser\Node\Param $param) : \PHPStan\Type\Type
     {
         if ($param->type === null) {
-            return new MixedType();
+            return new \PHPStan\Type\MixedType();
         }
-
-        if ($param->type instanceof NullableType) {
+        if ($this->paramAnalyzer->isNullable($param)) {
+            /** @var NullableType $type */
+            $type = $param->type;
             $types = [];
-            $types[] = new NullType();
-            $types[] = $this->staticTypeMapper->mapPhpParserNodePHPStanType($param->type->type);
-
+            $types[] = new \PHPStan\Type\NullType();
+            $types[] = $this->staticTypeMapper->mapPhpParserNodePHPStanType($type->type);
             return $this->typeFactory->createMixedPassedOrUnionType($types);
         }
-
         // special case for alias
-        if ($param->type instanceof FullyQualified) {
+        if ($param->type instanceof \PhpParser\Node\Name\FullyQualified) {
             $type = $this->resolveFullyQualifiedOrAliasedObjectType($param);
             if ($type !== null) {
                 return $type;
             }
         }
-
         return $this->staticTypeMapper->mapPhpParserNodePHPStanType($param->type);
     }
-
-    private function getResolveParamStaticTypeAsPHPStanType(ClassMethod $classMethod, string $propertyName): Type
+    private function getResolveParamStaticTypeAsPHPStanType(\PhpParser\Node\Stmt\ClassMethod $classMethod, string $propertyName) : \PHPStan\Type\Type
     {
-        $paramStaticType = new ArrayType(new MixedType(), new MixedType());
-
-        $this->simpleCallableNodeTraverser->traverseNodesWithCallable(
-            (array) $classMethod->stmts,
-            function (Node $node) use ($propertyName, &$paramStaticType): ?int {
-                if (! $node instanceof Variable) {
-                    return null;
-                }
-
-                if (! $this->nodeNameResolver->isName($node, $propertyName)) {
-                    return null;
-                }
-
-                $paramStaticType = $this->nodeTypeResolver->getStaticType($node);
-
-                return NodeTraverser::STOP_TRAVERSAL;
+        $paramStaticType = new \PHPStan\Type\ArrayType(new \PHPStan\Type\MixedType(), new \PHPStan\Type\MixedType());
+        $this->simpleCallableNodeTraverser->traverseNodesWithCallable((array) $classMethod->stmts, function (\PhpParser\Node $node) use($propertyName, &$paramStaticType) : ?int {
+            if (!$node instanceof \PhpParser\Node\Expr\Variable) {
+                return null;
             }
-        );
-
+            if (!$this->nodeNameResolver->isName($node, $propertyName)) {
+                return null;
+            }
+            $paramStaticType = $this->nodeTypeResolver->getType($node);
+            return \PhpParser\NodeTraverser::STOP_TRAVERSAL;
+        });
         return $paramStaticType;
     }
-
-    private function isParamNullable(Param $param): bool
+    private function isParamNullable(\PhpParser\Node\Param $param) : bool
     {
-        if ($param->type instanceof NullableType) {
-            return true;
+        if ($this->paramAnalyzer->isNullable($param)) {
+            return \true;
         }
-
         if ($param->default !== null) {
-            $defaultValueStaticType = $this->nodeTypeResolver->getStaticType($param->default);
-            if ($defaultValueStaticType instanceof NullType) {
-                return true;
+            $defaultValueStaticType = $this->nodeTypeResolver->getType($param->default);
+            if ($defaultValueStaticType instanceof \PHPStan\Type\NullType) {
+                return \true;
             }
         }
-
-        return false;
+        return \false;
     }
-
-    private function resolveFullyQualifiedOrAliasedObjectType(Param $param): ?Type
+    private function resolveFullyQualifiedOrAliasedObjectType(\PhpParser\Node\Param $param) : ?\PHPStan\Type\Type
     {
         if ($param->type === null) {
             return null;
         }
-
         $fullyQualifiedName = $this->nodeNameResolver->getName($param->type);
-        if (! $fullyQualifiedName) {
+        if (!$fullyQualifiedName) {
             return null;
         }
-
-        $originalName = $param->type->getAttribute(AttributeKey::ORIGINAL_NAME);
-        if (! $originalName instanceof Name) {
+        $originalName = $param->type->getAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::ORIGINAL_NAME);
+        if (!$originalName instanceof \PhpParser\Node\Name) {
             return null;
         }
-
         // if the FQN has different ending than the original, it was aliased and we need to return the alias
-        if (! Strings::endsWith($fullyQualifiedName, '\\' . $originalName->toString())) {
+        if (\substr_compare($fullyQualifiedName, '\\' . $originalName->toString(), -\strlen('\\' . $originalName->toString())) !== 0) {
             $className = $originalName->toString();
-
             if ($this->reflectionProvider->hasClass($className)) {
-                return new FullyQualifiedObjectType($className);
+                return new \Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType($className);
             }
-
             // @note: $fullyQualifiedName is a guess, needs real life test
-            return new AliasedObjectType($originalName->toString(), $fullyQualifiedName);
+            return new \Rector\StaticTypeMapper\ValueObject\Type\AliasedObjectType($originalName->toString(), $fullyQualifiedName);
         }
-
         return null;
     }
 }

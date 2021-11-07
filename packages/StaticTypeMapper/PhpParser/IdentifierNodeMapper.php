@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\StaticTypeMapper\PhpParser;
 
 use PhpParser\Node;
@@ -9,31 +8,27 @@ use PhpParser\Node\Identifier;
 use PHPStan\Type\Type;
 use Rector\StaticTypeMapper\Contract\PhpParser\PhpParserNodeMapperInterface;
 use Rector\StaticTypeMapper\Mapper\ScalarStringToTypeMapper;
-
-final class IdentifierNodeMapper implements PhpParserNodeMapperInterface
+final class IdentifierNodeMapper implements \Rector\StaticTypeMapper\Contract\PhpParser\PhpParserNodeMapperInterface
 {
     /**
-     * @var ScalarStringToTypeMapper
+     * @var \Rector\StaticTypeMapper\Mapper\ScalarStringToTypeMapper
      */
     private $scalarStringToTypeMapper;
-
-    public function __construct(ScalarStringToTypeMapper $scalarStringToTypeMapper)
+    public function __construct(\Rector\StaticTypeMapper\Mapper\ScalarStringToTypeMapper $scalarStringToTypeMapper)
     {
         $this->scalarStringToTypeMapper = $scalarStringToTypeMapper;
     }
-
     /**
      * @return class-string<Node>
      */
-    public function getNodeType(): string
+    public function getNodeType() : string
     {
-        return Identifier::class;
+        return \PhpParser\Node\Identifier::class;
     }
-
     /**
-     * @param Identifier $node
+     * @param \PhpParser\Node $node
      */
-    public function mapToPHPStan(Node $node): Type
+    public function mapToPHPStan($node) : \PHPStan\Type\Type
     {
         return $this->scalarStringToTypeMapper->mapScalarStringToType($node->name);
     }

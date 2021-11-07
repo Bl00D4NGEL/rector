@@ -1,116 +1,114 @@
 <?php
 
-declare(strict_types=1);
+declare (strict_types=1);
+namespace RectorPrefix20211107;
 
+use RectorPrefix20211107\Nette\Utils\Json;
+use Rector\ChangesReporting\Output\JsonOutputFormatter;
 use Rector\Core\Bootstrap\RectorConfigsResolver;
+use Rector\Core\Configuration\Option;
 use Rector\Core\Console\ConsoleApplication;
 use Rector\Core\Console\Style\SymfonyStyleFactory;
 use Rector\Core\DependencyInjection\RectorContainerFactory;
-use Rector\Core\HttpKernel\RectorKernel;
-use Symplify\PackageBuilder\Console\ShellCode;
-use Symplify\PackageBuilder\Reflection\PrivatesCaller;
-use Symplify\SetConfigResolver\Bootstrap\InvalidSetReporter;
-use Symplify\SetConfigResolver\Exception\SetNotFoundException;
-
+use Rector\Core\Kernel\RectorKernel;
+use RectorPrefix20211107\Symfony\Component\Console\Command\Command;
+use RectorPrefix20211107\Symfony\Component\Console\Input\ArgvInput;
+use RectorPrefix20211107\Symplify\PackageBuilder\Reflection\PrivatesCaller;
 // @ intentionally: continue anyway
-@ini_set('memory_limit', '-1');
-
+@\ini_set('memory_limit', '-1');
 // Performance boost
-error_reporting(E_ALL);
-ini_set('display_errors', 'stderr');
-gc_disable();
-
-define('__RECTOR_RUNNING__', true);
-
+\error_reporting(\E_ALL);
+\ini_set('display_errors', 'stderr');
+\gc_disable();
+\define('__RECTOR_RUNNING__', \true);
 // Require Composer autoload.php
-$autoloadIncluder = new AutoloadIncluder();
+$autoloadIncluder = new \RectorPrefix20211107\AutoloadIncluder();
 $autoloadIncluder->includeDependencyOrRepositoryVendorAutoloadIfExists();
-
+// load extracted PHPStan with its own preload.php
+$extractedPhpstanAutoload = __DIR__ . '/../vendor/phpstan/phpstan-extracted/vendor/autoload.php';
+if (\file_exists($extractedPhpstanAutoload)) {
+    require_once $extractedPhpstanAutoload;
+}
+if (\file_exists(__DIR__ . '/../preload.php') && \is_dir(__DIR__ . '/../vendor')) {
+    require_once __DIR__ . '/../preload.php';
+}
+require_once __DIR__ . '/../src/constants.php';
+// pre-set for PHP 5.6/7.0 downgraded version
+$autoloadIncluder->loadIfExistsAndNotLoadedYet(__DIR__ . '/../vendor/phpstan/phpstan-extracted/vendor/phpstan-autoload.php');
 $autoloadIncluder->loadIfExistsAndNotLoadedYet(__DIR__ . '/../vendor/scoper-autoload.php');
-
 $autoloadIncluder->autoloadProjectAutoloaderFile();
 $autoloadIncluder->autoloadFromCommandLine();
-
-$symfonyStyleFactory = new SymfonyStyleFactory(new PrivatesCaller());
-$symfonyStyle = $symfonyStyleFactory->create();
-
-$rectorConfigsResolver = new RectorConfigsResolver();
-
+$rectorConfigsResolver = new \Rector\Core\Bootstrap\RectorConfigsResolver();
 try {
     $bootstrapConfigs = $rectorConfigsResolver->provide();
-
-    $rectorContainerFactory = new RectorContainerFactory();
+    $rectorContainerFactory = new \Rector\Core\DependencyInjection\RectorContainerFactory();
     $container = $rectorContainerFactory->createFromBootstrapConfigs($bootstrapConfigs);
-} catch (SetNotFoundException $setNotFoundException) {
-    $invalidSetReporter = new InvalidSetReporter();
-    $invalidSetReporter->report($setNotFoundException);
-    exit(ShellCode::ERROR);
-} catch (Throwable $throwable) {
-    $symfonyStyle->error($throwable->getMessage());
-    exit(ShellCode::ERROR);
+} catch (\Throwable $throwable) {
+    // for json output
+    $argvInput = new \RectorPrefix20211107\Symfony\Component\Console\Input\ArgvInput();
+    $outputFormat = $argvInput->getParameterOption('--' . \Rector\Core\Configuration\Option::OUTPUT_FORMAT);
+    // report fatal error in json format
+    if ($outputFormat === \Rector\ChangesReporting\Output\JsonOutputFormatter::NAME) {
+        echo \RectorPrefix20211107\Nette\Utils\Json::encode(['fatal_errors' => [$throwable->getMessage()]]);
+    } else {
+        // report fatal errors in console format
+        $symfonyStyleFactory = new \Rector\Core\Console\Style\SymfonyStyleFactory(new \RectorPrefix20211107\Symplify\PackageBuilder\Reflection\PrivatesCaller());
+        $symfonyStyle = $symfonyStyleFactory->create();
+        $symfonyStyle->error($throwable->getMessage());
+    }
+    exit(\RectorPrefix20211107\Symfony\Component\Console\Command\Command::FAILURE);
 }
-
 /** @var ConsoleApplication $application */
-$application = $container->get(ConsoleApplication::class);
+$application = $container->get(\Rector\Core\Console\ConsoleApplication::class);
 exit($application->run());
-
 final class AutoloadIncluder
 {
     /**
      * @var string[]
      */
     private $alreadyLoadedAutoloadFiles = [];
-
-    public function includeDependencyOrRepositoryVendorAutoloadIfExists(): void
+    public function includeDependencyOrRepositoryVendorAutoloadIfExists() : void
     {
         // Rector's vendor is already loaded
-        if (class_exists(RectorKernel::class)) {
+        if (\class_exists(\Rector\Core\Kernel\RectorKernel::class)) {
             return;
         }
-
         // in Rector develop repository
         $this->loadIfExistsAndNotLoadedYet(__DIR__ . '/../vendor/autoload.php');
     }
-
     /**
      * In case Rector is installed as vendor dependency,
      * this autoloads the project vendor/autoload.php, including Rector
      */
-    public function autoloadProjectAutoloaderFile(): void
+    public function autoloadProjectAutoloaderFile() : void
     {
         $this->loadIfExistsAndNotLoadedYet(__DIR__ . '/../../../autoload.php');
     }
-
-    public function autoloadFromCommandLine(): void
+    public function autoloadFromCommandLine() : void
     {
         $cliArgs = $_SERVER['argv'];
-
-        $autoloadOptionPosition = array_search('-a', $cliArgs, true) ?: array_search('--autoload-file', $cliArgs, true);
-        if (! $autoloadOptionPosition) {
+        $autoloadOptionPosition = \array_search('-a', $cliArgs, \true) ?: \array_search('--autoload-file', $cliArgs, \true);
+        if (!$autoloadOptionPosition) {
             return;
         }
-
         $autoloadFileValuePosition = $autoloadOptionPosition + 1;
         $fileToAutoload = $cliArgs[$autoloadFileValuePosition] ?? null;
         if ($fileToAutoload === null) {
             return;
         }
-
         $this->loadIfExistsAndNotLoadedYet($fileToAutoload);
     }
-
-    public function loadIfExistsAndNotLoadedYet(string $filePath): void
+    public function loadIfExistsAndNotLoadedYet(string $filePath) : void
     {
-        if (! file_exists($filePath)) {
+        // the scoper-autoload.php is exists in phpstan-extracted/vendor/scoper-autoload.php, move the check in :
+        if (!\file_exists($filePath)) {
             return;
         }
-
-        if (in_array($filePath, $this->alreadyLoadedAutoloadFiles, true)) {
+        if (\in_array($filePath, $this->alreadyLoadedAutoloadFiles, \true)) {
             return;
         }
-
-        $this->alreadyLoadedAutoloadFiles[] = realpath($filePath);
-
+        $this->alreadyLoadedAutoloadFiles[] = \realpath($filePath);
         require_once $filePath;
     }
 }
+\class_alias('RectorPrefix20211107\\AutoloadIncluder', 'AutoloadIncluder', \false);

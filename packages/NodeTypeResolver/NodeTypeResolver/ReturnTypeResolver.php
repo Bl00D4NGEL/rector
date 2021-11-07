@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\NodeTypeResolver\NodeTypeResolver;
 
 use PhpParser\Node;
@@ -10,39 +9,35 @@ use PHPStan\Type\Type;
 use PHPStan\Type\VoidType;
 use Rector\NodeTypeResolver\Contract\NodeTypeResolverInterface;
 use Rector\NodeTypeResolver\NodeTypeResolver;
-
-final class ReturnTypeResolver implements NodeTypeResolverInterface
+use RectorPrefix20211107\Symfony\Contracts\Service\Attribute\Required;
+final class ReturnTypeResolver implements \Rector\NodeTypeResolver\Contract\NodeTypeResolverInterface
 {
     /**
-     * @var NodeTypeResolver
+     * @var \Rector\NodeTypeResolver\NodeTypeResolver
      */
     private $nodeTypeResolver;
-
     /**
      * @required
      */
-    public function autowireReturnTypeResolver(NodeTypeResolver $nodeTypeResolver): void
+    public function autowireReturnTypeResolver(\Rector\NodeTypeResolver\NodeTypeResolver $nodeTypeResolver) : void
     {
         $this->nodeTypeResolver = $nodeTypeResolver;
     }
-
     /**
      * @return array<class-string<Node>>
      */
-    public function getNodeClasses(): array
+    public function getNodeClasses() : array
     {
-        return [Return_::class];
+        return [\PhpParser\Node\Stmt\Return_::class];
     }
-
     /**
-     * @param Return_ $node
+     * @param \PhpParser\Node $node
      */
-    public function resolve(Node $node): Type
+    public function resolve($node) : \PHPStan\Type\Type
     {
         if ($node->expr === null) {
-            return new VoidType();
+            return new \PHPStan\Type\VoidType();
         }
-
-        return $this->nodeTypeResolver->resolve($node->expr);
+        return $this->nodeTypeResolver->getType($node->expr);
     }
 }

@@ -1,129 +1,127 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\StaticTypeMapper\PhpParser;
 
 use PhpParser\Node;
 use PhpParser\Node\Name;
+use PhpParser\Node\Stmt\ClassLike;
+use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\BooleanType;
+use PHPStan\Type\Constant\ConstantBooleanType;
 use PHPStan\Type\FloatType;
 use PHPStan\Type\IntegerType;
 use PHPStan\Type\MixedType;
+use PHPStan\Type\ObjectWithoutClassType;
 use PHPStan\Type\StaticType;
 use PHPStan\Type\StringType;
 use PHPStan\Type\ThisType;
 use PHPStan\Type\Type;
-use Rector\NodeTypeResolver\Node\AttributeKey;
-use Rector\PSR4\Collector\RenamedClassesCollector;
+use Rector\Core\Configuration\RenamedClassesDataCollector;
+use Rector\Core\Enum\ObjectReference;
+use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\StaticTypeMapper\Contract\PhpParser\PhpParserNodeMapperInterface;
-use Rector\StaticTypeMapper\ValueObject\Type\FalseBooleanType;
 use Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType;
-
-final class NameNodeMapper implements PhpParserNodeMapperInterface
+use Rector\StaticTypeMapper\ValueObject\Type\ParentObjectWithoutClassType;
+use Rector\StaticTypeMapper\ValueObject\Type\ParentStaticType;
+final class NameNodeMapper implements \Rector\StaticTypeMapper\Contract\PhpParser\PhpParserNodeMapperInterface
 {
     /**
-     * @var RenamedClassesCollector
+     * @var \Rector\Core\Configuration\RenamedClassesDataCollector
      */
-    private $renamedClassesCollector;
-
+    private $renamedClassesDataCollector;
     /**
-     * @var ReflectionProvider
+     * @var \PHPStan\Reflection\ReflectionProvider
      */
     private $reflectionProvider;
-
-    public function __construct(
-        RenamedClassesCollector $renamedClassesCollector,
-        ReflectionProvider $reflectionProvider
-    ) {
-        $this->renamedClassesCollector = $renamedClassesCollector;
+    /**
+     * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
+     */
+    private $betterNodeFinder;
+    public function __construct(\Rector\Core\Configuration\RenamedClassesDataCollector $renamedClassesDataCollector, \PHPStan\Reflection\ReflectionProvider $reflectionProvider, \Rector\Core\PhpParser\Node\BetterNodeFinder $betterNodeFinder)
+    {
+        $this->renamedClassesDataCollector = $renamedClassesDataCollector;
         $this->reflectionProvider = $reflectionProvider;
+        $this->betterNodeFinder = $betterNodeFinder;
     }
-
     /**
      * @return class-string<Node>
      */
-    public function getNodeType(): string
+    public function getNodeType() : string
     {
-        return Name::class;
+        return \PhpParser\Node\Name::class;
     }
-
     /**
-     * @param Name $node
+     * @param \PhpParser\Node $node
      */
-    public function mapToPHPStan(Node $node): Type
+    public function mapToPHPStan($node) : \PHPStan\Type\Type
     {
         $name = $node->toString();
         if ($this->isExistingClass($name)) {
-            return new FullyQualifiedObjectType($name);
+            return new \Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType($name);
         }
-
-        if (in_array($name, ['static', 'self'], true)) {
+        if (\Rector\Core\Enum\ObjectReference::isValid($name)) {
             return $this->createClassReferenceType($node, $name);
         }
-
         return $this->createScalarType($name);
     }
-
-    private function isExistingClass(string $name): bool
+    private function isExistingClass(string $name) : bool
     {
         if ($this->reflectionProvider->hasClass($name)) {
-            return true;
+            return \true;
         }
-
         // to be existing class names
-        $oldToNewClasses = $this->renamedClassesCollector->getOldToNewClasses();
-
-        return in_array($name, $oldToNewClasses, true);
+        $oldToNewClasses = $this->renamedClassesDataCollector->getOldToNewClasses();
+        return \in_array($name, $oldToNewClasses, \true);
     }
-
-    private function createClassReferenceType(Name $name, string $reference): Type
+    /**
+     * @return \PHPStan\Type\MixedType|\PHPStan\Type\ObjectWithoutClassType|\PHPStan\Type\StaticType
+     */
+    private function createClassReferenceType(\PhpParser\Node\Name $name, string $reference)
     {
-        $className = $name->getAttribute(AttributeKey::CLASS_NAME);
-        if ($className === null) {
-            return new MixedType();
+        $classLike = $this->betterNodeFinder->findParentType($name, \PhpParser\Node\Stmt\ClassLike::class);
+        if (!$classLike instanceof \PhpParser\Node\Stmt\ClassLike) {
+            return new \PHPStan\Type\MixedType();
         }
-
-        if ($reference === 'static') {
-            return new StaticType($className);
+        $className = $classLike->namespacedName->toString();
+        $classReflection = $this->reflectionProvider->getClass($className);
+        if ($reference === \Rector\Core\Enum\ObjectReference::STATIC()->getValue()) {
+            return new \PHPStan\Type\StaticType($classReflection);
         }
-
-        if ($this->reflectionProvider->hasClass($className)) {
-            $classReflection = $this->reflectionProvider->getClass($className);
-            return new ThisType($classReflection);
+        if ($reference === \Rector\Core\Enum\ObjectReference::PARENT()->getValue()) {
+            $parentClassReflection = $classReflection->getParentClass();
+            if ($parentClassReflection instanceof \PHPStan\Reflection\ClassReflection) {
+                return new \Rector\StaticTypeMapper\ValueObject\Type\ParentStaticType($parentClassReflection);
+            }
+            return new \Rector\StaticTypeMapper\ValueObject\Type\ParentObjectWithoutClassType();
         }
-
-        return new ThisType($className);
+        return new \PHPStan\Type\ThisType($classReflection);
     }
-
-    private function createScalarType(string $name): Type
+    /**
+     * @return \PHPStan\Type\ArrayType|\PHPStan\Type\BooleanType|\PHPStan\Type\Constant\ConstantBooleanType|\PHPStan\Type\FloatType|\PHPStan\Type\IntegerType|\PHPStan\Type\MixedType|\PHPStan\Type\StringType
+     */
+    private function createScalarType(string $name)
     {
         if ($name === 'array') {
-            return new ArrayType(new MixedType(), new MixedType());
+            return new \PHPStan\Type\ArrayType(new \PHPStan\Type\MixedType(), new \PHPStan\Type\MixedType());
         }
-
         if ($name === 'int') {
-            return new IntegerType();
+            return new \PHPStan\Type\IntegerType();
         }
-
         if ($name === 'float') {
-            return new FloatType();
+            return new \PHPStan\Type\FloatType();
         }
-
         if ($name === 'string') {
-            return new StringType();
+            return new \PHPStan\Type\StringType();
         }
-
         if ($name === 'false') {
-            return new FalseBooleanType();
+            return new \PHPStan\Type\Constant\ConstantBooleanType(\false);
         }
-
         if ($name === 'bool') {
-            return new BooleanType();
+            return new \PHPStan\Type\BooleanType();
         }
-
-        return new MixedType();
+        return new \PHPStan\Type\MixedType();
     }
 }

@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Comments;
 
 use PhpParser\Comment;
@@ -9,42 +8,36 @@ use PhpParser\Comment\Doc;
 use PhpParser\Node;
 use Rector\Comments\NodeTraverser\CommentRemovingNodeTraverser;
 use Rector\NodeTypeResolver\Node\AttributeKey;
-
 /**
- * @see \Rector\Comments\Tests\CommentRemover\CommentRemoverTest
+ * @see \Rector\Tests\Comments\CommentRemover\CommentRemoverTest
  */
 final class CommentRemover
 {
     /**
-     * @var CommentRemovingNodeTraverser
+     * @var \Rector\Comments\NodeTraverser\CommentRemovingNodeTraverser
      */
     private $commentRemovingNodeTraverser;
-
-    public function __construct(CommentRemovingNodeTraverser $commentRemovingNodeTraverser)
+    public function __construct(\Rector\Comments\NodeTraverser\CommentRemovingNodeTraverser $commentRemovingNodeTraverser)
     {
         $this->commentRemovingNodeTraverser = $commentRemovingNodeTraverser;
     }
-
     /**
-     * @param Node[]|Node|null $node
-     * @return Node[]|null
+     * @return mixed[]|null
+     * @param mixed[]|\PhpParser\Node|null $node
      */
-    public function removeFromNode($node): ?array
+    public function removeFromNode($node)
     {
         if ($node === null) {
             return null;
         }
-
         $copiedNodes = $node;
-
-        $nodes = is_array($copiedNodes) ? $copiedNodes : [$copiedNodes];
+        $nodes = \is_array($copiedNodes) ? $copiedNodes : [$copiedNodes];
         return $this->commentRemovingNodeTraverser->traverse($nodes);
     }
-
-    public function rollbackComments(Node $node, Comment $comment): void
+    public function rollbackComments(\PhpParser\Node $node, \PhpParser\Comment $comment) : void
     {
-        $node->setAttribute(AttributeKey::COMMENTS, null);
-        $node->setDocComment(new Doc($comment->getText()));
-        $node->setAttribute(AttributeKey::PHP_DOC_INFO, null);
+        $node->setAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::COMMENTS, null);
+        $node->setDocComment(new \PhpParser\Comment\Doc($comment->getText()));
+        $node->setAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::PHP_DOC_INFO, null);
     }
 }

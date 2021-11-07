@@ -1,135 +1,137 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\PhpAttribute\Printer;
 
 use PhpParser\BuilderHelpers;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Attribute;
 use PhpParser\Node\AttributeGroup;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
-use Rector\PhpAttribute\Contract\ManyPhpAttributableTagNodeInterface;
-use Rector\PhpAttribute\Contract\PhpAttributableTagNodeInterface;
-
+use PhpParser\Node\Scalar\String_;
+use Rector\BetterPhpDocParser\PhpDoc\DoctrineAnnotationTagValueNode;
+use Rector\NodeTypeResolver\Node\AttributeKey;
+use Rector\Php80\ValueObject\AnnotationToAttribute;
+use Rector\PhpAttribute\NodeAnalyzer\NamedArgumentsResolver;
+use Rector\PhpAttribute\Value\ValueNormalizer;
+/**
+ * @see \Rector\Tests\PhpAttribute\Printer\PhpAttributeGroupFactoryTest
+ */
 final class PhpAttributeGroupFactory
 {
     /**
-     * A dummy placeholder for annotation, that we know will be converted to attributes,
-     * but don't have specific attribute class yet.
-     *
-     * @var string
+     * @var \Rector\PhpAttribute\NodeAnalyzer\NamedArgumentsResolver
      */
-    public const TO_BE_ANNOUNCED = 'TBA';
-
+    private $namedArgumentsResolver;
     /**
-     * @param PhpAttributableTagNodeInterface[] $phpAttributableTagNodes
-     * @return AttributeGroup[]
+     * @var \Rector\PhpAttribute\Value\ValueNormalizer
      */
-    public function create(array $phpAttributableTagNodes): array
+    private $valueNormalizer;
+    public function __construct(\Rector\PhpAttribute\NodeAnalyzer\NamedArgumentsResolver $namedArgumentsResolver, \Rector\PhpAttribute\Value\ValueNormalizer $valueNormalizer)
     {
-        $attributeGroups = [];
-        foreach ($phpAttributableTagNodes as $phpAttributableTagNode) {
-            $currentAttributeGroups = $this->printPhpAttributableTagNode($phpAttributableTagNode);
-            $attributeGroups = array_merge($attributeGroups, $currentAttributeGroups);
-        }
-
-        return $attributeGroups;
+        $this->namedArgumentsResolver = $namedArgumentsResolver;
+        $this->valueNormalizer = $valueNormalizer;
     }
-
+    public function createFromSimpleTag(\Rector\Php80\ValueObject\AnnotationToAttribute $annotationToAttribute) : \PhpParser\Node\AttributeGroup
+    {
+        return $this->createFromClass($annotationToAttribute->getAttributeClass());
+    }
+    public function createFromClass(string $attributeClass) : \PhpParser\Node\AttributeGroup
+    {
+        $fullyQualified = new \PhpParser\Node\Name\FullyQualified($attributeClass);
+        $attribute = new \PhpParser\Node\Attribute($fullyQualified);
+        return new \PhpParser\Node\AttributeGroup([$attribute]);
+    }
     /**
-     * @return Arg[]
+     * @param mixed[] $items
      */
-    public function printItemsToAttributeArgs(PhpAttributableTagNodeInterface $phpAttributableTagNode): array
+    public function createFromClassWithItems(string $attributeClass, array $items) : \PhpParser\Node\AttributeGroup
     {
-        $items = $phpAttributableTagNode->getAttributableItems();
-        return $this->createArgsFromItems($items);
+        $fullyQualified = new \PhpParser\Node\Name\FullyQualified($attributeClass);
+        $args = $this->createArgsFromItems($items);
+        $attribute = new \PhpParser\Node\Attribute($fullyQualified, $args);
+        return new \PhpParser\Node\AttributeGroup([$attribute]);
     }
-
-    /**
-     * @return AttributeGroup[]
-     */
-    private function printPhpAttributableTagNode(PhpAttributableTagNodeInterface $phpAttributableTagNode): array
+    public function create(\Rector\BetterPhpDocParser\PhpDoc\DoctrineAnnotationTagValueNode $doctrineAnnotationTagValueNode, \Rector\Php80\ValueObject\AnnotationToAttribute $annotationToAttribute) : \PhpParser\Node\AttributeGroup
     {
-        $args = $this->printItemsToAttributeArgs($phpAttributableTagNode);
-
-        $attributeClassName = $this->resolveAttributeClassName($phpAttributableTagNode);
-
-        $attributeGroups = [];
-        $attributeGroups[] = $this->createAttributeGroupFromNameAndArgs($attributeClassName, $args);
-
-        if ($phpAttributableTagNode instanceof ManyPhpAttributableTagNodeInterface) {
-            foreach ($phpAttributableTagNode->provide() as $shortName => $items) {
-                $args = $this->createArgsFromItems($items);
-                $name = new Name($shortName);
-                $attributeGroups[] = $this->createAttributeGroupFromNameAndArgs($name, $args);
-            }
-        }
-
-        return $attributeGroups;
+        $fullyQualified = new \PhpParser\Node\Name\FullyQualified($annotationToAttribute->getAttributeClass());
+        $values = $doctrineAnnotationTagValueNode->getValuesWithExplicitSilentAndWithoutQuotes();
+        $args = $this->createArgsFromItems($values);
+        $argumentNames = $this->namedArgumentsResolver->resolveFromClass($annotationToAttribute->getAttributeClass());
+        $this->completeNamedArguments($args, $argumentNames);
+        $attribute = new \PhpParser\Node\Attribute($fullyQualified, $args);
+        return new \PhpParser\Node\AttributeGroup([$attribute]);
     }
-
     /**
      * @param mixed[] $items
      * @return Arg[]
      */
-    private function createArgsFromItems(array $items, ?string $silentKey = null): array
+    public function createArgsFromItems(array $items, ?string $silentKey = null) : array
     {
         $args = [];
-
         if ($silentKey !== null && isset($items[$silentKey])) {
-            $silentValue = BuilderHelpers::normalizeValue($items[$silentKey]);
-            $args[] = new Arg($silentValue);
+            $silentValue = \PhpParser\BuilderHelpers::normalizeValue($items[$silentKey]);
+            $this->normalizeStringDoubleQuote($silentValue);
+            $args[] = new \PhpParser\Node\Arg($silentValue);
             unset($items[$silentKey]);
         }
-
-        if ($this->isArrayArguments($items)) {
-            foreach ($items as $key => $value) {
-                $argumentName = new Identifier($key);
-                $value = BuilderHelpers::normalizeValue($value);
-                $args[] = new Arg($value, false, false, [], $argumentName);
+        foreach ($items as $key => $value) {
+            $value = $this->valueNormalizer->normalize($value);
+            $value = \PhpParser\BuilderHelpers::normalizeValue($value);
+            $this->normalizeStringDoubleQuote($value);
+            $name = null;
+            if (\is_string($key)) {
+                $name = new \PhpParser\Node\Identifier($key);
             }
-        } else {
-            foreach ($items as $item) {
-                $item = BuilderHelpers::normalizeValue($item);
-                $args[] = new Arg($item);
-            }
+            // resolve argument name
+            $args[] = $this->isArrayArguments($items) ? new \PhpParser\Node\Arg($value, \false, \false, [], $name) : new \PhpParser\Node\Arg($value);
         }
-
         return $args;
     }
-
-    private function resolveAttributeClassName(PhpAttributableTagNodeInterface $phpAttributableTagNode): Name
-    {
-        if ($phpAttributableTagNode->getAttributeClassName() !== self::TO_BE_ANNOUNCED) {
-            return new FullyQualified($phpAttributableTagNode->getAttributeClassName());
-        }
-
-        return new Name($phpAttributableTagNode->getShortName());
-    }
-
-    /**
-     * @param Arg[] $args
-     */
-    private function createAttributeGroupFromNameAndArgs(Name $name, array $args): AttributeGroup
-    {
-        $attribute = new Attribute($name, $args);
-        return new AttributeGroup([$attribute]);
-    }
-
     /**
      * @param mixed[] $items
      */
-    private function isArrayArguments(array $items): bool
+    private function isArrayArguments(array $items) : bool
     {
-        foreach (array_keys($items) as $key) {
-            if (! is_int($key)) {
-                return true;
+        foreach (\array_keys($items) as $key) {
+            if (!\is_int($key)) {
+                return \true;
             }
         }
-
-        return false;
+        return \false;
+    }
+    private function normalizeStringDoubleQuote(\PhpParser\Node\Expr $expr) : void
+    {
+        if (!$expr instanceof \PhpParser\Node\Scalar\String_) {
+            return;
+        }
+        // avoid escaping quotes + preserve newlines
+        if (\strpos($expr->value, "'") === \false) {
+            return;
+        }
+        if (\strpos($expr->value, "\n") !== \false) {
+            return;
+        }
+        $expr->setAttribute(\Rector\NodeTypeResolver\Node\AttributeKey::KIND, \PhpParser\Node\Scalar\String_::KIND_DOUBLE_QUOTED);
+    }
+    /**
+     * @param Arg[] $args
+     * @param string[] $argumentNames
+     */
+    private function completeNamedArguments(array $args, array $argumentNames) : void
+    {
+        foreach ($args as $key => $arg) {
+            $argumentName = $argumentNames[$key] ?? null;
+            if ($argumentName === null) {
+                continue;
+            }
+            if ($arg->name !== null) {
+                continue;
+            }
+            $arg->name = new \PhpParser\Node\Identifier($argumentName);
+        }
     }
 }

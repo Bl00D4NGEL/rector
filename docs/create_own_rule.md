@@ -14,7 +14,9 @@ Let's say we want to **change method calls from `set*` to `change*`**.
 Create a class that extends [`Rector\Core\Rector\AbstractRector`](/src/Rector/AbstractRector.php). It will inherit useful methods e.g. to check node type and name. See the source (or type `$this->` in an IDE) for a list of available methods.
 
 ```php
-namespace Utils\Rector;
+declare(strict_types=1);
+
+namespace Utils\Rector\Rector;
 
 use Nette\Utils\Strings;
 use PhpParser\Node;
@@ -27,7 +29,7 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class MyFirstRector extends AbstractRector
 {
     /**
-     * @return string[]
+     * @return array<class-string<Node>>
      */
     public function getNodeTypes(): array
     {
@@ -58,7 +60,7 @@ final class MyFirstRector extends AbstractRector
     }
 
     /**
-     * From this method documentation is generated.
+     * This method helps other to understand the rule and to generate documentation.
      */
     public function getRuleDefinition(): RuleDefinition
     {
@@ -76,14 +78,46 @@ final class MyFirstRector extends AbstractRector
 }
 ```
 
-This is how the file structure should look like:
+
+## File Structure
+
+This is how the file structure for custom rule in your own project will look like:
 
 ```bash
-/src/YourCode.php
-/utils/Rector/MyFirstRector.php
+/src/
+    /YourCode.php
+/utils
+    /rector
+        /src
+            /Rector
+                MyFirstRector.php
 rector.php
 composer.json
 ```
+
+Writing test saves you lot of time in future debugging. Here is a file structure with tests:
+
+```bash
+/src/
+    /YourCode.php
+/utils
+    /rector
+        /src
+            /Rector
+                MyFirstRector.php
+        /tests
+            /Rector
+                /MyFirstRector
+                    /Fixture
+                        test_fixture.php.inc
+                    /config
+                        config.php
+                    MyFirstRectorTest.php
+rector.php
+composer.json
+```
+
+## Update `composer.json`
 
 We also need to load Rector rules in `composer.json`:
 
@@ -96,7 +130,8 @@ We also need to load Rector rules in `composer.json`:
     },
     "autoload-dev": {
         "psr-4": {
-            "Utils\\": "utils"
+            "Utils\\Rector\\": "utils/rector/src",
+            "Utils\\Rector\\Tests\\": "utils/rector/tests"
         }
     }
 }
@@ -117,7 +152,7 @@ composer dump-autoload
 declare(strict_types=1);
 
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use Utils\Rector\MyFirstRector;
+use Utils\Rector\Rector\MyFirstRector;
 
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();

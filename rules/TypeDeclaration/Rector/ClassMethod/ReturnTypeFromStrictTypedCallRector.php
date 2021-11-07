@@ -1,14 +1,11 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\TypeDeclaration\Rector\ClassMethod;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\Closure;
-use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Expr\MethodCall;
-use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
@@ -20,42 +17,42 @@ use PhpParser\Node\Stmt\Return_;
 use PhpParser\Node\UnionType as PhpParserUnionType;
 use PHPStan\Type\NullType;
 use PHPStan\Type\ObjectType;
-use PHPStan\Type\Type;
 use PHPStan\Type\UnionType;
-use Rector\Core\Exception\ShouldNotHappenException;
+use PHPStan\Type\VoidType;
 use Rector\Core\Rector\AbstractRector;
 use Rector\Core\ValueObject\PhpVersionFeature;
+use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
+use Rector\TypeDeclaration\NodeAnalyzer\ReturnStrictTypeAnalyzer;
 use Rector\TypeDeclaration\NodeAnalyzer\TypeNodeUnwrapper;
-use Rector\TypeDeclaration\Reflection\ReflectionTypeResolver;
+use Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\ClassMethod\ReturnTypeFromStrictTypedCallRector\ReturnTypeFromStrictTypedCallRectorTest
  */
-final class ReturnTypeFromStrictTypedCallRector extends AbstractRector
+final class ReturnTypeFromStrictTypedCallRector extends \Rector\Core\Rector\AbstractRector
 {
     /**
-     * @var ReflectionTypeResolver
-     */
-    private $reflectionTypeResolver;
-
-    /**
-     * @var TypeNodeUnwrapper
+     * @var \Rector\TypeDeclaration\NodeAnalyzer\TypeNodeUnwrapper
      */
     private $typeNodeUnwrapper;
-
-    public function __construct(ReflectionTypeResolver $reflectionTypeResolver, TypeNodeUnwrapper $typeNodeUnwrapper)
+    /**
+     * @var \Rector\TypeDeclaration\NodeAnalyzer\ReturnStrictTypeAnalyzer
+     */
+    private $returnStrictTypeAnalyzer;
+    /**
+     * @var \Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer
+     */
+    private $returnTypeInferer;
+    public function __construct(\Rector\TypeDeclaration\NodeAnalyzer\TypeNodeUnwrapper $typeNodeUnwrapper, \Rector\TypeDeclaration\NodeAnalyzer\ReturnStrictTypeAnalyzer $returnStrictTypeAnalyzer, \Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer $returnTypeInferer)
     {
-        $this->reflectionTypeResolver = $reflectionTypeResolver;
         $this->typeNodeUnwrapper = $typeNodeUnwrapper;
+        $this->returnStrictTypeAnalyzer = $returnStrictTypeAnalyzer;
+        $this->returnTypeInferer = $returnTypeInferer;
     }
-
-    public function getRuleDefinition(): RuleDefinition
+    public function getRuleDefinition() : \Symplify\RuleDocGenerator\ValueObject\RuleDefinition
     {
-        return new RuleDefinition('Add return type from strict return type of call', [
-            new CodeSample(
-                <<<'CODE_SAMPLE'
+        return new \Symplify\RuleDocGenerator\ValueObject\RuleDefinition('Add return type from strict return type of call', [new \Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample(<<<'CODE_SAMPLE'
 final class SomeClass
 {
     public function getData()
@@ -69,8 +66,7 @@ final class SomeClass
     }
 }
 CODE_SAMPLE
-                ,
-                <<<'CODE_SAMPLE'
+, <<<'CODE_SAMPLE'
 final class SomeClass
 {
     public function getData(): int
@@ -84,190 +80,134 @@ final class SomeClass
     }
 }
 CODE_SAMPLE
-
-            ),
-        ]);
+)]);
     }
-
     /**
      * @return array<class-string<Node>>
      */
-    public function getNodeTypes(): array
+    public function getNodeTypes() : array
     {
-        return [ClassMethod::class, Function_::class, Closure::class];
+        return [\PhpParser\Node\Stmt\ClassMethod::class, \PhpParser\Node\Stmt\Function_::class, \PhpParser\Node\Expr\Closure::class, \PhpParser\Node\Expr\ArrowFunction::class];
     }
-
     /**
-     * @param ClassMethod|Function_|Closure $node
+     * @param ClassMethod|Function_|Closure|ArrowFunction $node
      */
-    public function refactor(Node $node): ?Node
+    public function refactor(\PhpParser\Node $node) : ?\PhpParser\Node
     {
         if ($this->isSkipped($node)) {
             return null;
         }
-
+        if ($node instanceof \PhpParser\Node\Expr\ArrowFunction) {
+            return $this->processArrowFunction($node);
+        }
         /** @var Return_[] $returns */
-        $returns = $this->betterNodeFinder->findInstanceOf((array) $node->stmts, Return_::class);
-
-        $returnedStrictTypes = $this->collectStrictReturnTypes($returns);
+        $returns = $this->betterNodeFinder->find((array) $node->stmts, function (\PhpParser\Node $n) use($node) : bool {
+            $currentFunctionLike = $this->betterNodeFinder->findParentType($n, \PhpParser\Node\FunctionLike::class);
+            if ($currentFunctionLike === $node) {
+                return $n instanceof \PhpParser\Node\Stmt\Return_;
+            }
+            $currentReturn = $this->betterNodeFinder->findParentType($n, \PhpParser\Node\Stmt\Return_::class);
+            if (!$currentReturn instanceof \PhpParser\Node\Stmt\Return_) {
+                return \false;
+            }
+            $currentFunctionLike = $this->betterNodeFinder->findParentType($currentReturn, \PhpParser\Node\FunctionLike::class);
+            if ($currentFunctionLike !== $node) {
+                return \false;
+            }
+            return $n instanceof \PhpParser\Node\Stmt\Return_;
+        });
+        $returnedStrictTypes = $this->returnStrictTypeAnalyzer->collectStrictReturnTypes($returns);
         if ($returnedStrictTypes === []) {
             return null;
         }
-
-        if (count($returnedStrictTypes) === 1) {
+        if (\count($returnedStrictTypes) === 1) {
             return $this->refactorSingleReturnType($returns[0], $returnedStrictTypes[0], $node);
         }
-
-        if ($this->isAtLeastPhpVersion(PhpVersionFeature::UNION_TYPES)) {
+        if ($this->phpVersionProvider->isAtLeastPhpVersion(\Rector\Core\ValueObject\PhpVersionFeature::UNION_TYPES)) {
             /** @var PhpParserUnionType[] $returnedStrictTypes */
             $unwrappedTypes = $this->typeNodeUnwrapper->unwrapNullableUnionTypes($returnedStrictTypes);
-            $returnType = new PhpParserUnionType($unwrappedTypes);
+            $returnType = new \PhpParser\Node\UnionType($unwrappedTypes);
             $node->returnType = $returnType;
             return $node;
         }
-
         return null;
     }
-
+    private function processArrowFunction(\PhpParser\Node\Expr\ArrowFunction $arrowFunction) : ?\PhpParser\Node\Expr\ArrowFunction
+    {
+        $resolvedType = $this->nodeTypeResolver->getType($arrowFunction->expr);
+        // void type is not accepted for arrow functions - https://www.php.net/manual/en/functions.arrow.php#125673
+        if ($resolvedType instanceof \PHPStan\Type\VoidType) {
+            return null;
+        }
+        $returnType = $this->staticTypeMapper->mapPHPStanTypeToPhpParserNode($resolvedType, \Rector\PHPStanStaticTypeMapper\Enum\TypeKind::RETURN());
+        if (!$returnType instanceof \PhpParser\Node) {
+            return null;
+        }
+        $arrowFunction->returnType = $returnType;
+        return $arrowFunction;
+    }
     /**
-     * @param ClassMethod|Function_|Closure $node
+     * @param \PhpParser\Node\Expr\ArrowFunction|\PhpParser\Node\Expr\Closure|\PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_ $node
      */
-    private function processSingleUnionType(Node $node, UnionType $unionType, NullableType $nullableType): Node
+    private function isUnionPossibleReturnsVoid($node) : bool
+    {
+        $inferReturnType = $this->returnTypeInferer->inferFunctionLike($node);
+        if ($inferReturnType instanceof \PHPStan\Type\UnionType) {
+            foreach ($inferReturnType->getTypes() as $type) {
+                if ($type instanceof \PHPStan\Type\VoidType) {
+                    return \true;
+                }
+            }
+        }
+        return \false;
+    }
+    /**
+     * @param \PhpParser\Node\Expr\Closure|\PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_ $node
+     * @return \PhpParser\Node\Expr\Closure|\PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_
+     */
+    private function processSingleUnionType($node, \PHPStan\Type\UnionType $unionType, \PhpParser\Node\NullableType $nullableType)
     {
         $types = $unionType->getTypes();
-        $returnType = $types[0] instanceof ObjectType && $types[1] instanceof NullType
-            ? new NullableType(new FullyQualified($types[0]->getClassName()))
-            : $nullableType;
-
+        $returnType = $types[0] instanceof \PHPStan\Type\ObjectType && $types[1] instanceof \PHPStan\Type\NullType ? new \PhpParser\Node\NullableType(new \PhpParser\Node\Name\FullyQualified($types[0]->getClassName())) : $nullableType;
         $node->returnType = $returnType;
         return $node;
     }
-
     /**
-     * @param ClassMethod|Function_|Closure $node
+     * @param \PhpParser\Node\Expr\ArrowFunction|\PhpParser\Node\Expr\Closure|\PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_ $node
      */
-    private function isSkipped(Node $node): bool
+    private function isSkipped($node) : bool
     {
-        if (! $this->phpVersionProvider->isAtLeastPhpVersion(PhpVersionFeature::SCALAR_TYPES)) {
-            return true;
+        if (!$this->phpVersionProvider->isAtLeastPhpVersion(\Rector\Core\ValueObject\PhpVersionFeature::SCALAR_TYPES)) {
+            return \true;
         }
-
         if ($node->returnType !== null) {
-            return true;
+            return \true;
         }
-
-        return $node instanceof ClassMethod && $node->isMagic();
+        if (!$node instanceof \PhpParser\Node\Stmt\ClassMethod) {
+            return $this->isUnionPossibleReturnsVoid($node);
+        }
+        if (!$node->isMagic()) {
+            return $this->isUnionPossibleReturnsVoid($node);
+        }
+        return \true;
     }
-
     /**
-     * @param Return_[] $returns
-     * @return array<Name|NullableType|UnionType>
+     * @param \PhpParser\Node\Identifier|\PhpParser\Node\Name|\PhpParser\Node\NullableType $returnedStrictTypeNode
+     * @param \PhpParser\Node\Expr\Closure|\PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_ $functionLike
+     * @return \PhpParser\Node\Expr\Closure|\PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_
      */
-    private function collectStrictReturnTypes(array $returns): array
+    private function refactorSingleReturnType(\PhpParser\Node\Stmt\Return_ $return, $returnedStrictTypeNode, $functionLike)
     {
-        $returnedStrictTypeNodes = [];
-
-        foreach ($returns as $return) {
-            if ($return->expr === null) {
-                return [];
+        $resolvedType = $this->nodeTypeResolver->getType($return);
+        if ($resolvedType instanceof \PHPStan\Type\UnionType) {
+            if (!$returnedStrictTypeNode instanceof \PhpParser\Node\NullableType) {
+                return $functionLike;
             }
-
-            $returnedExpr = $return->expr;
-
-            if ($returnedExpr instanceof MethodCall) {
-                $returnNode = $this->resolveMethodCallReturnNode($returnedExpr);
-            } elseif ($returnedExpr instanceof StaticCall) {
-                $returnNode = $this->resolveStaticCallReturnNode($returnedExpr);
-            } elseif ($returnedExpr instanceof FuncCall) {
-                $returnNode = $this->resolveFuncCallReturnNode($returnedExpr);
-            } else {
-                return [];
-            }
-
-            if (! $returnNode instanceof Node) {
-                return [];
-            }
-
-            $returnedStrictTypeNodes[] = $returnNode;
-        }
-
-        return $this->typeNodeUnwrapper->uniquateNodes($returnedStrictTypeNodes);
-    }
-
-    private function resolveMethodCallReturnNode(MethodCall $methodCall): ?Node
-    {
-        $classMethod = $this->nodeRepository->findClassMethodByMethodCall($methodCall);
-        if ($classMethod instanceof ClassMethod) {
-            return $classMethod->returnType;
-        }
-
-        $returnType = $this->reflectionTypeResolver->resolveMethodCallReturnType($methodCall);
-        if (! $returnType instanceof Type) {
-            return null;
-        }
-
-        return $this->staticTypeMapper->mapPHPStanTypeToPhpParserNode($returnType);
-    }
-
-    private function resolveStaticCallReturnNode(StaticCall $staticCall): ?Node
-    {
-        $classMethod = $this->nodeRepository->findClassMethodByStaticCall($staticCall);
-        if ($classMethod instanceof ClassMethod) {
-            return $classMethod->returnType;
-        }
-
-        $returnType = $this->reflectionTypeResolver->resolveStaticCallReturnType($staticCall);
-        if (! $returnType instanceof Type) {
-            return null;
-        }
-
-        return $this->staticTypeMapper->mapPHPStanTypeToPhpParserNode($returnType);
-    }
-
-    /**
-     * @return Identifier|Name|NullableType|PhpParserUnionType|null
-     */
-    private function resolveFuncCallReturnNode(FuncCall $funcCall): ?Node
-    {
-        $function = $this->nodeRepository->findFunctionByFuncCall($funcCall);
-        if ($function instanceof Function_) {
-            return $function->returnType;
-        }
-
-        $returnType = $this->reflectionTypeResolver->resolveFuncCallReturnType($funcCall);
-        if (! $returnType instanceof Type) {
-            return null;
-        }
-
-        return $this->staticTypeMapper->mapPHPStanTypeToPhpParserNode($returnType);
-    }
-
-    /**
-     * @param ClassMethod|Function_|Closure $functionLike
-     * @param Name|NullableType|PhpParserUnionType $returnedStrictTypeNode
-     */
-    private function refactorSingleReturnType(
-        Return_ $return,
-        Node $returnedStrictTypeNode,
-        FunctionLike $functionLike
-    ): Node {
-        $resolvedType = $this->nodeTypeResolver->resolve($return);
-
-        if ($resolvedType instanceof UnionType) {
-            if (! $returnedStrictTypeNode instanceof NullableType) {
-                throw new ShouldNotHappenException();
-            }
-
             return $this->processSingleUnionType($functionLike, $resolvedType, $returnedStrictTypeNode);
         }
-
         /** @var Name $returnType */
-        $returnType = $resolvedType instanceof ObjectType
-            ? new FullyQualified($resolvedType->getClassName())
-            : $returnedStrictTypeNode;
-
+        $returnType = $resolvedType instanceof \PHPStan\Type\ObjectType ? new \PhpParser\Node\Name\FullyQualified($resolvedType->getClassName()) : $returnedStrictTypeNode;
         $functionLike->returnType = $returnType;
-
         return $functionLike;
     }
 }

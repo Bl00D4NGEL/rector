@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\VendorLocker;
 
 use PhpParser\Node;
@@ -9,64 +8,40 @@ use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Property;
 use Rector\VendorLocker\NodeVendorLocker\ClassMethodParamVendorLockResolver;
 use Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnVendorLockResolver;
-use Rector\VendorLocker\NodeVendorLocker\ClassMethodVendorLockResolver;
 use Rector\VendorLocker\NodeVendorLocker\PropertyTypeVendorLockResolver;
-
 final class VendorLockResolver
 {
     /**
-     * @var ClassMethodReturnVendorLockResolver
-     */
-    private $classMethodReturnVendorLockResolver;
-
-    /**
-     * @var ClassMethodParamVendorLockResolver
+     * @var \Rector\VendorLocker\NodeVendorLocker\ClassMethodParamVendorLockResolver
      */
     private $classMethodParamVendorLockResolver;
-
     /**
-     * @var PropertyTypeVendorLockResolver
+     * @var \Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnVendorLockResolver
+     */
+    private $classMethodReturnVendorLockResolver;
+    /**
+     * @var \Rector\VendorLocker\NodeVendorLocker\PropertyTypeVendorLockResolver
      */
     private $propertyTypeVendorLockResolver;
-
-    /**
-     * @var ClassMethodVendorLockResolver
-     */
-    private $classMethodVendorLockResolver;
-
-    public function __construct(
-        ClassMethodParamVendorLockResolver $classMethodParamVendorLockResolver,
-        ClassMethodReturnVendorLockResolver $classMethodReturnVendorLockResolver,
-        ClassMethodVendorLockResolver $classMethodVendorLockResolver,
-        PropertyTypeVendorLockResolver $propertyTypeVendorLockResolver
-    ) {
-        $this->classMethodReturnVendorLockResolver = $classMethodReturnVendorLockResolver;
-        $this->classMethodParamVendorLockResolver = $classMethodParamVendorLockResolver;
-        $this->propertyTypeVendorLockResolver = $propertyTypeVendorLockResolver;
-        $this->classMethodVendorLockResolver = $classMethodVendorLockResolver;
-    }
-
-    public function isClassMethodParamLockedIn(Node $node, int $paramPosition): bool
+    public function __construct(\Rector\VendorLocker\NodeVendorLocker\ClassMethodParamVendorLockResolver $classMethodParamVendorLockResolver, \Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnVendorLockResolver $classMethodReturnVendorLockResolver, \Rector\VendorLocker\NodeVendorLocker\PropertyTypeVendorLockResolver $propertyTypeVendorLockResolver)
     {
-        if (! $node instanceof ClassMethod) {
-            return false;
-        }
-
-        return $this->classMethodParamVendorLockResolver->isVendorLocked($node, $paramPosition);
+        $this->classMethodParamVendorLockResolver = $classMethodParamVendorLockResolver;
+        $this->classMethodReturnVendorLockResolver = $classMethodReturnVendorLockResolver;
+        $this->propertyTypeVendorLockResolver = $propertyTypeVendorLockResolver;
     }
-
-    public function isReturnChangeVendorLockedIn(ClassMethod $classMethod): bool
+    public function isClassMethodParamLockedIn(\PhpParser\Node $node) : bool
+    {
+        if (!$node instanceof \PhpParser\Node\Stmt\ClassMethod) {
+            return \false;
+        }
+        return $this->classMethodParamVendorLockResolver->isVendorLocked($node);
+    }
+    public function isReturnChangeVendorLockedIn(\PhpParser\Node\Stmt\ClassMethod $classMethod) : bool
     {
         return $this->classMethodReturnVendorLockResolver->isVendorLocked($classMethod);
     }
-
-    public function isPropertyTypeChangeVendorLockedIn(Property $property): bool
+    public function isPropertyTypeChangeVendorLockedIn(\PhpParser\Node\Stmt\Property $property) : bool
     {
         return $this->propertyTypeVendorLockResolver->isVendorLocked($property);
-    }
-
-    public function isClassMethodRemovalVendorLocked(ClassMethod $classMethod): bool
-    {
-        return $this->classMethodVendorLockResolver->isRemovalVendorLocked($classMethod);
     }
 }

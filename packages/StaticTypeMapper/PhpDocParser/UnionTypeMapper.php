@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\StaticTypeMapper\PhpDocParser;
 
 use PhpParser\Node;
@@ -12,48 +11,47 @@ use PHPStan\Type\Type;
 use Rector\NodeTypeResolver\PHPStan\Type\TypeFactory;
 use Rector\StaticTypeMapper\Contract\PhpDocParser\PhpDocTypeMapperInterface;
 use Rector\StaticTypeMapper\PhpDoc\PhpDocTypeMapper;
-
-final class UnionTypeMapper implements PhpDocTypeMapperInterface
+use RectorPrefix20211107\Symfony\Contracts\Service\Attribute\Required;
+final class UnionTypeMapper implements \Rector\StaticTypeMapper\Contract\PhpDocParser\PhpDocTypeMapperInterface
 {
     /**
-     * @var PhpDocTypeMapper
+     * @var \Rector\StaticTypeMapper\PhpDoc\PhpDocTypeMapper
      */
     private $phpDocTypeMapper;
-
     /**
-     * @var TypeFactory
+     * @var \Rector\NodeTypeResolver\PHPStan\Type\TypeFactory
      */
     private $typeFactory;
-
-    public function __construct(TypeFactory $typeFactory)
+    public function __construct(\Rector\NodeTypeResolver\PHPStan\Type\TypeFactory $typeFactory)
     {
         $this->typeFactory = $typeFactory;
     }
-
-    public function getNodeType(): string
+    /**
+     * @return class-string<TypeNode>
+     */
+    public function getNodeType() : string
     {
-        return UnionTypeNode::class;
+        return \PHPStan\PhpDocParser\Ast\Type\UnionTypeNode::class;
     }
-
     /**
      * @required
      */
-    public function autowireUnionTypeMapper(PhpDocTypeMapper $phpDocTypeMapper): void
+    public function autowireUnionTypeMapper(\Rector\StaticTypeMapper\PhpDoc\PhpDocTypeMapper $phpDocTypeMapper) : void
     {
         $this->phpDocTypeMapper = $phpDocTypeMapper;
     }
-
     /**
-     * @param UnionTypeNode $typeNode
+     * @param \PHPStan\PhpDocParser\Ast\Type\TypeNode $typeNode
+     * @param \PhpParser\Node $node
+     * @param \PHPStan\Analyser\NameScope $nameScope
      */
-    public function mapToPHPStanType(TypeNode $typeNode, Node $node, NameScope $nameScope): Type
+    public function mapToPHPStanType($typeNode, $node, $nameScope) : \PHPStan\Type\Type
     {
         $unionedTypes = [];
         foreach ($typeNode->types as $unionedTypeNode) {
             $unionedTypes[] = $this->phpDocTypeMapper->mapToPHPStanType($unionedTypeNode, $node, $nameScope);
         }
-
         // to prevent missing class error, e.g. in tests
-        return $this->typeFactory->createMixedPassedOrUnionType($unionedTypes);
+        return $this->typeFactory->createMixedPassedOrUnionTypeAndKeepConstant($unionedTypes);
     }
 }

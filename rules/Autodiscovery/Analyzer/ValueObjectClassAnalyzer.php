@@ -1,127 +1,100 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Rector\Autodiscovery\Analyzer;
 
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PHPStan\Type\ObjectType;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
-use Rector\BetterPhpDocParser\ValueObject\PhpDocNode\JMS\SerializerTypeTagValueNode;
+use Rector\Core\NodeAnalyzer\ClassAnalyzer;
+use Rector\Core\PhpParser\AstResolver;
 use Rector\Core\ValueObject\MethodName;
-use Rector\NodeCollector\NodeCollector\NodeRepository;
-use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\NodeTypeResolver;
-
 final class ValueObjectClassAnalyzer
 {
     /**
      * @var array<string, bool>
      */
     private $valueObjectStatusByClassName = [];
-
     /**
-     * @var NodeNameResolver
-     */
-    private $nodeNameResolver;
-
-    /**
-     * @var NodeTypeResolver
+     * @var \Rector\NodeTypeResolver\NodeTypeResolver
      */
     private $nodeTypeResolver;
-
     /**
-     * @var PhpDocInfoFactory
+     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
     private $phpDocInfoFactory;
-
     /**
-     * @var NodeRepository
+     * @var \Rector\Core\PhpParser\AstResolver
      */
-    private $nodeRepository;
-
-    public function __construct(
-        NodeNameResolver $nodeNameResolver,
-        NodeTypeResolver $nodeTypeResolver,
-        PhpDocInfoFactory $phpDocInfoFactory,
-        NodeRepository $nodeRepository
-    ) {
-        $this->nodeNameResolver = $nodeNameResolver;
+    private $astResolver;
+    /**
+     * @var \Rector\Core\NodeAnalyzer\ClassAnalyzer
+     */
+    private $classAnalyzer;
+    public function __construct(\Rector\NodeTypeResolver\NodeTypeResolver $nodeTypeResolver, \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory $phpDocInfoFactory, \Rector\Core\PhpParser\AstResolver $astResolver, \Rector\Core\NodeAnalyzer\ClassAnalyzer $classAnalyzer)
+    {
         $this->nodeTypeResolver = $nodeTypeResolver;
         $this->phpDocInfoFactory = $phpDocInfoFactory;
-        $this->nodeRepository = $nodeRepository;
+        $this->astResolver = $astResolver;
+        $this->classAnalyzer = $classAnalyzer;
     }
-
-    public function isValueObjectClass(Class_ $class): bool
+    public function isValueObjectClass(\PhpParser\Node\Stmt\Class_ $class) : bool
     {
-        if ($class->isAnonymous()) {
-            return false;
+        if ($this->classAnalyzer->isAnonymousClass($class)) {
+            return \false;
         }
-
         /** @var string $className */
-        $className = $this->nodeNameResolver->getName($class);
-
+        $className = $class->namespacedName->toString();
         if (isset($this->valueObjectStatusByClassName[$className])) {
             return $this->valueObjectStatusByClassName[$className];
         }
-
-        $constructClassMethod = $class->getMethod(MethodName::CONSTRUCT);
-
-        if (! $constructClassMethod instanceof ClassMethod) {
-            return $this->analyseWithoutConstructor($class, $className);
+        $constructClassMethod = $class->getMethod(\Rector\Core\ValueObject\MethodName::CONSTRUCT);
+        if (!$constructClassMethod instanceof \PhpParser\Node\Stmt\ClassMethod) {
+            return $this->hasExlusivelySerializeProperties($class, $className);
         }
-
         // resolve constructor types
         foreach ($constructClassMethod->params as $param) {
-            $paramType = $this->nodeTypeResolver->resolve($param);
-            if (! $paramType instanceof ObjectType) {
+            $paramType = $this->nodeTypeResolver->getType($param);
+            if (!$paramType instanceof \PHPStan\Type\ObjectType) {
                 continue;
             }
-
             // awesome!
             // is it services or value object?
-            $paramTypeClass = $this->nodeRepository->findClass($paramType->getClassName());
-            if (! $paramTypeClass instanceof Class_) {
+            $paramTypeClass = $this->astResolver->resolveClassFromName($paramType->getClassName());
+            if (!$paramTypeClass instanceof \PhpParser\Node\Stmt\Class_) {
                 // not sure :/
                 continue;
             }
-
-            if (! $this->isValueObjectClass($paramTypeClass)) {
-                return false;
+            if (!$this->isValueObjectClass($paramTypeClass)) {
+                return \false;
             }
         }
-
         // if we didn't prove it's not a value object so far → fallback to true
-        $this->valueObjectStatusByClassName[$className] = true;
-
-        return true;
+        $this->valueObjectStatusByClassName[$className] = \true;
+        return \true;
     }
-
-    private function analyseWithoutConstructor(Class_ $class, string $className): bool
+    private function hasExlusivelySerializeProperties(\PhpParser\Node\Stmt\Class_ $class, string $className) : bool
     {
         // A. has all properties with serialize?
         if ($this->hasAllPropertiesWithSerialize($class)) {
-            $this->valueObjectStatusByClassName[$className] = true;
-            return true;
+            $this->valueObjectStatusByClassName[$className] = \true;
+            return \true;
         }
-
         // probably not a value object
-        $this->valueObjectStatusByClassName[$className] = false;
-        return false;
+        $this->valueObjectStatusByClassName[$className] = \false;
+        return \false;
     }
-
-    private function hasAllPropertiesWithSerialize(Class_ $class): bool
+    private function hasAllPropertiesWithSerialize(\PhpParser\Node\Stmt\Class_ $class) : bool
     {
         foreach ($class->getProperties() as $property) {
             $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($property);
-            if ($phpDocInfo->hasByType(SerializerTypeTagValueNode::class)) {
+            if ($phpDocInfo->hasByAnnotationClass('JMS\\Serializer\\Annotation\\Type')) {
                 continue;
             }
-
-            return false;
+            return \false;
         }
-
-        return true;
+        return \true;
     }
 }
