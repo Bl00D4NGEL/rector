@@ -24,7 +24,7 @@ jobs:
         steps:
             # see https://github.com/rectorphp/rector-prefixed-rule-test
             -
-                uses: actions/checkout@v2
+                uses: actions/checkout@v3
                 with:
                     repository: rectorphp/rector-prefixed-rule-test
 
